@@ -1,8 +1,8 @@
 {
   "name": "Auto Shorts Maker v1.1",
   "short_name": "AutoShorts",
-  "start_url": "/dtslib-cloud-appstore/auto-shorts-maker/",
-  "scope": "/dtslib-cloud-appstore/auto-shorts-maker/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#667eea",

@@ -197,7 +197,13 @@ processBtn.addEventListener('click', async () => {
         
     } catch (error) {
         console.error('Processing error:', error);
-        showError(`Error: ${error.message || 'Unknown error occurred. Please try again.'}`);
+        const errorMsg = error.message || 'An unexpected error occurred';
+        const helpText = error.message?.includes('video') ? 
+            ' Please check your video file format.' : 
+            error.message?.includes('audio') ? 
+            ' Please check your audio file format.' :
+            ' Please try again or use different files.';
+        showError(`Error: ${errorMsg}.${helpText}`);
     } finally {
         processBtn.disabled = false;
     }
