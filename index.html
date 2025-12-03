@@ -61,36 +61,52 @@
             opacity: 0.7;
             margin-top: 5px;
         }
-        .working {
+        .real {
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            animation: pulse 2s infinite;
+        }
+        .working {
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
         }
         .beta {
             background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
         }
     </style>
 </head>
 <body>
     <h1>🚀 DTS Cloud AppStore</h1>
     <div class="app-grid">
+        <div class="app-card" onclick="location.href='./auto-shorts-v3/'">
+            <div class="app-inner">
+                <div class="app-icon real">🎬</div>
+                <div class="app-name">Shorts v3 (REAL)</div>
+                <div class="app-desc">실제 2분 MP4 생성</div>
+            </div>
+        </div>
         <div class="app-card" onclick="location.href='./auto-shorts-v2/'">
             <div class="app-inner">
                 <div class="app-icon working">✅</div>
-                <div class="app-name">Shorts v2 (작동)</div>
-                <div class="app-desc">간단한 쇼츠 메이커</div>
+                <div class="app-name">Shorts v2</div>
+                <div class="app-desc">데모 버전</div>
             </div>
         </div>
         <div class="app-card" onclick="location.href='./shorts-maker/'">
             <div class="app-inner">
-                <div class="app-icon beta">🎬</div>
-                <div class="app-name">Shorts Maker</div>
-                <div class="app-desc">FFmpeg 버전 (베타)</div>
+                <div class="app-icon beta">🎥</div>
+                <div class="app-name">Shorts v1</div>
+                <div class="app-desc">베타</div>
             </div>
         </div>
         <div class="app-card" onclick="location.href='./auto-shorts-maker/'">
             <div class="app-inner">
-                <div class="app-icon beta">🎥</div>
+                <div class="app-icon beta">📹</div>
                 <div class="app-name">Auto Shorts v1.1</div>
-                <div class="app-desc">SAB-free (베타)</div>
+                <div class="app-desc">SAB-free</div>
             </div>
         </div>
     </div>
