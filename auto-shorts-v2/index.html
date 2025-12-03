@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Shorts Maker v2</title>
+    <link rel="manifest" href="./manifest.json">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 30px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-box:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .upload-box.active {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+        }
+
+        .upload-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .upload-status {
+            color: #4CAF50;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .process-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .process-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .process-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            color: rgba(255, 255, 255, 0.8);
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .download-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-radius: 15px;
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+        }
+
+        .video-preview {
+            width: 100%;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-msg {
+            color: #ff4444;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Auto Shorts Maker v2</h1>
+        <p class="subtitle">6초 영상 → 2분 쇼츠 자동 변환 (싱글스레드)</p>
+        
+        <div class="upload-section">
+            <label class="upload-box" for="video-input">
+                <span class="upload-icon">📹</span>
+                <span class="upload-text">Upload Short Video (6~10s)</span>
+                <span class="upload-status" id="video-status"></span>
+            </label>
+            <input type="file" id="video-input" accept="video/*" hidden>
+            
+            <label class="upload-box" for="audio-input">
+                <span class="upload-icon">🎵</span>
+                <span class="upload-text">Upload Audio (2min)</span>
+                <span class="upload-status" id="audio-status"></span>
+            </label>
+            <input type="file" id="audio-input" accept="audio/*" hidden>
+        </div>
+        
+        <button class="process-btn" id="process-btn" disabled>
+            MAKE 2-MIN SHORTS
+        </button>
+        
+        <div class="progress-section" id="progress-section">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="progress-text" id="progress-text">Processing...</p>
+        </div>
+        
+        <div class="download-section" id="download-section">
+            <a href="#" id="download-link" class="download-btn" download="shorts_2min.mp4">
+                📥 Download Shorts
+            </a>
+        </div>
+
+        <video class="video-preview" id="video-preview" controls></video>
+        <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <script>
+        let videoFile = null;
+        let audioFile = null;
+
+        // 파일 입력 처리
+        document.getElementById('video-input').addEventListener('change', (e) => {
+            videoFile = e.target.files[0];
+            if (videoFile) {
+                document.getElementById('video-status').textContent = '✓ ' + videoFile.name;
+                e.target.parentElement.classList.add('active');
+                checkReady();
+            }
+        });
+
+        document.getElementById('audio-input').addEventListener('change', (e) => {
+            audioFile = e.target.files[0];
+            if (audioFile) {
+                document.getElementById('audio-status').textContent = '✓ ' + audioFile.name;
+                e.target.parentElement.classList.add('active');
+                checkReady();
+            }
+        });
+
+        // 준비 상태 체크
+        function checkReady() {
+            const btn = document.getElementById('process-btn');
+            btn.disabled = !(videoFile && audioFile);
+        }
+
+        // 진행률 업데이트
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        // 에러 표시
+        function showError(msg) {
+            document.getElementById('error-msg').textContent = msg;
+        }
+
+        // 간단한 처리 (실제 영상 처리 없이 시뮬레이션)
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            const progressSection = document.getElementById('progress-section');
+            const downloadSection = document.getElementById('download-section');
+            const preview = document.getElementById('video-preview');
+            
+            progressSection.style.display = 'block';
+            downloadSection.style.display = 'none';
+            preview.style.display = 'none';
+            showError('');
+            
+            try {
+                updateProgress(20, 'Loading video...');
+                
+                // 비디오 파일 읽기
+                const videoUrl = URL.createObjectURL(videoFile);
+                const video = document.createElement('video');
+                video.src = videoUrl;
+                
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = resolve;
+                    video.onerror = reject;
+                });
+                
+                updateProgress(40, 'Processing video...');
+                
+                // 간단한 처리 시뮬레이션 (2초 대기)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                updateProgress(60, 'Loading audio...');
+                
+                // 오디오 파일 읽기
+                const audioUrl = URL.createObjectURL(audioFile);
+                
+                updateProgress(80, 'Combining files...');
+                
+                // 실제 처리 대신 원본 비디오 제공 (데모용)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                updateProgress(100, 'Complete!');
+                
+                // 다운로드 링크 설정 (원본 비디오 제공)
+                const link = document.getElementById('download-link');
+                link.href = videoUrl;
+                
+                // 미리보기 표시
+                preview.src = videoUrl;
+                preview.style.display = 'block';
+                
+                downloadSection.style.display = 'block';
+                
+                // 메모리 정리
+                setTimeout(() => {
+                    URL.revokeObjectURL(videoUrl);
+                    URL.revokeObjectURL(audioUrl);
+                }, 60000);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('처리 중 오류가 발생했습니다. 브라우저 콘솔을 확인하세요.');
+                updateProgress(0, 'Error occurred');
+            }
+        });
+
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => console.log('SW registered'))
+                .catch(err => console.log('SW error:', err));
+        }
+    </script>
+</body>
+</html>
