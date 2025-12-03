@@ -61,23 +61,36 @@
             opacity: 0.7;
             margin-top: 5px;
         }
+        .working {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        }
+        .beta {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        }
     </style>
 </head>
 <body>
     <h1>🚀 DTS Cloud AppStore</h1>
     <div class="app-grid">
+        <div class="app-card" onclick="location.href='./auto-shorts-v2/'">
+            <div class="app-inner">
+                <div class="app-icon working">✅</div>
+                <div class="app-name">Shorts v2 (작동)</div>
+                <div class="app-desc">간단한 쇼츠 메이커</div>
+            </div>
+        </div>
         <div class="app-card" onclick="location.href='./shorts-maker/'">
             <div class="app-inner">
-                <div class="app-icon">🎬</div>
+                <div class="app-icon beta">🎬</div>
                 <div class="app-name">Shorts Maker</div>
-                <div class="app-desc">2분 자동 쇼츠 생성</div>
+                <div class="app-desc">FFmpeg 버전 (베타)</div>
             </div>
         </div>
         <div class="app-card" onclick="location.href='./auto-shorts-maker/'">
             <div class="app-inner">
-                <div class="app-icon">🎥</div>
+                <div class="app-icon beta">🎥</div>
                 <div class="app-name">Auto Shorts v1.1</div>
-                <div class="app-desc">SAB-free 2분 쇼츠</div>
+                <div class="app-desc">SAB-free (베타)</div>
             </div>
         </div>
     </div>
