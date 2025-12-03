@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="6~10초 영상을 2분 쇼츠로 자동 변환">
+    <title>Auto Shorts Maker v1.1</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Auto Shorts Maker v1.1</h1>
+        <p class="subtitle">6~10초 영상 → 2분 쇼츠 자동 변환</p>
+        
+        <!-- Step 1: Upload Short Video -->
+        <div class="upload-section">
+            <label class="upload-box" for="video-input">
+                <span class="upload-icon">📹</span>
+                <span class="upload-text">Step 1: Upload Short Video (6~10s)</span>
+                <span class="upload-status" id="video-status"></span>
+            </label>
+            <input type="file" id="video-input" accept="video/mp4,video/*" hidden>
+            
+            <!-- Step 2: Upload Audio -->
+            <label class="upload-box" for="audio-input">
+                <span class="upload-icon">🎵</span>
+                <span class="upload-text">Step 2: Upload Audio (2min)</span>
+                <span class="upload-status" id="audio-status"></span>
+            </label>
+            <input type="file" id="audio-input" accept="audio/mp3,audio/wav,audio/*" hidden>
+        </div>
+        
+        <!-- Step 3: Process Button -->
+        <button class="process-btn" id="process-btn" disabled>
+            🚀 MAKE 2-MIN SHORTS
+        </button>
+        
+        <!-- Progress Section -->
+        <div class="progress-section" id="progress-section" style="display: none;">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p class="progress-text" id="progress-text">Preparing...</p>
+        </div>
+        
+        <!-- Error Section -->
+        <div class="error-section" id="error-section" style="display: none;">
+            <p class="error-text" id="error-text"></p>
+        </div>
+        
+        <!-- Download Section -->
+        <div class="download-section" id="download-section" style="display: none;">
+            <a href="#" id="download-link" class="download-btn">
+                📥 Download 2-Min Shorts
+            </a>
+        </div>
+    </div>
+    
+    <!-- Load FFmpeg.wasm (single-thread version) -->
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>
