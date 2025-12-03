@@ -69,20 +69,29 @@
 ```
 dts-cloud-appstore/
 ├── index.html           # AppStore 대시보드
-├── shorts-maker/        # Shorts Maker PWA (기존)
-│   ├── index.html
-│   ├── script.js
-│   ├── style.css
-│   ├── manifest.json
-│   └── service-worker.js
-├── auto-shorts-maker/   # Auto Shorts Maker v1.1 (NEW!)
-│   ├── index.html
-│   ├── app.js
-│   ├── style.css
-│   ├── manifest.json
-│   └── service-worker.js
+├── shorts-maker/        # Shorts Maker v1 (베타)
+├── auto-shorts-maker/   # Auto Shorts Maker v1.1 (SAB-free)
+├── auto-shorts-v2/      # Auto Shorts v2 (데모)
+├── auto-shorts-v3/      # Auto Shorts v3 (REAL) ⭐
 └── README.md
 ```
+
+## 📚 문서
+
+프로젝트에 대한 상세한 문서를 제공합니다:
+
+- **[종합 리포트](./REPOSITORY_REPORT.md)** - 레포지토리 전체 개요, 기술 스택, 설치된 항목, 향후 계획
+- **[개발 일지](./DEVELOPMENT_LOG.md)** - 시간순 개발 기록, 기술적 결정 사항
+- **[에러 문서](./ERROR_DOCUMENTATION.md)** - 발생한 모든 에러와 해결 방법, 트러블슈팅 가이드
+
+## 🔧 트러블슈팅
+
+문제가 발생했나요? [에러 문서](./ERROR_DOCUMENTATION.md)를 확인하세요.
+
+일반적인 문제:
+- SharedArrayBuffer 에러 → v1.1 또는 v3 사용
+- 메모리 부족 → 720p 다운스케일 옵션 활성화
+- 느린 처리 속도 → Chrome 브라우저 사용 권장
 
 ---
 
