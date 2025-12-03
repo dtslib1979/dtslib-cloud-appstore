@@ -68,21 +68,29 @@
 
 ```
 dts-cloud-appstore/
-├── index.html           # AppStore 대시보드
-├── shorts-maker/        # Shorts Maker PWA (기존)
+├── index.html              # AppStore 대시보드
+├── shorts-maker/           # Shorts Maker PWA (기존)
 │   ├── index.html
 │   ├── script.js
 │   ├── style.css
 │   ├── manifest.json
 │   └── service-worker.js
-├── auto-shorts-maker/   # Auto Shorts Maker v1.1 (NEW!)
+├── auto-shorts-maker/      # Auto Shorts Maker v1.1 (NEW!)
 │   ├── index.html
 │   ├── app.js
 │   ├── style.css
 │   ├── manifest.json
 │   └── service-worker.js
+├── DESIGN_CONSTITUTION.md  # Design & Mobile System Constitution
 └── README.md
 ```
+
+## 📋 Design & Mobile System Constitution
+
+For EAE Skillset6 report generation and MDX documentation standards, see:
+- [**Design & Mobile System Constitution**](./DESIGN_CONSTITUTION.md) - Official design guidelines and rules
+
+This constitution defines the mandatory design system for all MDX reports and component outputs.
 
 ---
 
