@@ -40,9 +40,12 @@ self.addEventListener('activate', event => {
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
   // Don't cache ffmpeg.wasm files or CDN resources
-  if (event.request.url.includes('unpkg.com') || 
-      event.request.url.includes('jsdelivr.net') ||
-      event.request.url.includes('ffmpeg')) {
+  const url = new URL(event.request.url);
+  const isCDN = url.hostname === 'unpkg.com' || 
+                url.hostname === 'cdn.jsdelivr.net' ||
+                url.pathname.includes('ffmpeg');
+  
+  if (isCDN) {
     event.respondWith(fetch(event.request));
     return;
   }
