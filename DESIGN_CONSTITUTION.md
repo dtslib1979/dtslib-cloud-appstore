@@ -8,9 +8,11 @@
 
 ## Overview
 
-This document defines the **Design & Mobile System Constitution** for the EAE Skillset6 report generator agent. When producing MDX reports, component outputs, or system documentation, **all rules specified in this constitution MUST be followed without exception**.
+This document defines the **Design & Mobile System Constitution** for the EAE Skillset6 report generator agent. When producing **MDX reports and component outputs**, **all rules specified in this constitution MUST be followed without exception**.
 
-**Failure to comply with these rules constitutes an OUTPUT ERROR.**
+**Note:** This constitution document itself uses standard markdown documentation structure for clarity and organization. The heading restrictions (h1/h2 only) apply specifically to **MDX report outputs**, not to this specification document.
+
+**Failure to comply with these rules in MDX reports constitutes an OUTPUT ERROR.**
 
 ---
 
@@ -46,7 +48,7 @@ All backgrounds, borders, buttons, and text **MUST** use the following exact col
 
 ### Heading Hierarchy Rules
 
-**ONLY two heading levels are permitted:**
+**For MDX Reports - ONLY two heading levels are permitted:**
 
 #### Heading Level 1 (h1)
 - **Markdown:** `#`
@@ -60,9 +62,10 @@ All backgrounds, borders, buttons, and text **MUST** use the following exact col
 - **Styles:** `text-xl md:text-2xl font-semibold mt-6 mb-3`
 - **Example:** `## Part 3 – Theory Map`
 
-#### ⚠️ PROHIBITED
-- **NEVER use `###` or deeper heading levels**
-- Heading level violations are considered OUTPUT ERRORS
+#### ⚠️ PROHIBITED IN MDX REPORTS
+- **NEVER use `###` or deeper heading levels in MDX reports**
+- Heading level violations in MDX reports are considered OUTPUT ERRORS
+- This constitution document uses deeper headings for documentation clarity, but MDX reports must not
 
 ### Body Text Rules
 
@@ -145,11 +148,12 @@ The following structure **MUST be followed in exact order:**
   - Technical terminology
 
 #### 4. Part 3 – Theory Map (Required)
-- **Heading:** `## Part 3 – Theory Map`
+- **Heading:** `# Part 3 – Theory Map` (or as a subsection: `## Theory Map` within Part 2)
 - **Components:**
   - Mermaid graph block (graph TD or graph LR)
   - 3–5 line plain text explanation below the graph
 - **Purpose:** Visual representation of concepts
+- **Note:** Can be a standalone part (h1) or subsection of Part 2 (h2)
 
 #### 5. Optional Components
 - **SketchCard:** 0–2 maximum (can appear in Part 2 or at end)
@@ -270,7 +274,7 @@ The following structure **MUST be followed in exact order:**
   <p className="text-main">
     Want to explore further? Try the{" "}
     <a 
-      href="https://prompt-engine.example.com"
+      href="[INSERT_PROMPT_ENGINE_URL]"
       className="text-accent-1 underline-offset-4 hover:underline"
     >
       Prompt Engine
@@ -283,6 +287,7 @@ The following structure **MUST be followed in exact order:**
 **Required elements:**
 - Section: `mt-10 rounded-2xl border border-accent-1/40 bg-main/60 px-4 py-4 text-sm`
 - Link: `text-accent-1 underline-offset-4 hover:underline`
+- **URL:** Replace `[INSERT_PROMPT_ENGINE_URL]` with the actual Prompt Engine URL
 - Position: **ALWAYS last section**
 - Presence: **ALWAYS required** – never skip
 
@@ -509,7 +514,7 @@ This diagram shows the request flow: client sends request to API gateway, which 
   <p className="text-main">
     Want to explore further? Try the{" "}
     <a 
-      href="https://prompt-engine.example.com"
+      href="[INSERT_PROMPT_ENGINE_URL]"
       className="text-accent-1 underline-offset-4 hover:underline"
     >
       Prompt Engine
@@ -518,6 +523,8 @@ This diagram shows the request flow: client sends request to API gateway, which 
   </p>
 </div>
 ```
+
+**Note:** Replace `[INSERT_PROMPT_ENGINE_URL]` with the actual Prompt Engine URL in your implementation.
 
 ---
 
