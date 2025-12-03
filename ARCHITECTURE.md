@@ -278,10 +278,12 @@ GitHub Pages를 통해 배포되는 Progressive Web App(PWA) 기반의 모바일
 - **GitHub Pages**: 정적 사이트 호스팅
 
 ### 외부 의존성
-| 라이브러리 | 버전 | 용도 | CDN |
-|-----------|------|------|-----|
-| FFmpeg.wasm | 0.11.6 | 비디오 처리 | unpkg.com / cdn.jsdelivr.net |
-| FFmpeg Core | 0.11.0 | WASM 런타임 | unpkg.com |
+| 라이브러리 | 버전 | 용도 | CDN | 상태 |
+|-----------|------|------|-----|------|
+| FFmpeg.wasm | 0.11.6 | 비디오 처리 | unpkg.com / cdn.jsdelivr.net | ⚠️ 불일치 (통일 필요) |
+| FFmpeg Core | 0.11.0 | WASM 런타임 | unpkg.com | ✅ 정상 |
+
+> **⚠️ 주의**: 현재 두 앱에서 서로 다른 CDN을 사용 중입니다. [ISSUES.md](./ISSUES.md#2-ffmpegwasm-cdn-불일치)를 참조하여 통일이 필요합니다.
 
 ---
 
