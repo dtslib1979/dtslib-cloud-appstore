@@ -2,6 +2,8 @@
 
 박씨 전용 PWA 공장 - 모바일 도구 앱스토어
 
+> 📖 **처음 사용하시나요?** [빠른 시작 가이드](./QUICK_START.md)를 확인하세요!
+
 ## 📱 접속 URL
 
 - **메인 AppStore**: https://dtslib1979.github.io/dtslib-cloud-appstore/
@@ -80,6 +82,7 @@ dts-cloud-appstore/
 
 프로젝트에 대한 상세한 문서를 제공합니다:
 
+- **[빠른 시작 가이드](./QUICK_START.md)** ⭐ - 처음 사용자를 위한 간단한 가이드
 - **[종합 리포트](./REPOSITORY_REPORT.md)** - 레포지토리 전체 개요, 기술 스택, 설치된 항목, 향후 계획
 - **[개발 일지](./DEVELOPMENT_LOG.md)** - 시간순 개발 기록, 기술적 결정 사항
 - **[에러 문서](./ERROR_DOCUMENTATION.md)** - 발생한 모든 에러와 해결 방법, 트러블슈팅 가이드
