@@ -1,49 +1,51 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-export default function SubtitlePlayer({ data, exitPlayer }) {
+export default function SubtitlePlayer({ data, exit }) {
   const [idx, setIdx] = useState(0);
-  const last = data.length;
-  const isFin = idx >= last;
+  const len = data.length;
+  const done = idx >= len;
+  const line = data[idx] || { kor: "", eng: "" };
 
-  const next = () => {
-    if (isFin) return exitPlayer();
-    setIdx(i => i + 1);
-  };
-
-  const line = data[idx] || { kor:"", eng:"" };
+  const next = () => done ? exit() : setIdx(i => i + 1);
 
   return (
     <div
       onClick={next}
+      onTouchStart={(e) => { e.preventDefault(); next(); }}
       style={{
-        position:"fixed", inset:0, display:"flex",
-        flexDirection:"column", justifyContent:"flex-end",
-        cursor:"pointer"
+        position: "fixed", inset: 0, background: "transparent",
+        display: "flex", flexDirection: "column", justifyContent: "flex-end",
+        cursor: "pointer", userSelect: "none"
       }}
     >
-      <div className="parksy-player-box">
-        <div className="parksy-kor" style={{fontSize:"1.6rem", marginBottom:8}}>
+      {/* 하단 자막바 */}
+      <div style={{
+        width: "100%", height: "12vh", minHeight: 80,
+        background: "rgba(0,0,0,0.75)",
+        display: "flex", flexDirection: "column", justifyContent: "center",
+        padding: "0 5vw", boxSizing: "border-box"
+      }}>
+        <div style={{ color: "#ffd93d", fontSize: "1.05rem", fontWeight: 700, marginBottom: 4 }}>
           {line.kor}
         </div>
-        <div className="parksy-eng" style={{fontSize:"1.2rem"}}>
+        <div style={{ color: "#fff", fontSize: "0.9rem", fontWeight: 300 }}>
           {line.eng}
         </div>
-
-        <div style={{marginTop:16, color:"rgba(255,255,255,0.3)", fontSize:"0.9rem"}}>
-          {idx+1} / {last}
+        <div style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", marginTop: 6 }}>
+          {idx + 1} / {len}
         </div>
       </div>
 
+      {/* EXIT 버튼 */}
       <button
-        onClick={(e)=>{ e.stopPropagation(); exitPlayer(); }}
+        onClick={(e) => { e.stopPropagation(); exit(); }}
         style={{
-          position:"absolute", top:20, right:20,
-          background:"rgba(255,0,0,0.7)", color:"#fff",
-          padding:"6px 12px", borderRadius:20
+          position: "absolute", top: 20, right: 20, zIndex: 10,
+          background: "rgba(255,0,0,0.8)", color: "#fff",
+          border: "none", borderRadius: 20, padding: "8px 16px",
+          fontSize: 14, fontWeight: 600
         }}
-      >
-        EXIT
-      </button>
+      >EXIT</button>
     </div>
   );
 }
