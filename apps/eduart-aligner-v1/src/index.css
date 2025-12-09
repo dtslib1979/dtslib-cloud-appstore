@@ -1,0 +1,82 @@
+/* -------------------------------
+   GLOBAL RESET
+-------------------------------- */
+*,
+*::before,
+*::after { margin:0; padding:0; box-sizing:border-box; }
+
+html, body, #root {
+  height:100%;
+  width:100%;
+  overflow:hidden;
+}
+
+/* 기본 폰트 */
+body {
+  font-family: "Courier New", monospace;
+  color:#F3F7F4;
+}
+
+
+/* -------------------------------
+   PARKSY WORLD CHALKBOARD THEME
+-------------------------------- */
+:root {
+  --parksy-chalk-base: #253A2F;
+
+  --parksy-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='parksy-noise-filter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23parksy-noise-filter)' opacity='0.09'/%3E%3C/svg%3E");
+  --parksy-scratch: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='parksy-scratch-pattern' width='800' height='800'%3E%3Cpath d='M0,400 Q300,50 600,400 T800,400' stroke='%2355B08A' stroke-width='0.8' opacity='0.018'/%3E%3Cpath d='M400,0 Q50,350 400,800' stroke='%2340A57A' stroke-width='0.6' opacity='0.012'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23parksy-scratch-pattern)'/%3E%3C/svg%3E");
+  --parksy-dust-light: radial-gradient(circle at 48% 45%, rgba(220, 245, 225, 0.11) 0%, transparent 65%);
+  --parksy-vignette: inset 0 0 180px 70px rgba(0,0,0,0.8);
+}
+
+/* 전체 칠판 배경 */
+.parksy-root {
+  position:fixed;
+  inset:0;
+  background:
+    var(--parksy-noise),
+    var(--parksy-dust-light),
+    var(--parksy-scratch),
+    var(--parksy-chalk-base);
+  background-size: 180px 180px, cover, cover, cover;
+  background-blend-mode: overlay, soft-light, overlay, normal;
+  box-shadow: var(--parksy-vignette);
+  z-index:0;
+}
+
+/* 실제 콘텐츠 (텍스트/버튼) */
+.parksy-main {
+  position:relative;
+  z-index:3;
+  width:100%;
+  height:100%;
+  padding:20px;
+  overflow-y:auto;
+}
+
+/* 칠판 텍스트 색상 */
+.parksy-kor {
+  color:#FFE08A;
+}
+.parksy-eng {
+  color:#FFFFFF;
+  opacity:0.95;
+}
+
+/* INPUT 화면 컨테이너 - 약간 투명 박스 */
+.parksy-panel {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius:16px;
+  padding:20px;
+  backdrop-filter: blur(4px);
+}
+
+/* 전체 화면 재생 박스 */
+.parksy-player-box {
+  width:100%;
+  background:rgba(0,0,0,0.45);
+  padding:24px 18px;
+  border-top:1px solid rgba(255,255,255,0.18);
+}
