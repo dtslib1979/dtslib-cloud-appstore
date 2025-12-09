@@ -1,64 +1,65 @@
 import React, { useState } from 'react';
 
+/**
+ * v8.0 — 12% Bottom Subtitle Bar
+ * - 전체 화면은 투명한 터치 레이어
+ * - 하단 12vh만 반투명 블랙 바 + 2줄 자막(한/영)
+ * - 화면 아무 곳이나 탭 → 다음 문장
+ * - EXIT 버튼 유지
+ */
 export default function SubtitlePlayer({ data, exitPlayer }) {
   const [idx, setIdx] = useState(0);
 
-  const length = Array.isArray(data) ? data.length : 0;
-  const isFinished = idx >= length;
-  const current = !isFinished && length > 0 ? data[idx] : { kor: "스크립트가 끝났습니다.", eng: "" };
+  const isFinished = !data || idx >= data.length;
+  const current = !isFinished && data && data[idx]
+    ? data[idx]
+    : { kor: "스크립트가 끝났습니다.", eng: "End of script." };
 
-  const advance = () => {
-    if (!length) return;
-    if (idx + 1 >= length) {
-      setIdx(length);
-      return;
-    }
+  const handleTap = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isFinished) { exitPlayer(); return; }
     setIdx((prev) => prev + 1);
   };
 
-  const handleTap = (e) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
-    if (isFinished) { exitPlayer(); } else { advance(); }
-  };
-
   const handleExit = (e) => {
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (e && e.preventDefault) e.preventDefault();
     exitPlayer();
   };
 
   return (
     <div onClick={handleTap} onTouchStart={handleTap} style={{
-      position: 'fixed', inset: 0, background: isFinished ? '#222' : '#000',
-      color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
-      padding: '20px 20px 40px 20px', textAlign: 'center', cursor: 'pointer',
-      zIndex: 9999, userSelect: 'none'
+      position: "fixed", inset: 0, background: "transparent",
+      zIndex: 9999, userSelect: "none"
     }}>
       <button onClick={handleExit} style={{
-        position: 'absolute', top: 20, right: 20, background: 'rgba(255,0,0,0.8)',
-        color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 20, fontSize: 14
+        position: "absolute", top: 16, right: 16, background: "rgba(255,0,0,0.85)",
+        color: "#fff", border: "none", padding: "8px 16px", borderRadius: 999,
+        fontSize: 14, fontWeight: 700
       }}>EXIT</button>
 
-      {isFinished ? (
-        <div style={{ marginBottom: 'auto', marginTop: 'auto' }}>
-          <h1 style={{ color: '#4caf50', marginBottom: 8 }}>강의 완료!</h1>
-          <p style={{ fontSize: '1rem', color: '#ccc' }}>화면을 한 번 더 터치하면 종료합니다.</p>
+      {/* 하단 12% 자막 바 */}
+      <div style={{
+        position: "absolute", left: 0, right: 0, bottom: 0,
+        height: "12vh", background: "rgba(0,0,0,0.75)", color: "#fff",
+        display: "flex", flexDirection: "column", justifyContent: "center",
+        padding: "6px 14px 8px 14px"
+      }}>
+        <div style={{
+          fontSize: "1.05rem", fontWeight: 800, lineHeight: 1.3, marginBottom: 2,
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+        }}>{current.kor}</div>
+        <div style={{
+          fontSize: "0.9rem", fontWeight: 400, lineHeight: 1.25, color: "#dddddd",
+          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+        }}>{current.eng}</div>
+        <div style={{ marginTop: 2, fontSize: "0.7rem", color: "#aaaaaa" }}>
+          {isFinished
+            ? "끝 • 화면을 터치하면 종료됩니다."
+            : `${idx + 1} / ${data.length} • 화면 아무 곳이나 터치해서 다음 문장으로`}
         </div>
-      ) : (
-        <div style={{ marginBottom: '10vh' }}>
-          <div style={{
-            fontSize: '1.8rem', fontWeight: 800, marginBottom: '14px',
-            lineHeight: 1.4, color: '#fff'
-          }}>{current.kor}</div>
-          <div style={{
-            fontSize: '1.2rem', color: '#ccc', fontWeight: 400, lineHeight: 1.3
-          }}>{current.eng}</div>
-          <div style={{ marginTop: 24, fontSize: '0.8rem', color: '#888' }}>
-            {Math.min(idx + 1, length)} / {length} · 화면 아무 곳이나 터치해서 다음 문장으로
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
