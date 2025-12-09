@@ -1,93 +1,105 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import SubtitlePlayer from './SubtitlePlayer';
-import './index.css';
-
-const PRESET_KOR = `오늘은 EduArt Prompter 사용법을 설명합니다.
-네 줄에서 여섯 줄 정도가 가장 연습하기 좋습니다.
-한 문장은 한 호흡에 말할 수 있을 정도로 짧게 만드세요.
-강의 톤보다는 대화하듯이 말하는 게 좋습니다.
-필요하면 녹화하면서 애드리브를 추가해도 됩니다.
-이제 화면을 보면서 한 줄씩 읽어봅시다.`;
-
-const PRESET_ENG = `Today I will explain how to use the EduArt Prompter.
-Four to six lines are ideal for a first practice.
-Keep each sentence short enough for one breath.
-Speak more like a conversation than a formal lecture.
-You can always add ad-libs while recording.
-Now let's read each line one by one on screen.`;
+import { defaultKor, defaultEng } from './defaultScript';
 
 export default function App() {
-  const [kor, setKor] = useState(PRESET_KOR);
-  const [eng, setEng] = useState(PRESET_ENG);
+  const [kor, setKor] = useState("");
+  const [eng, setEng] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('input');
 
-  const handleAlign = async () => {
-    if (!kor.trim() || !eng.trim()) {
-      alert("⚠️ 한글과 영어 텍스트를 모두 입력해주세요.");
-      return;
+  useEffect(() => {
+    const saved = localStorage.getItem("eduart-script");
+    if (saved) {
+      const p = JSON.parse(saved);
+      setKor(p.kor || defaultKor);
+      setEng(p.eng || defaultEng);
+    } else {
+      setKor(defaultKor);
+      setEng(defaultEng);
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("eduart-script", JSON.stringify({ kor, eng }));
+  }, [kor, eng]);
+
+  const reset = () => { setKor(defaultKor); setEng(defaultEng); };
+
+  const align = async () => {
+    if (!kor.trim() || !eng.trim()) { alert("⚠️ 한글과 영어 텍스트를 모두 입력해주세요."); return; }
     setLoading(true);
     try {
-      const r = await fetch('/api/align', {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/align', {
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ kor_text: kor, eng_text: eng })
       });
-      const j = await r.json();
-      setData(j.data);
-      if (j.data && j.data.length > 0) setMode('preview');
-    } catch (e) {
-      alert("Error: " + e.message);
-    }
+      const json = await res.json();
+      setData(json.data);
+      setMode('preview');
+    } catch (e) { alert("Error: " + e.message); }
     setLoading(false);
   };
 
   if (mode === 'player' && data) {
-    return (
-      <div className="parksy-root">
-        <div className="parksy-main">
-          <SubtitlePlayer data={data} exitPlayer={() => setMode('preview')} />
-        </div>
-      </div>
-    );
+    return <SubtitlePlayer data={data} exit={() => setMode('preview')} />;
   }
 
+  const st = { wrap: { maxWidth: 600, margin: "0 auto", padding: 20, fontFamily: "system-ui" } };
+
   return (
-    <div className="parksy-root">
-      <div className="parksy-main">
-        {mode === 'preview' && (
-          <button onClick={() => setMode('input')} style={{marginBottom:15}}>
-            ⬅️ 수정하기
+    <div style={st.wrap}>
+      <h2 style={{ textAlign: "center", marginBottom: 20 }}>📘 EduArt Prompter v8.5</h2>
+
+      {mode === 'preview' && (
+        <button onClick={() => setMode('input')} style={{ marginBottom: 15, padding: "8px 12px", borderRadius: 6, border: "none", background: "#eee" }}>
+          ⬅️ 스크립트 수정
+        </button>
+      )}
+
+      {mode === 'input' && (
+        <>
+          <button onClick={reset} style={{ marginBottom: 15, padding: "8px 12px", fontSize: 14, borderRadius: 6, border: "1px solid #ccc", background: "#fff" }}>
+            ♻️ 기본 스크립트로 초기화
           </button>
-        )}
-        <div className="parksy-panel">
-          {mode === 'input' && (
-            <>
-              <label className="parksy-kor">🇰🇷 Korean</label>
-              <textarea
-                value={kor}
-                onChange={e => setKor(e.target.value)}
-                style={{ width:"100%", height:150, marginBottom:20 }}
-              />
-              <label className="parksy-eng">🇺🇸 English</label>
-              <textarea
-                value={eng}
-                onChange={e => setEng(e.target.value)}
-                style={{ width:"100%", height:150, marginBottom:20 }}
-              />
-              <button
-                onClick={handleAlign}
-                disabled={loading}
-                style={{ width:"100%", padding:12, fontWeight:"bold" }}
-              >
-                {loading ? "Processing..." : "✨ Align"}
-              </button>
-            </>
-          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 15 }}>
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>🇰🇷 Korean</label>
+              <textarea value={kor} onChange={e => setKor(e.target.value)}
+                style={{ width: "100%", height: 150, padding: 10, borderRadius: 8, border: "1px solid #ccc", fontSize: 15 }} />
+            </div>
+            <div>
+              <label style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>🇺🇸 English</label>
+              <textarea value={eng} onChange={e => setEng(e.target.value)}
+                style={{ width: "100%", height: 150, padding: 10, borderRadius: 8, border: "1px solid #ccc", fontSize: 15 }} />
+            </div>
+            <button onClick={align} disabled={loading} style={{
+              width: "100%", padding: 16, borderRadius: 10, border: "none",
+              fontSize: 16, fontWeight: 700, background: loading ? "#999" : "#0070f3", color: "#fff"
+            }}>{loading ? "Processing..." : "✨ 자막 데이터 생성"}</button>
+          </div>
+        </>
+      )}
+
+      {mode === 'preview' && data && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ padding: 14, background: "#f7f7f7", borderRadius: 10, marginBottom: 15 }}>
+            <div style={{ fontWeight: 600, marginBottom: 10 }}>자막 데이터 준비 완료 ({data.length}줄)</div>
+            <button onClick={() => setMode('player')} style={{
+              width: "100%", padding: 14, borderRadius: 8, border: "none",
+              background: "#e00", color: "#fff", fontWeight: 700, fontSize: 16
+            }}>▶️ 녹화 모드 시작</button>
+          </div>
+          <div style={{ fontSize: 13, color: "#777", marginBottom: 8 }}>👇 미리보기 (첫 3줄)</div>
+          {data.slice(0, 3).map((row, idx) => (
+            <div key={idx} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: "1px solid #eee" }}>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>{row.kor}</div>
+              <div style={{ color: "#555", fontSize: 14 }}>{row.eng}</div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
