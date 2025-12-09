@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 
 /**
- * v8.0 — 12% Bottom Subtitle Bar
- * - 전체 화면은 투명한 터치 레이어
- * - 하단 12vh만 반투명 블랙 바 + 2줄 자막(한/영)
- * - 화면 아무 곳이나 탭 → 다음 문장
- * - EXIT 버튼 유지
+ * v8.1 — 완전 투명 오버레이 + 하단 12% CNN 스타일 바
  */
 export default function SubtitlePlayer({ data, exitPlayer }) {
   const [idx, setIdx] = useState(0);
@@ -15,49 +11,48 @@ export default function SubtitlePlayer({ data, exitPlayer }) {
     ? data[idx]
     : { kor: "스크립트가 끝났습니다.", eng: "End of script." };
 
-  const handleTap = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (e && e.preventDefault) e.preventDefault();
+  const onNext = (e) => {
+    if (e?.stopPropagation) e.stopPropagation();
+    if (e?.preventDefault) e.preventDefault();
     if (isFinished) { exitPlayer(); return; }
-    setIdx((prev) => prev + 1);
+    setIdx((p) => p + 1);
   };
 
-  const handleExit = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (e && e.preventDefault) e.preventDefault();
+  const onExit = (e) => {
+    if (e?.stopPropagation) e.stopPropagation();
+    if (e?.preventDefault) e.preventDefault();
     exitPlayer();
   };
 
   return (
-    <div onClick={handleTap} onTouchStart={handleTap} style={{
+    <div onClick={onNext} onTouchStart={onNext} style={{
       position: "fixed", inset: 0, background: "transparent",
       zIndex: 9999, userSelect: "none"
     }}>
-      <button onClick={handleExit} style={{
-        position: "absolute", top: 16, right: 16, background: "rgba(255,0,0,0.85)",
+      <button onClick={onExit} style={{
+        position: "absolute", top: 14, right: 14, background: "rgba(255,0,0,0.85)",
         color: "#fff", border: "none", padding: "8px 16px", borderRadius: 999,
-        fontSize: 14, fontWeight: 700
+        fontSize: 14, fontWeight: 700, zIndex: 10000
       }}>EXIT</button>
 
       {/* 하단 12% 자막 바 */}
       <div style={{
-        position: "absolute", left: 0, right: 0, bottom: 0,
-        height: "12vh", background: "rgba(0,0,0,0.75)", color: "#fff",
-        display: "flex", flexDirection: "column", justifyContent: "center",
-        padding: "6px 14px 8px 14px"
+        position: "absolute", left: 0, right: 0, bottom: 0, height: "12vh",
+        background: "rgba(0,0,0,0.72)", display: "flex", flexDirection: "column",
+        justifyContent: "center", padding: "6px 16px 10px 16px"
       }}>
         <div style={{
-          fontSize: "1.05rem", fontWeight: 800, lineHeight: 1.3, marginBottom: 2,
-          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
+          fontSize: "1.1rem", fontWeight: 800, color: "#ffd93d", lineHeight: 1.25,
+          marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>{current.kor}</div>
         <div style={{
-          fontSize: "0.9rem", fontWeight: 400, lineHeight: 1.25, color: "#dddddd",
+          fontSize: "0.9rem", fontWeight: 400, color: "#ffffff", lineHeight: 1.2,
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis"
         }}>{current.eng}</div>
-        <div style={{ marginTop: 2, fontSize: "0.7rem", color: "#aaaaaa" }}>
+        <div style={{ marginTop: 2, fontSize: "0.75rem", color: "#bbbbbb" }}>
           {isFinished
-            ? "끝 • 화면을 터치하면 종료됩니다."
-            : `${idx + 1} / ${data.length} • 화면 아무 곳이나 터치해서 다음 문장으로`}
+            ? "끝났습니다. 화면을 탭하면 종료합니다."
+            : `${idx + 1} / ${data.length} • 다음 문장: 화면 아무 곳이나 탭`}
         </div>
       </div>
     </div>
