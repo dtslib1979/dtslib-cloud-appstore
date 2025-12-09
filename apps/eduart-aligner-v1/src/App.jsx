@@ -64,7 +64,7 @@ export default function App() {
       fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif"
     }}>
       <h2 style={{ textAlign: "center", marginBottom: 20, fontSize: "1.6rem", fontWeight: 700 }}>
-        📘 EduArt Prompter v7.4
+        📘 EduArt Prompter v8.0
       </h2>
 
       {mode === "preview" && (
