@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "auto-shorts-final/**",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/auto-shorts-final/(.*)",
+            "dest": "/auto-shorts-final/$1"
+        }
+    ]
+}
