@@ -1,9 +1,8 @@
 /**
- * Lecture Shorts Factory - Service Worker v2.0.0
- * WebCodecs + mp4-muxer 지원
+ * Lecture Shorts Factory - Service Worker v2.1.0
  */
 
-const CACHE_NAME = 'lecture-shorts-v2.0.0';
+const CACHE_NAME = 'lecture-shorts-v2.1.0';
 
 const APP_FILES = [
     './',
@@ -51,7 +50,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     const url = event.request.url;
     
-    // CDN 파일: 캐시 우선
+    // CDN: 캐시 우선
     if (url.includes('unpkg.com') || url.includes('jsdelivr.net')) {
         event.respondWith(
             caches.match(event.request).then(cached => {
@@ -71,7 +70,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // 앱 파일: 네트워크 우선 (캐시 문제 방지)
+    // 앱: 네트워크 우선
     event.respondWith(
         fetch(event.request).then(res => {
             if (res.ok) {
