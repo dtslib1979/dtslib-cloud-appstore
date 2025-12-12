@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎓 Lecture Shorts Factory</title>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Lecture Shorts Factory</h1>
+            <p class="subtitle">4분 강의 → 3분 쇼츠 자동 변환</p>
+            <span class="version">v1.0.0</span>
+        </header>
+
+        <!-- Memory Warning -->
+        <div id="memWarn" class="memory-warning" style="display:none;">
+            ⚠️ 메모리 부족 경고: 4GB 이상 권장
+        </div>
+
+        <main>
+            <!-- Step 1: Lecture Video -->
+            <section class="step-card" id="step1">
+                <div class="step-header">
+                    <span class="step-num">1</span>
+                    <span class="step-title">강의 영상 (4분 내외)</span>
+                </div>
+                <div class="step-content">
+                    <input type="file" id="vidIn" accept="video/*" hidden>
+                    <button class="upload-btn" onclick="document.getElementById('vidIn').click()">
+                        📹 영상 선택
+                    </button>
+                    <div id="vidInfo" class="file-info"></div>
+                </div>
+            </section>
+
+            <!-- Step 2: Intro Video -->
+            <section class="step-card" id="step2">
+                <div class="step-header">
+                    <span class="step-num">2</span>
+                    <span class="step-title">인트로 영상 (15초)</span>
+                </div>
+                <div class="step-content">
+                    <input type="file" id="introIn" accept="video/*" hidden>
+                    <button class="upload-btn" onclick="document.getElementById('introIn').click()">
+                        🎬 인트로 선택
+                    </button>
+                    <div id="introInfo" class="file-info"></div>
+                </div>
+            </section>
+
+            <!-- Step 3: Background Music -->
+            <section class="step-card" id="step3">
+                <div class="step-header">
+                    <span class="step-num">3</span>
+                    <span class="step-title">배경음악 (2분, 선택)</span>
+                </div>
+                <div class="step-content">
+                    <input type="file" id="bgmIn" accept="audio/*" hidden>
+                    <button class="upload-btn secondary" onclick="document.getElementById('bgmIn').click()">
+                        🎵 음악 선택 (선택사항)
+                    </button>
+                    <div id="bgmInfo" class="file-info"></div>
+                </div>
+            </section>
+
+            <!-- Step 4: Device Preset -->
+            <section class="step-card" id="step4">
+                <div class="step-header">
+                    <span class="step-num">4</span>
+                    <span class="step-title">디바이스 프리셋</span>
+                </div>
+                <div class="step-content">
+                    <p class="preset-desc">UI 바 제거를 위한 크롭 설정</p>
+                    <div class="preset-btns">
+                        <button class="preset-btn" id="btnTabS9" onclick="setPreset('TAB_S9')">
+                            📱 Galaxy Tab S9
+                        </button>
+                        <button class="preset-btn" id="btnS25" onclick="setPreset('S25_ULTRA')">
+                            📱 Galaxy S25 Ultra
+                        </button>
+                        <button class="preset-btn active" id="btnNone" onclick="setPreset(null)">
+                            ❌ 크롭 없음
+                        </button>
+                    </div>
+                    <div id="presetInfo" class="preset-info"></div>
+                </div>
+            </section>
+
+            <!-- Step 5: Generate -->
+            <section class="step-card generate-card" id="step5">
+                <button class="generate-btn" id="genBtn" onclick="generate()" disabled>
+                    🚀 3분 쇼츠 생성
+                </button>
+                <div id="status" class="status"></div>
+                <div id="progress" class="progress-bar" style="display:none;">
+                    <div class="progress-fill" id="progFill"></div>
+                    <span class="progress-text" id="progText">0%</span>
+                </div>
+            </section>
+
+            <!-- Result -->
+            <section class="step-card result-card" id="result" style="display:none;">
+                <h3>✅ 변환 완료!</h3>
+                <video id="preview" controls></video>
+                <div class="result-btns">
+                    <a id="dlLink" class="download-btn" download="lecture_shorts.mp4">
+                        📥 다운로드
+                    </a>
+                    <button class="reset-btn" onclick="reset()">
+                        🔄 새로 만들기
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>DTS Cloud AppStore</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>
