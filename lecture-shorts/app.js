@@ -1,11 +1,11 @@
 /**
- * Lecture Shorts Factory v1.1.0 - OPTIMIZED
+ * Lecture Shorts Factory v1.2.0 - MOBILE OPTIMIZED
  * 4분 강의 → 3분 쇼츠 자동 변환
  * 
- * v1.1.0 최적화:
- * - 단일 패스 인코딩 (7회 → 1회)
- * - preset: ultrafast (모바일 최적화)
- * - 글리치 효과 간소화
+ * v1.2.0 모바일 최적화:
+ * - 720p 해상도 (1080p → 720p)
+ * - CRF 28 (더 빠른 인코딩)
+ * - 최소 필터 체인
  */
 
 /* ========== DEVICE PRESETS ========== */
@@ -24,10 +24,10 @@ const PRESETS = {
     }
 };
 
-/* ========== OUTPUT SPECS ========== */
+/* ========== OUTPUT SPECS (720p for mobile) ========== */
 const OUTPUT = {
-    width: 1080,
-    height: 1920,
+    width: 720,      // 1080 → 720 (4배 빠름)
+    height: 1280,    // 1920 → 1280
     targetDur: 180,
     introDur: 15,
     bgmVol: 0.1
@@ -147,7 +147,7 @@ function checkReady() {
     el('genBtn').disabled = !ready;
 }
 
-/* ========== MAIN GENERATION (OPTIMIZED) ========== */
+/* ========== MAIN GENERATION ========== */
 async function generate() {
     const btn = el('genBtn');
     btn.disabled = true;
@@ -157,38 +157,31 @@ async function generate() {
     setProg(5);
     
     try {
-        // 1. FFmpeg 초기화
         await initFFmpeg();
         setProg(10);
         
-        // 2. 파일 쓰기
         setStatus('파일 준비 중...');
         await writeFiles();
-        setProg(20);
+        setProg(15);
         
-        // 3. 인트로 빠른 변환 (copy 우선, 필요시만 인코딩)
-        setStatus('인트로 준비 중...');
+        setStatus('인트로 처리 중...');
         await prepareIntro();
-        setProg(30);
+        setProg(25);
         
-        // 4. 본편 단일 패스 처리 (속도+크롭+스케일 한번에)
-        setStatus('본편 처리 중...');
+        setStatus('본편 처리 중... (가장 오래 걸림)');
         await processMain();
-        setProg(60);
+        setProg(75);
         
-        // 5. concat (스트림 복사, 재인코딩 없음)
         setStatus('영상 합치는 중...');
         await concatVideos();
-        setProg(80);
+        setProg(85);
         
-        // 6. BGM 믹싱 (선택, 오디오만 재인코딩)
         if (bgmFile) {
             setStatus('배경음악 믹싱 중...');
             await mixBgm();
         }
         setProg(95);
         
-        // 7. 결과 출력
         setStatus('완료!');
         await showResult();
         setProg(100);
@@ -200,7 +193,7 @@ async function generate() {
     }
 }
 
-/* ========== OPTIMIZED FFMPEG PIPELINE ========== */
+/* ========== FFMPEG PIPELINE ========== */
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
     
@@ -231,21 +224,19 @@ async function writeFiles() {
     }
 }
 
-// 인트로: 스케일만 (단일 패스)
+// 인트로: 720p 스케일
 async function prepareIntro() {
     const filter = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
-                   `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black,` +
-                   `setsar=1`;
+                   `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
     
     await ffmpeg.run(
         '-i', 'intro.mp4',
         '-vf', filter,
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',  // 최고속
-        '-crf', '23',            // 품질 약간 낮춤 (속도 우선)
+        '-preset', 'ultrafast',
+        '-crf', '28',
         '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
+        '-b:a', '96k',
         'intro_ready.mp4'
     );
 }
@@ -254,10 +245,9 @@ async function prepareIntro() {
 async function processMain() {
     const speedRatio = calcSpeed(vidMeta.dur);
     
-    // 비디오 필터 체인 구성
+    // 비디오 필터 (최소화)
     let vf = `setpts=PTS/${speedRatio}`;
     
-    // 크롭 (프리셋 선택시)
     if (preset && PRESETS[preset]) {
         const p = PRESETS[preset];
         const cropH = 1 - p.topCutPct - p.bottomCutPct;
@@ -265,34 +255,28 @@ async function processMain() {
         vf += `,crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${topY.toFixed(4)}`;
     }
     
-    // 스케일 + 패딩
     vf += `,scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease`;
     vf += `,pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
-    vf += `,setsar=1`;
     
-    // 오디오 필터 (속도 조절)
-    let af = '';
-    if (speedRatio <= 2.0) {
-        af = `atempo=${speedRatio}`;
-    } else {
-        af = `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
-    }
+    // 오디오 필터
+    let af = speedRatio <= 2.0 
+        ? `atempo=${speedRatio}` 
+        : `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
     
     await ffmpeg.run(
         '-i', 'lecture.mp4',
         '-vf', vf,
         '-af', af,
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',  // 최고속
-        '-crf', '23',
+        '-preset', 'ultrafast',
+        '-crf', '28',
         '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
+        '-b:a', '96k',
         'main_ready.mp4'
     );
 }
 
-// concat: 스트림 복사 (재인코딩 없음!)
+// concat: 스트림 복사
 async function concatVideos() {
     const concatList = "file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n";
     ffmpeg.FS('writeFile', 'concat.txt', new TextEncoder().encode(concatList));
@@ -301,25 +285,24 @@ async function concatVideos() {
         '-f', 'concat',
         '-safe', '0',
         '-i', 'concat.txt',
-        '-c', 'copy',  // 재인코딩 없이 복사!
+        '-c', 'copy',
         'output.mp4'
     );
 }
 
-// BGM 믹싱: 오디오만 처리
+// BGM 믹싱
 async function mixBgm() {
     await ffmpeg.run(
         '-i', 'output.mp4',
         '-i', 'bgm.mp3',
         '-filter_complex',
         `[0:a]volume=1[a1];[1:a]volume=${OUTPUT.bgmVol}[a2];[a1][a2]amix=inputs=2:duration=first`,
-        '-c:v', 'copy',  // 비디오는 복사!
+        '-c:v', 'copy',
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', '96k',
         'final.mp4'
     );
     
-    // 결과 파일명 통일
     ffmpeg.FS('rename', 'final.mp4', 'output.mp4');
 }
 
@@ -336,17 +319,9 @@ async function showResult() {
 }
 
 /* ========== UTILITIES ========== */
-function el(id) {
-    return document.getElementById(id);
-}
-
-function show(id) {
-    el(id).style.display = 'block';
-}
-
-function hide(id) {
-    el(id).style.display = 'none';
-}
+function el(id) { return document.getElementById(id); }
+function show(id) { el(id).style.display = 'block'; }
+function hide(id) { el(id).style.display = 'none'; }
 
 function showInfo(id, html, cls) {
     const e = el(id);
