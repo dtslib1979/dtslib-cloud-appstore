@@ -13,8 +13,6 @@
         
         :root {
             --scale: 1;
-            --kor-font: 32px;
-            --eng-font: 24px;
             --header-h: 44px;
             --footer-h: 90px;
             --pad: 20px;
@@ -191,24 +189,26 @@
         }
         
         .line-korean {
-            font-size: var(--kor-font);
+            font-size: 32px;
             font-weight: 700;
             text-align: center;
-            margin-bottom: calc(15px * var(--scale));
+            margin-bottom: 15px;
             line-height: 1.3;
             color: #fff;
             word-break: keep-all;
             max-width: 100%;
+            transition: font-size 0.2s;
         }
         
         .line-english {
-            font-size: var(--eng-font);
+            font-size: 24px;
             font-weight: 400;
             text-align: center;
             line-height: 1.3;
             color: rgba(255,255,255,0.7);
             word-break: break-word;
             max-width: 100%;
+            transition: font-size 0.2s;
         }
         
         .prompter-footer {
@@ -454,26 +454,39 @@ The weather is nice today."></textarea>
             
             if (isCompact !== wasCompact) {
                 document.body.classList.toggle('compact', isCompact);
-                updateFontScale();
+            }
+            
+            // 프롬프터 모드일 때 폰트 스케일 업데이트
+            if (document.getElementById('prompterMode').classList.contains('active')) {
+                applyPrompterFonts();
             }
         }
         
-        // 폰트 스케일 계산 (뷰포트 비율 기반)
-        function updateFontScale() {
+        // 프롬프터 폰트 적용 (뷰포트 비율 기반 스케일)
+        function applyPrompterFonts() {
             const w = window.innerWidth;
             const h = window.innerHeight;
             
             // 기준: 400x700 = scale 1.0
-            const wRatio = Math.min(w / 400, 1.2);
-            const hRatio = Math.min(h / 700, 1.2);
-            const scale = Math.min(wRatio, hRatio);
+            const wRatio = Math.min(w / 400, 1.5);
+            const hRatio = Math.min(h / 700, 1.5);
+            let scale = Math.min(wRatio, hRatio);
             
             // 컴팩트 모드에서 추가 축소
-            const finalScale = isCompact ? scale * 0.7 : scale;
+            if (isCompact) {
+                scale = scale * 0.75;
+            }
             
-            document.documentElement.style.setProperty('--scale', finalScale);
-            document.documentElement.style.setProperty('--kor-font', (korFontSize * finalScale) + 'px');
-            document.documentElement.style.setProperty('--eng-font', (engFontSize * finalScale) + 'px');
+            // CSS 변수 업데이트
+            document.documentElement.style.setProperty('--scale', scale);
+            
+            // 폰트 크기 직접 적용
+            const scaledKor = Math.round(korFontSize * scale);
+            const scaledEng = Math.round(engFontSize * scale);
+            
+            document.getElementById('lineKor').style.fontSize = scaledKor + 'px';
+            document.getElementById('lineEng').style.fontSize = scaledEng + 'px';
+            document.getElementById('lineKor').style.marginBottom = Math.round(15 * scale) + 'px';
         }
         
         // 로컬 스토리지에서 설정 로드
@@ -511,14 +524,18 @@ The weather is nice today."></textarea>
         
         function adjustFont(type, delta) {
             if (type === 'kor') {
-                korFontSize = Math.max(16, Math.min(60, korFontSize + delta));
+                korFontSize = Math.max(16, Math.min(80, korFontSize + delta));
                 document.getElementById('korFontDisplay').textContent = korFontSize;
             } else {
-                engFontSize = Math.max(12, Math.min(48, engFontSize + delta));
+                engFontSize = Math.max(12, Math.min(60, engFontSize + delta));
                 document.getElementById('engFontDisplay').textContent = engFontSize;
             }
-            updateFontScale();
             saveSettings();
+            
+            // 프롬프터 모드일 때 즉시 반영
+            if (document.getElementById('prompterMode').classList.contains('active')) {
+                applyPrompterFonts();
+            }
         }
         
         function loadSample() {
@@ -565,7 +582,8 @@ Language learning is a fun journey.`;
             document.getElementById('inputMode').classList.add('hidden');
             document.getElementById('prompterMode').classList.add('active');
             
-            updateFontScale();
+            // 폰트 적용
+            applyPrompterFonts();
             updateDisplay();
         }
         
@@ -633,14 +651,12 @@ Language learning is a fun journey.`;
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 checkCompactMode();
-                updateFontScale();
             }, 100);
         });
         
         // 초기화
         loadSettings();
         checkCompactMode();
-        updateFontScale();
         
         // PWA
         if ('serviceWorker' in navigator) {
