@@ -1,10 +1,10 @@
 /**
- * Lecture Shorts Factory v1.3.0 - DYNAMIC INTRO
- * 4분 강의 → 3분 쇼츠 자동 변환
+ * Lecture Shorts Factory v1.4.0 - EXTREME MOBILE
  * 
- * v1.3.0 변경:
- * - 인트로 길이 자동 감지 (하드코딩 제거)
- * - 본편 속도 = (4분 영상) / (3분 - 인트로길이)
+ * v1.4.0:
+ * - 480p SD (속도 2배 향상)
+ * - BGM 자동 루프 (1~2분 → 3분 채움)
+ * - CRF 32 + 24fps
  */
 
 /* ========== DEVICE PRESETS ========== */
@@ -23,11 +23,11 @@ const PRESETS = {
     }
 };
 
-/* ========== OUTPUT SPECS ========== */
+/* ========== OUTPUT SPECS (480p for SPEED) ========== */
 const OUTPUT = {
-    width: 720,
-    height: 1280,
-    targetDur: 180,  // 최종 목표: 3분
+    width: 480,
+    height: 854,
+    targetDur: 180,
     bgmVol: 0.1
 };
 
@@ -63,13 +63,11 @@ async function loadVid(file) {
     vidFile = file;
     
     try {
-        const meta = await getVidMeta(file);
-        vidMeta = meta;
-        
+        vidMeta = await getVidMeta(file);
         updateVidInfo();
         checkReady();
     } catch (e) {
-        showInfo('vidInfo', `❌ 영상 로드 실패: ${e.message}`, 'warn');
+        showInfo('vidInfo', `❌ ${e.message}`, 'warn');
     }
 }
 
@@ -78,55 +76,34 @@ async function loadIntro(file) {
     introFile = file;
     
     try {
-        const meta = await getVidMeta(file);
-        introMeta = meta;
+        introMeta = await getVidMeta(file);
         
-        const durStr = fmtDur(meta.dur);
-        
-        // 인트로 길이 검증
-        let status = 'success';
-        let msg = '';
-        
-        if (meta.dur > 120) {
-            status = 'warn';
-            msg = ' ⚠️ 2분 초과! 본편 시간 부족';
-        } else if (meta.dur > 60) {
-            status = 'warn';
-            msg = ' (본편 2분 미만)';
-        }
+        let warn = '';
+        if (introMeta.dur > 120) warn = ' ⚠️ 2분 초과';
         
         showInfo('introInfo', 
-            `✅ ${file.name}<br>⏱️ ${durStr}${msg}`,
-            status
+            `✅ ${file.name}<br>⏱️ ${fmtDur(introMeta.dur)}${warn}`,
+            introMeta.dur > 120 ? 'warn' : 'success'
         );
         
-        // 본편 정보도 업데이트 (인트로 길이 반영)
         updateVidInfo();
         checkReady();
     } catch (e) {
-        showInfo('introInfo', `❌ 인트로 로드 실패: ${e.message}`, 'warn');
+        showInfo('introInfo', `❌ ${e.message}`, 'warn');
     }
 }
 
-// 본편 정보 업데이트 (인트로 길이 반영)
 function updateVidInfo() {
     if (!vidMeta.dur) return;
     
-    const durStr = fmtDur(vidMeta.dur);
-    const speedRatio = calcSpeed();
-    const newDur = fmtDur(vidMeta.dur / speedRatio);
+    const speed = calcSpeed();
     const targetMain = OUTPUT.targetDur - introMeta.dur;
-    
-    let speedInfo = `${speedRatio.toFixed(2)}x`;
-    if (speedRatio >= 2.0) {
-        speedInfo += ' ⚠️ 최대 속도';
-    }
     
     showInfo('vidInfo', 
         `✅ ${vidFile.name}<br>` +
-        `📐 ${vidMeta.w}×${vidMeta.h}<br>` +
-        `⏱️ ${durStr} → ${fmtDur(targetMain)} (${speedInfo})`,
-        speedRatio >= 2.0 ? 'warn' : 'success'
+        `📐 ${vidMeta.w}×${vidMeta.h} → 480p<br>` +
+        `⏱️ ${fmtDur(vidMeta.dur)} → ${fmtDur(targetMain)} (${speed.toFixed(2)}x)`,
+        speed >= 2.0 ? 'warn' : 'success'
     );
 }
 
@@ -135,7 +112,7 @@ async function loadBgm(file) {
     bgmFile = file;
     
     showInfo('bgmInfo', 
-        `✅ ${file.name}<br>🔊 볼륨: ${OUTPUT.bgmVol * 100}%`,
+        `✅ ${file.name}<br>🔊 자동 루프 (3분 채움)`,
         'success'
     );
     
@@ -154,77 +131,64 @@ function setPreset(key) {
         const p = PRESETS[key];
         el('presetInfo').innerHTML = 
             `Top: ${(p.topCutPct * 100).toFixed(1)}% | ` +
-            `Bottom: ${(p.bottomCutPct * 100).toFixed(1)}% | ` +
-            `Shift: ${(p.yShiftPct * 100).toFixed(1)}%`;
+            `Bottom: ${(p.bottomCutPct * 100).toFixed(1)}%`;
     } else {
-        el('presetInfo').innerHTML = '크롭 없이 원본 비율 유지';
+        el('presetInfo').innerHTML = '크롭 없음';
     }
     
     checkReady();
 }
 
-/* ========== READINESS CHECK ========== */
 function checkReady() {
-    const ready = vidFile && introFile;
-    el('genBtn').disabled = !ready;
+    el('genBtn').disabled = !(vidFile && introFile);
 }
 
-/* ========== SPEED CALCULATION (동적) ========== */
 function calcSpeed() {
-    // 본편 목표 시간 = 전체 목표 - 실제 인트로 길이
     const targetMain = OUTPUT.targetDur - introMeta.dur;
-    
-    if (targetMain <= 0) {
-        return 2.0;  // 인트로가 3분 이상이면 최대 속도
-    }
-    
-    const ratio = vidMeta.dur / targetMain;
-    return Math.max(1.0, Math.min(2.0, ratio));
+    if (targetMain <= 0) return 2.0;
+    return Math.max(1.0, Math.min(2.0, vidMeta.dur / targetMain));
 }
 
 /* ========== MAIN GENERATION ========== */
 async function generate() {
-    const btn = el('genBtn');
-    btn.disabled = true;
-    
+    el('genBtn').disabled = true;
     show('progress');
-    setStatus('FFmpeg 로딩 중...');
-    setProg(5);
     
     try {
+        setStatus('FFmpeg 로딩...');
+        setProg(5);
         await initFFmpeg();
+        
+        setStatus('파일 준비...');
         setProg(10);
-        
-        setStatus('파일 준비 중...');
         await writeFiles();
+        
+        setStatus('인트로 처리...');
         setProg(15);
-        
-        setStatus('인트로 처리 중...');
         await prepareIntro();
-        setProg(25);
         
-        setStatus('본편 처리 중... (가장 오래 걸림)');
+        setStatus('본편 처리... (시간 소요)');
+        setProg(20);
         await processMain();
-        setProg(75);
         
-        setStatus('영상 합치는 중...');
+        setStatus('영상 합치기...');
+        setProg(80);
         await concatVideos();
-        setProg(85);
         
         if (bgmFile) {
-            setStatus('배경음악 믹싱 중...');
+            setStatus('BGM 믹싱...');
+            setProg(90);
             await mixBgm();
         }
-        setProg(95);
         
         setStatus('완료!');
-        await showResult();
         setProg(100);
+        await showResult();
         
     } catch (e) {
-        setStatus(`❌ 오류: ${e.message}`, true);
+        setStatus(`❌ ${e.message}`, true);
         console.error(e);
-        btn.disabled = false;
+        el('genBtn').disabled = false;
     }
 }
 
@@ -240,8 +204,7 @@ async function initFFmpeg() {
     
     ffmpeg.setProgress(({ ratio }) => {
         if (ratio > 0) {
-            const pct = Math.round(ratio * 100);
-            el('progText').textContent = `처리: ${pct}%`;
+            el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
         }
     });
     
@@ -250,66 +213,63 @@ async function initFFmpeg() {
 
 async function writeFiles() {
     const { fetchFile } = FFmpeg;
-    
     ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(vidFile));
     ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(introFile));
-    
     if (bgmFile) {
         ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
     }
 }
 
 async function prepareIntro() {
-    const filter = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
-                   `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
+    const vf = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
+               `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
     
     await ffmpeg.run(
         '-i', 'intro.mp4',
-        '-vf', filter,
+        '-vf', vf,
+        '-r', '24',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '32',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '64k',
         'intro_ready.mp4'
     );
 }
 
 async function processMain() {
-    const speedRatio = calcSpeed();
+    const speed = calcSpeed();
     
-    let vf = `setpts=PTS/${speedRatio}`;
+    let vf = `setpts=PTS/${speed}`;
     
     if (preset && PRESETS[preset]) {
         const p = PRESETS[preset];
         const cropH = 1 - p.topCutPct - p.bottomCutPct;
-        const topY = p.topCutPct;
-        vf += `,crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${topY.toFixed(4)}`;
+        vf += `,crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${p.topCutPct.toFixed(4)}`;
     }
     
     vf += `,scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease`;
     vf += `,pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
     
-    let af = speedRatio <= 2.0 
-        ? `atempo=${speedRatio}` 
-        : `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
+    const af = speed <= 2.0 ? `atempo=${speed}` : `atempo=2.0,atempo=${(speed/2).toFixed(3)}`;
     
     await ffmpeg.run(
         '-i', 'lecture.mp4',
         '-vf', vf,
         '-af', af,
+        '-r', '24',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '32',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '64k',
         'main_ready.mp4'
     );
 }
 
 async function concatVideos() {
-    const concatList = "file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n";
-    ffmpeg.FS('writeFile', 'concat.txt', new TextEncoder().encode(concatList));
+    ffmpeg.FS('writeFile', 'concat.txt', 
+        new TextEncoder().encode("file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n"));
     
     await ffmpeg.run(
         '-f', 'concat',
@@ -320,15 +280,18 @@ async function concatVideos() {
     );
 }
 
+// BGM 자동 루프 (1~2분 → 3분 채움)
 async function mixBgm() {
     await ffmpeg.run(
         '-i', 'output.mp4',
+        '-stream_loop', '-1',
         '-i', 'bgm.mp3',
+        '-t', String(OUTPUT.targetDur),
         '-filter_complex',
         `[0:a]volume=1[a1];[1:a]volume=${OUTPUT.bgmVol}[a2];[a1][a2]amix=inputs=2:duration=first`,
         '-c:v', 'copy',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '64k',
         'final.mp4'
     );
     
@@ -370,52 +333,33 @@ function setProg(pct) {
 }
 
 function fmtDur(sec) {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}분 ${s}초`;
+    return `${Math.floor(sec/60)}분 ${Math.floor(sec%60)}초`;
 }
 
 async function getVidMeta(file) {
     return new Promise((resolve, reject) => {
         const vid = document.createElement('video');
         vid.preload = 'metadata';
-        
         vid.onloadedmetadata = () => {
-            resolve({
-                dur: vid.duration,
-                w: vid.videoWidth,
-                h: vid.videoHeight
-            });
+            resolve({ dur: vid.duration, w: vid.videoWidth, h: vid.videoHeight });
             URL.revokeObjectURL(vid.src);
         };
-        
-        vid.onerror = () => reject(new Error('메타데이터 로드 실패'));
+        vid.onerror = () => reject(new Error('로드 실패'));
         vid.src = URL.createObjectURL(file);
     });
 }
 
 function reset() {
-    vidFile = null;
-    introFile = null;
-    bgmFile = null;
-    preset = null;
-    vidMeta = { dur: 0, w: 0, h: 0 };
-    introMeta = { dur: 0, w: 0, h: 0 };
+    vidFile = introFile = bgmFile = preset = null;
+    vidMeta = introMeta = { dur: 0, w: 0, h: 0 };
     
-    el('vidIn').value = '';
-    el('introIn').value = '';
-    el('bgmIn').value = '';
-    
-    el('vidInfo').className = 'file-info';
-    el('introInfo').className = 'file-info';
-    el('bgmInfo').className = 'file-info';
+    el('vidIn').value = el('introIn').value = el('bgmIn').value = '';
+    el('vidInfo').className = el('introInfo').className = el('bgmInfo').className = 'file-info';
     
     setPreset(null);
-    
     hide('result');
     hide('progress');
     show('step5');
-    
     el('genBtn').disabled = true;
     setStatus('');
     setProg(0);
