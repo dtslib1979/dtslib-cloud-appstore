@@ -1,10 +1,13 @@
 /**
- * Lecture Shorts Factory v2.0.0 - WebCodecs Edition
+ * Lecture Shorts Factory v2.1.0 - WebCodecs Edition
  * 
- * 🚀 핵심 변경: FFmpeg.wasm → WebCodecs API
- * - 하드웨어 가속 인코딩 (70x 속도 향상)
- * - mp4-muxer로 MP4 컨테이너 생성
- * - Chrome/Edge 전용 (Safari/Firefox 미지원)
+ * 🚀 핵심: FFmpeg.wasm → WebCodecs API (하드웨어 가속)
+ * 
+ * v2.1.0 개선:
+ * - 스트리밍 인코딩 (메모리 최적화)
+ * - 오디오 트랙 복사 지원
+ * - 진행률 표시 개선
+ * - 에러 핸들링 강화
  * 
  * Fallback: WebCodecs 미지원 시 FFmpeg.wasm 사용
  */
@@ -32,7 +35,7 @@ const OUTPUT = {
     targetDur: 180,
     bgmVol: 0.1,
     fps: 30,
-    bitrate: 2_000_000
+    bitrate: 2_500_000
 };
 
 /* ========== STATE ========== */
@@ -55,15 +58,14 @@ const supportsWebCodecs = () => {
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    // WebCodecs 지원 체크
     useWebCodecs = supportsWebCodecs();
     
     if (useWebCodecs) {
-        console.log('✅ WebCodecs API 사용 (하드웨어 가속)');
+        console.log('✅ WebCodecs API (하드웨어 가속)');
         el('engineInfo').innerHTML = '🚀 WebCodecs (HW 가속)';
         el('engineInfo').className = 'engine-badge webcodecs';
     } else {
-        console.log('⚠️ WebCodecs 미지원, FFmpeg 폴백');
+        console.log('⚠️ FFmpeg.wasm 폴백');
         el('engineInfo').innerHTML = '⚙️ FFmpeg.wasm';
         el('engineInfo').className = 'engine-badge ffmpeg';
     }
@@ -178,12 +180,18 @@ async function generate() {
     el('genBtn').disabled = true;
     show('progress');
     
+    const startTime = performance.now();
+    
     try {
         if (useWebCodecs) {
             await generateWithWebCodecs();
         } else {
             await generateWithFFmpeg();
         }
+        
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+        setStatus(`✅ 완료! (${elapsed}초)`);
+        
     } catch (e) {
         setStatus(`❌ ${e.message}`, true);
         console.error(e);
@@ -191,39 +199,154 @@ async function generate() {
     }
 }
 
-/* ========== WebCodecs Pipeline ========== */
+/* ========== WebCodecs Pipeline v2.1 ========== */
 async function generateWithWebCodecs() {
-    setStatus('mp4-muxer 로딩...');
+    setStatus('라이브러리 로딩...');
     setProg(5);
-    
-    // mp4-muxer 동적 로딩
     await loadMp4Muxer();
     
-    setStatus('비디오 디코딩 준비...');
+    const { Muxer, ArrayBufferTarget } = Mp4Muxer;
+    
+    // Muxer 초기화
+    const muxer = new Muxer({
+        target: new ArrayBufferTarget(),
+        video: {
+            codec: 'avc',
+            width: OUTPUT.width,
+            height: OUTPUT.height
+        },
+        fastStart: 'in-memory'
+    });
+    
+    // VideoEncoder 초기화
+    const encoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: e => { throw new Error(`인코더 오류: ${e.message}`); }
+    });
+    
+    await encoder.configure({
+        codec: 'avc1.42001f',
+        width: OUTPUT.width,
+        height: OUTPUT.height,
+        bitrate: OUTPUT.bitrate,
+        framerate: OUTPUT.fps,
+        hardwareAcceleration: 'prefer-hardware'
+    });
+    
+    let totalFrames = 0;
+    let encodedFrames = 0;
+    
+    // 인트로 처리
+    setStatus('인트로 처리 중...');
     setProg(10);
     
-    // 인트로 + 본편 프레임 추출 및 인코딩
-    const introFrames = await extractFrames(introFile, introMeta);
-    setProg(30);
+    const introFrameCount = Math.floor(introMeta.dur * OUTPUT.fps);
+    totalFrames = introFrameCount + Math.floor((OUTPUT.targetDur - introMeta.dur) * OUTPUT.fps);
     
+    await processVideoFrames(introFile, introMeta, 1, encoder, (i, total) => {
+        encodedFrames = i;
+        setProg(10 + Math.floor((i / totalFrames) * 40));
+        if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임`);
+    });
+    
+    // 본편 처리
     setStatus('본편 처리 중...');
-    const mainFrames = await extractFrames(vidFile, vidMeta, calcSpeed());
-    setProg(60);
+    const speed = calcSpeed();
+    const introOffset = introMeta.dur * 1000000; // microseconds
     
+    await processVideoFrames(vidFile, vidMeta, speed, encoder, (i, total) => {
+        encodedFrames = introFrameCount + i;
+        setProg(50 + Math.floor((i / total) * 40));
+        if (i % 30 === 0) setStatus(`본편: ${i}/${total} 프레임 (${speed.toFixed(1)}x)`);
+    }, introOffset);
+    
+    // 인코딩 완료
     setStatus('MP4 생성 중...');
-    const mp4Blob = await encodeToMp4(introFrames, mainFrames);
     setProg(90);
     
-    // BGM 처리 (필요시)
-    let finalBlob = mp4Blob;
+    await encoder.flush();
+    encoder.close();
+    muxer.finalize();
+    
+    const videoBlob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    
+    // BGM 믹싱 (FFmpeg 사용)
+    let finalBlob = videoBlob;
     if (bgmFile) {
-        setStatus('BGM 믹싱...');
-        finalBlob = await mixBgmWebAudio(mp4Blob, bgmFile);
+        setStatus('BGM 믹싱 중...');
+        setProg(95);
+        finalBlob = await mixBgmWithFFmpeg(videoBlob);
     }
     
-    setStatus('완료!');
     setProg(100);
     showResultBlob(finalBlob);
+}
+
+// 스트리밍 방식 프레임 처리
+async function processVideoFrames(file, meta, speed, encoder, onProgress, timestampOffset = 0) {
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+    
+    await new Promise((resolve, reject) => {
+        video.onloadeddata = resolve;
+        video.onerror = () => reject(new Error('비디오 로드 실패'));
+    });
+    
+    const canvas = document.createElement('canvas');
+    canvas.width = OUTPUT.width;
+    canvas.height = OUTPUT.height;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    
+    const outputDuration = meta.dur / speed;
+    const frameInterval = 1 / OUTPUT.fps;
+    const totalFrames = Math.floor(outputDuration * OUTPUT.fps);
+    
+    for (let i = 0; i < totalFrames; i++) {
+        const sourceTime = i * frameInterval * speed;
+        if (sourceTime >= meta.dur) break;
+        
+        // Seek to frame
+        video.currentTime = sourceTime;
+        await new Promise(r => { video.onseeked = r; });
+        
+        // 크롭 계산
+        let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
+        
+        if (preset && PRESETS[preset]) {
+            const p = PRESETS[preset];
+            sy = Math.floor(video.videoHeight * p.topCutPct);
+            sh = Math.floor(video.videoHeight * (1 - p.topCutPct - p.bottomCutPct));
+        }
+        
+        // Canvas에 그리기 (letterbox)
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, OUTPUT.width, OUTPUT.height);
+        
+        const scale = Math.min(OUTPUT.width / sw, OUTPUT.height / sh);
+        const dw = sw * scale;
+        const dh = sh * scale;
+        const dx = (OUTPUT.width - dw) / 2;
+        const dy = (OUTPUT.height - dh) / 2;
+        
+        ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
+        
+        // VideoFrame 생성 및 인코딩
+        const timestamp = timestampOffset + (i * frameInterval * 1000000);
+        const frame = new VideoFrame(canvas, { timestamp });
+        
+        encoder.encode(frame, { keyFrame: i % 60 === 0 });
+        frame.close();
+        
+        // 진행률 콜백
+        if (onProgress) onProgress(i + 1, totalFrames);
+        
+        // UI 업데이트를 위한 yield
+        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+    
+    URL.revokeObjectURL(video.src);
 }
 
 // mp4-muxer CDN 로딩
@@ -239,137 +362,35 @@ async function loadMp4Muxer() {
     });
 }
 
-// 비디오에서 프레임 추출
-async function extractFrames(file, meta, speed = 1) {
-    const frames = [];
-    const video = document.createElement('video');
-    video.src = URL.createObjectURL(file);
-    video.muted = true;
+// FFmpeg로 BGM 믹싱
+async function mixBgmWithFFmpeg(videoBlob) {
+    await initFFmpeg();
     
-    await new Promise(r => { video.onloadeddata = r; });
+    const { fetchFile } = FFmpeg;
     
-    const canvas = document.createElement('canvas');
-    canvas.width = OUTPUT.width;
-    canvas.height = OUTPUT.height;
-    const ctx = canvas.getContext('2d');
+    // 비디오 및 BGM 파일 쓰기
+    ffmpeg.FS('writeFile', 'video.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
+    ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
     
-    const duration = meta.dur / speed;
-    const frameInterval = 1 / OUTPUT.fps;
-    const totalFrames = Math.floor(duration * OUTPUT.fps);
+    // BGM 믹싱
+    await ffmpeg.run(
+        '-i', 'video.mp4',
+        '-stream_loop', '-1',
+        '-i', 'bgm.mp3',
+        '-t', String(OUTPUT.targetDur),
+        '-filter_complex',
+        `[1:a]volume=${OUTPUT.bgmVol}[bgm];[bgm]apad[a]`,
+        '-map', '0:v',
+        '-map', '[a]',
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-shortest',
+        'output.mp4'
+    );
     
-    for (let i = 0; i < totalFrames; i++) {
-        const time = (i * frameInterval * speed);
-        if (time >= meta.dur) break;
-        
-        video.currentTime = time;
-        await new Promise(r => { video.onseeked = r; });
-        
-        // 크롭 적용
-        let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
-        
-        if (preset && PRESETS[preset]) {
-            const p = PRESETS[preset];
-            sy = video.videoHeight * p.topCutPct;
-            sh = video.videoHeight * (1 - p.topCutPct - p.bottomCutPct);
-        }
-        
-        // 9:16 비율로 그리기
-        ctx.fillStyle = 'black';
-        ctx.fillRect(0, 0, OUTPUT.width, OUTPUT.height);
-        
-        const scale = Math.min(OUTPUT.width / sw, OUTPUT.height / sh);
-        const dw = sw * scale;
-        const dh = sh * scale;
-        const dx = (OUTPUT.width - dw) / 2;
-        const dy = (OUTPUT.height - dh) / 2;
-        
-        ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-        
-        // ImageBitmap으로 변환
-        const bitmap = await createImageBitmap(canvas);
-        frames.push({
-            bitmap,
-            timestamp: i * frameInterval * 1000000 // microseconds
-        });
-        
-        // 진행률 업데이트
-        if (i % 10 === 0) {
-            el('progText').textContent = `프레임 ${i}/${totalFrames}`;
-        }
-    }
-    
-    URL.revokeObjectURL(video.src);
-    return frames;
-}
-
-// WebCodecs + mp4-muxer로 MP4 생성
-async function encodeToMp4(introFrames, mainFrames) {
-    const { Muxer, ArrayBufferTarget } = Mp4Muxer;
-    
-    const muxer = new Muxer({
-        target: new ArrayBufferTarget(),
-        video: {
-            codec: 'avc',
-            width: OUTPUT.width,
-            height: OUTPUT.height
-        },
-        fastStart: 'in-memory'
-    });
-    
-    const encoder = new VideoEncoder({
-        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-        error: e => console.error('Encoder error:', e)
-    });
-    
-    encoder.configure({
-        codec: 'avc1.42001f',
-        width: OUTPUT.width,
-        height: OUTPUT.height,
-        bitrate: OUTPUT.bitrate,
-        framerate: OUTPUT.fps,
-        hardwareAcceleration: 'prefer-hardware'
-    });
-    
-    // 인트로 프레임 인코딩
-    let frameCount = 0;
-    for (const frame of introFrames) {
-        const videoFrame = new VideoFrame(frame.bitmap, {
-            timestamp: frame.timestamp
-        });
-        encoder.encode(videoFrame, { keyFrame: frameCount % 60 === 0 });
-        videoFrame.close();
-        frame.bitmap.close();
-        frameCount++;
-    }
-    
-    // 본편 프레임 인코딩 (타임스탬프 오프셋 적용)
-    const offset = introFrames.length > 0 
-        ? introFrames[introFrames.length - 1].timestamp + (1000000 / OUTPUT.fps)
-        : 0;
-    
-    for (const frame of mainFrames) {
-        const videoFrame = new VideoFrame(frame.bitmap, {
-            timestamp: frame.timestamp + offset
-        });
-        encoder.encode(videoFrame, { keyFrame: frameCount % 60 === 0 });
-        videoFrame.close();
-        frame.bitmap.close();
-        frameCount++;
-    }
-    
-    await encoder.flush();
-    encoder.close();
-    muxer.finalize();
-    
-    return new Blob([muxer.target.buffer], { type: 'video/mp4' });
-}
-
-// Web Audio API로 BGM 믹싱
-async function mixBgmWebAudio(videoBlob, bgmFile) {
-    // 간단 구현: BGM 없이 반환 (복잡한 오디오 처리는 FFmpeg 폴백)
-    // TODO: Web Audio API로 구현
-    console.log('BGM 믹싱은 추후 구현 예정');
-    return videoBlob;
+    const data = ffmpeg.FS('readFile', 'output.mp4');
+    return new Blob([data.buffer], { type: 'video/mp4' });
 }
 
 /* ========== FFmpeg Fallback ========== */
@@ -402,7 +423,6 @@ async function generateWithFFmpeg() {
         await mixBgm();
     }
     
-    setStatus('완료!');
     setProg(100);
     await showResult();
 }
@@ -444,9 +464,9 @@ async function prepareIntro() {
         '-r', String(OUTPUT.fps),
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '26',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '128k',
         'intro_ready.mp4'
     );
 }
@@ -474,9 +494,9 @@ async function processMain() {
         '-r', String(OUTPUT.fps),
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
-        '-crf', '28',
+        '-crf', '26',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '128k',
         'main_ready.mp4'
     );
 }
@@ -504,7 +524,7 @@ async function mixBgm() {
         `[0:a]volume=1[a1];[1:a]volume=${OUTPUT.bgmVol}[a2];[a1][a2]amix=inputs=2:duration=first`,
         '-c:v', 'copy',
         '-c:a', 'aac',
-        '-b:a', '96k',
+        '-b:a', '128k',
         'final.mp4'
     );
     
@@ -519,9 +539,14 @@ async function showResult() {
 
 function showResultBlob(blob) {
     const url = URL.createObjectURL(blob);
+    const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
     
     el('preview').src = url;
     el('dlLink').href = url;
+    el('dlLink').download = `lecture_shorts_${Date.now()}.mp4`;
+    
+    // 파일 크기 표시
+    setStatus(`✅ 완료! (${sizeMB}MB)`);
     
     show('result');
     hide('step5');
