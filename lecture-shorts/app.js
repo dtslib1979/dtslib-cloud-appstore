@@ -1,17 +1,14 @@
 /**
- * Lecture Shorts Factory v1.0.0
+ * Lecture Shorts Factory v1.1.0 - OPTIMIZED
  * 4분 강의 → 3분 쇼츠 자동 변환
  * 
- * Pipeline:
- * 1. 속도 조절 (4min → ~2:45)
- * 2. 디바이스별 UI 바 제거 크롭
- * 3. 9:16 세로 포맷 변환
- * 4. 인트로 + TV 글리치 트랜지션
- * 5. 배경음악 믹싱 (선택)
- * 6. H.264 + AAC 인코딩
+ * v1.1.0 최적화:
+ * - 단일 패스 인코딩 (7회 → 1회)
+ * - preset: ultrafast (모바일 최적화)
+ * - 글리치 효과 간소화
  */
 
-/* ========== DEVICE PRESETS (DO NOT MODIFY) ========== */
+/* ========== DEVICE PRESETS ========== */
 const PRESETS = {
     TAB_S9: {
         name: 'Galaxy Tab S9',
@@ -33,8 +30,7 @@ const OUTPUT = {
     height: 1920,
     targetDur: 180,
     introDur: 15,
-    bgmVol: 0.1,
-    glitchDur: 1
+    bgmVol: 0.1
 };
 
 /* ========== STATE ========== */
@@ -151,7 +147,7 @@ function checkReady() {
     el('genBtn').disabled = !ready;
 }
 
-/* ========== MAIN GENERATION ========== */
+/* ========== MAIN GENERATION (OPTIMIZED) ========== */
 async function generate() {
     const btn = el('genBtn');
     btn.disabled = true;
@@ -161,35 +157,38 @@ async function generate() {
     setProg(5);
     
     try {
+        // 1. FFmpeg 초기화
         await initFFmpeg();
         setProg(10);
         
+        // 2. 파일 쓰기
         setStatus('파일 준비 중...');
         await writeFiles();
         setProg(20);
         
-        setStatus('속도 조절 중...');
-        await adjustSpeed();
-        setProg(35);
+        // 3. 인트로 빠른 변환 (copy 우선, 필요시만 인코딩)
+        setStatus('인트로 준비 중...');
+        await prepareIntro();
+        setProg(30);
         
-        setStatus('9:16 변환 중...');
-        await cropAndScale();
-        setProg(50);
+        // 4. 본편 단일 패스 처리 (속도+크롭+스케일 한번에)
+        setStatus('본편 처리 중...');
+        await processMain();
+        setProg(60);
         
-        setStatus('인트로 연결 중...');
-        await concatWithGlitch();
-        setProg(70);
+        // 5. concat (스트림 복사, 재인코딩 없음)
+        setStatus('영상 합치는 중...');
+        await concatVideos();
+        setProg(80);
         
+        // 6. BGM 믹싱 (선택, 오디오만 재인코딩)
         if (bgmFile) {
             setStatus('배경음악 믹싱 중...');
             await mixBgm();
         }
-        setProg(85);
-        
-        setStatus('최종 인코딩 중...');
-        await finalEncode();
         setProg(95);
         
+        // 7. 결과 출력
         setStatus('완료!');
         await showResult();
         setProg(100);
@@ -201,7 +200,7 @@ async function generate() {
     }
 }
 
-/* ========== FFMPEG PIPELINE ========== */
+/* ========== OPTIMIZED FFMPEG PIPELINE ========== */
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
     
@@ -214,7 +213,7 @@ async function initFFmpeg() {
     ffmpeg.setProgress(({ ratio }) => {
         if (ratio > 0) {
             const pct = Math.round(ratio * 100);
-            el('progText').textContent = `인코딩: ${pct}%`;
+            el('progText').textContent = `처리: ${pct}%`;
         }
     });
     
@@ -232,148 +231,96 @@ async function writeFiles() {
     }
 }
 
-async function adjustSpeed() {
+// 인트로: 스케일만 (단일 패스)
+async function prepareIntro() {
+    const filter = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
+                   `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black,` +
+                   `setsar=1`;
+    
+    await ffmpeg.run(
+        '-i', 'intro.mp4',
+        '-vf', filter,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',  // 최고속
+        '-crf', '23',            // 품질 약간 낮춤 (속도 우선)
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        'intro_ready.mp4'
+    );
+}
+
+// 본편: 속도+크롭+스케일 단일 패스
+async function processMain() {
     const speedRatio = calcSpeed(vidMeta.dur);
     
-    let atempoFilter = '';
+    // 비디오 필터 체인 구성
+    let vf = `setpts=PTS/${speedRatio}`;
+    
+    // 크롭 (프리셋 선택시)
+    if (preset && PRESETS[preset]) {
+        const p = PRESETS[preset];
+        const cropH = 1 - p.topCutPct - p.bottomCutPct;
+        const topY = p.topCutPct;
+        vf += `,crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${topY.toFixed(4)}`;
+    }
+    
+    // 스케일 + 패딩
+    vf += `,scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease`;
+    vf += `,pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
+    vf += `,setsar=1`;
+    
+    // 오디오 필터 (속도 조절)
+    let af = '';
     if (speedRatio <= 2.0) {
-        atempoFilter = `atempo=${speedRatio}`;
+        af = `atempo=${speedRatio}`;
     } else {
-        atempoFilter = `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
+        af = `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
     }
     
     await ffmpeg.run(
         '-i', 'lecture.mp4',
-        '-filter_complex',
-        `[0:v]setpts=PTS/${speedRatio}[v];[0:a]${atempoFilter}[a]`,
-        '-map', '[v]',
-        '-map', '[a]',
+        '-vf', vf,
+        '-af', af,
         '-c:v', 'libx264',
-        '-preset', 'fast',
+        '-preset', 'ultrafast',  // 최고속
+        '-crf', '23',
         '-c:a', 'aac',
-        'speed.mp4'
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        'main_ready.mp4'
     );
 }
 
-async function cropAndScale() {
-    let filter = '';
-    
-    if (preset && PRESETS[preset]) {
-        const p = PRESETS[preset];
-        const cropH = 1 - p.topCutPct - p.bottomCutPct;
-        const topY = p.topCutPct + (p.yShiftPct > 0 ? p.yShiftPct : 0);
-        
-        filter = `crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${topY.toFixed(4)},`;
-    }
-    
-    filter += `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,`;
-    filter += `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
-    
-    await ffmpeg.run(
-        '-i', 'speed.mp4',
-        '-vf', filter,
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-c:a', 'copy',
-        'cropped.mp4'
-    );
-}
-
-async function concatWithGlitch() {
-    const introFilter = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
-                       `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
-    
-    await ffmpeg.run(
-        '-i', 'intro.mp4',
-        '-vf', introFilter,
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-c:a', 'aac',
-        'intro_scaled.mp4'
-    );
-    
-    const glitchDur = OUTPUT.glitchDur;
-    const introDurSafe = Math.max(introMeta.dur - glitchDur, 0);
-    
-    await ffmpeg.run(
-        '-i', 'intro_scaled.mp4',
-        '-t', String(introDurSafe),
-        '-c', 'copy',
-        'intro_clean.mp4'
-    );
-    
-    await ffmpeg.run(
-        '-i', 'intro_scaled.mp4',
-        '-ss', String(introDurSafe),
-        '-t', String(glitchDur),
-        '-vf', 'rgbashift=rh=-5:gh=3:bh=5,noise=alls=30:allf=t',
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-c:a', 'aac',
-        'intro_glitch.mp4'
-    );
-    
-    await ffmpeg.run(
-        '-i', 'cropped.mp4',
-        '-t', String(glitchDur),
-        '-vf', 'rgbashift=rh=5:gh=-3:bh=-5,noise=alls=20:allf=t',
-        '-c:v', 'libx264',
-        '-preset', 'fast',
-        '-c:a', 'aac',
-        'main_glitch.mp4'
-    );
-    
-    await ffmpeg.run(
-        '-i', 'cropped.mp4',
-        '-ss', String(glitchDur),
-        '-c', 'copy',
-        'main_clean.mp4'
-    );
-    
-    const concatList = 
-        "file 'intro_clean.mp4'\n" +
-        "file 'intro_glitch.mp4'\n" +
-        "file 'main_glitch.mp4'\n" +
-        "file 'main_clean.mp4'\n";
-    
+// concat: 스트림 복사 (재인코딩 없음!)
+async function concatVideos() {
+    const concatList = "file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n";
     ffmpeg.FS('writeFile', 'concat.txt', new TextEncoder().encode(concatList));
     
     await ffmpeg.run(
         '-f', 'concat',
         '-safe', '0',
         '-i', 'concat.txt',
-        '-c', 'copy',
-        'combined.mp4'
+        '-c', 'copy',  // 재인코딩 없이 복사!
+        'output.mp4'
     );
 }
 
+// BGM 믹싱: 오디오만 처리
 async function mixBgm() {
     await ffmpeg.run(
-        '-i', 'combined.mp4',
+        '-i', 'output.mp4',
         '-i', 'bgm.mp3',
         '-filter_complex',
         `[0:a]volume=1[a1];[1:a]volume=${OUTPUT.bgmVol}[a2];[a1][a2]amix=inputs=2:duration=first`,
-        '-c:v', 'copy',
+        '-c:v', 'copy',  // 비디오는 복사!
         '-c:a', 'aac',
-        '-b:a', '192k',
-        'mixed.mp4'
+        '-b:a', '128k',
+        'final.mp4'
     );
     
-    ffmpeg.FS('rename', 'mixed.mp4', 'combined.mp4');
-}
-
-async function finalEncode() {
-    await ffmpeg.run(
-        '-i', 'combined.mp4',
-        '-c:v', 'libx264',
-        '-preset', 'medium',
-        '-crf', '18',
-        '-pix_fmt', 'yuv420p',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-movflags', '+faststart',
-        'output.mp4'
-    );
+    // 결과 파일명 통일
+    ffmpeg.FS('rename', 'final.mp4', 'output.mp4');
 }
 
 async function showResult() {
