@@ -3,28 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="6~10초 영상을 2분 쇼츠로 자동 변환">
+    <meta name="description" content="6~30초 영상을 2분 쇼츠로 자동 변환">
     <meta name="theme-color" content="#764ba2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
     <title>Auto Shorts Maker</title>
     <link rel="manifest" href="./manifest.json">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
     <link rel="stylesheet" href="./style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🎬 Auto Shorts Maker</h1>
-            <p class="subtitle">6~10초 영상 → 2분 쇼츠 자동 변환</p>
-            <p class="version">v1.0.0</p>
+            <p class="subtitle">6~30초 영상 → 2분 쇼츠 자동 변환</p>
+            <p class="version">v1.1.0</p>
         </header>
+        
+        <div class="memory-warning" id="memory-warning" style="display: none;"></div>
         
         <main>
             <div class="upload-section">
                 <label class="upload-box" for="video-input">
                     <span class="upload-icon">📹</span>
-                    <span class="upload-text">Step 1: 짧은 영상 업로드 (6~10초)</span>
+                    <span class="upload-text">Step 1: 짧은 영상 업로드 (6~30초)</span>
                     <span class="upload-hint">MP4, MOV 지원</span>
                     <span class="upload-status" id="video-status"></span>
                 </label>
