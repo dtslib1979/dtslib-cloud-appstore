@@ -1,9 +1,9 @@
 /**
- * Lecture Shorts Factory - Service Worker
- * UI 캐싱 + FFmpeg CDN 프리캐싱
+ * Lecture Shorts Factory - Service Worker v1.4.0
+ * 캐시 버전 업데이트로 구버전 무효화
  */
 
-const CACHE_NAME = 'lecture-shorts-v1';
+const CACHE_NAME = 'lecture-shorts-v1.4.0';
 
 const APP_FILES = [
     './',
@@ -69,9 +69,16 @@ self.addEventListener('fetch', event => {
         return;
     }
     
+    // 앱 파일은 네트워크 우선 (캐시 문제 방지)
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            return cached || fetch(event.request);
-        })
+        fetch(event.request).then(res => {
+            if (res.ok) {
+                const clone = res.clone();
+                caches.open(CACHE_NAME).then(cache => {
+                    cache.put(event.request, clone);
+                });
+            }
+            return res;
+        }).catch(() => caches.match(event.request))
     );
 });
