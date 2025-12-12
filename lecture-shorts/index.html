@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎓 Lecture Shorts Factory</title>
+    <title>🎓 Lecture Shorts Factory v2.0</title>
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
     <meta name="theme-color" content="#1a1a2e">
@@ -16,12 +16,20 @@
         <header>
             <h1>🎓 Lecture Shorts Factory</h1>
             <p class="subtitle">4분 강의 → 3분 쇼츠 자동 변환</p>
-            <span class="version">v1.0.0</span>
+            <div class="version-row">
+                <span class="version">v2.0.0</span>
+                <span id="engineInfo" class="engine-badge">검사 중...</span>
+            </div>
         </header>
 
         <!-- Memory Warning -->
         <div id="memWarn" class="memory-warning" style="display:none;">
             ⚠️ 메모리 부족 경고: 4GB 이상 권장
+        </div>
+
+        <!-- Browser Warning -->
+        <div id="browserWarn" class="browser-warning" style="display:none;">
+            ⚠️ Chrome/Edge 권장 (WebCodecs 하드웨어 가속)
         </div>
 
         <main>
@@ -44,7 +52,7 @@
             <section class="step-card" id="step2">
                 <div class="step-header">
                     <span class="step-num">2</span>
-                    <span class="step-title">인트로 영상 (15초)</span>
+                    <span class="step-title">인트로 영상 (15초~2분)</span>
                 </div>
                 <div class="step-content">
                     <input type="file" id="introIn" accept="video/*" hidden>
@@ -59,7 +67,7 @@
             <section class="step-card" id="step3">
                 <div class="step-header">
                     <span class="step-num">3</span>
-                    <span class="step-title">배경음악 (2분, 선택)</span>
+                    <span class="step-title">배경음악 (선택)</span>
                 </div>
                 <div class="step-content">
                     <input type="file" id="bgmIn" accept="audio/*" hidden>
@@ -108,7 +116,7 @@
             <!-- Result -->
             <section class="step-card result-card" id="result" style="display:none;">
                 <h3>✅ 변환 완료!</h3>
-                <video id="preview" controls></video>
+                <video id="preview" controls playsinline></video>
                 <div class="result-btns">
                     <a id="dlLink" class="download-btn" download="lecture_shorts.mp4">
                         📥 다운로드
@@ -121,7 +129,7 @@
         </main>
 
         <footer>
-            <p>DTS Cloud AppStore</p>
+            <p>DTS Cloud AppStore | WebCodecs + mp4-muxer</p>
         </footer>
     </div>
 
