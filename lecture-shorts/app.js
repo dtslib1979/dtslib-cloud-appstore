@@ -1,11 +1,10 @@
 /**
- * Lecture Shorts Factory v1.2.0 - MOBILE OPTIMIZED
+ * Lecture Shorts Factory v1.3.0 - DYNAMIC INTRO
  * 4분 강의 → 3분 쇼츠 자동 변환
  * 
- * v1.2.0 모바일 최적화:
- * - 720p 해상도 (1080p → 720p)
- * - CRF 28 (더 빠른 인코딩)
- * - 최소 필터 체인
+ * v1.3.0 변경:
+ * - 인트로 길이 자동 감지 (하드코딩 제거)
+ * - 본편 속도 = (4분 영상) / (3분 - 인트로길이)
  */
 
 /* ========== DEVICE PRESETS ========== */
@@ -24,12 +23,11 @@ const PRESETS = {
     }
 };
 
-/* ========== OUTPUT SPECS (720p for mobile) ========== */
+/* ========== OUTPUT SPECS ========== */
 const OUTPUT = {
-    width: 720,      // 1080 → 720 (4배 빠름)
-    height: 1280,    // 1920 → 1280
-    targetDur: 180,
-    introDur: 15,
+    width: 720,
+    height: 1280,
+    targetDur: 180,  // 최종 목표: 3분
     bgmVol: 0.1
 };
 
@@ -40,7 +38,7 @@ let introFile = null;
 let bgmFile = null;
 let preset = null;
 let vidMeta = { dur: 0, w: 0, h: 0 };
-let introMeta = { dur: 0 };
+let introMeta = { dur: 0, w: 0, h: 0 };
 
 /* ========== INIT ========== */
 document.addEventListener('DOMContentLoaded', init);
@@ -68,17 +66,7 @@ async function loadVid(file) {
         const meta = await getVidMeta(file);
         vidMeta = meta;
         
-        const durStr = fmtDur(meta.dur);
-        const speedRatio = calcSpeed(meta.dur);
-        const newDur = fmtDur(meta.dur / speedRatio);
-        
-        showInfo('vidInfo', 
-            `✅ ${file.name}<br>` +
-            `📐 ${meta.w}×${meta.h}<br>` +
-            `⏱️ ${durStr} → ${newDur} (${speedRatio.toFixed(2)}x)`,
-            'success'
-        );
-        
+        updateVidInfo();
         checkReady();
     } catch (e) {
         showInfo('vidInfo', `❌ 영상 로드 실패: ${e.message}`, 'warn');
@@ -94,18 +82,52 @@ async function loadIntro(file) {
         introMeta = meta;
         
         const durStr = fmtDur(meta.dur);
-        const status = meta.dur >= 10 && meta.dur <= 20 ? 'success' : 'warn';
-        const msg = status === 'warn' ? ' (권장: 15초)' : '';
+        
+        // 인트로 길이 검증
+        let status = 'success';
+        let msg = '';
+        
+        if (meta.dur > 120) {
+            status = 'warn';
+            msg = ' ⚠️ 2분 초과! 본편 시간 부족';
+        } else if (meta.dur > 60) {
+            status = 'warn';
+            msg = ' (본편 2분 미만)';
+        }
         
         showInfo('introInfo', 
             `✅ ${file.name}<br>⏱️ ${durStr}${msg}`,
             status
         );
         
+        // 본편 정보도 업데이트 (인트로 길이 반영)
+        updateVidInfo();
         checkReady();
     } catch (e) {
         showInfo('introInfo', `❌ 인트로 로드 실패: ${e.message}`, 'warn');
     }
+}
+
+// 본편 정보 업데이트 (인트로 길이 반영)
+function updateVidInfo() {
+    if (!vidMeta.dur) return;
+    
+    const durStr = fmtDur(vidMeta.dur);
+    const speedRatio = calcSpeed();
+    const newDur = fmtDur(vidMeta.dur / speedRatio);
+    const targetMain = OUTPUT.targetDur - introMeta.dur;
+    
+    let speedInfo = `${speedRatio.toFixed(2)}x`;
+    if (speedRatio >= 2.0) {
+        speedInfo += ' ⚠️ 최대 속도';
+    }
+    
+    showInfo('vidInfo', 
+        `✅ ${vidFile.name}<br>` +
+        `📐 ${vidMeta.w}×${vidMeta.h}<br>` +
+        `⏱️ ${durStr} → ${fmtDur(targetMain)} (${speedInfo})`,
+        speedRatio >= 2.0 ? 'warn' : 'success'
+    );
 }
 
 async function loadBgm(file) {
@@ -145,6 +167,19 @@ function setPreset(key) {
 function checkReady() {
     const ready = vidFile && introFile;
     el('genBtn').disabled = !ready;
+}
+
+/* ========== SPEED CALCULATION (동적) ========== */
+function calcSpeed() {
+    // 본편 목표 시간 = 전체 목표 - 실제 인트로 길이
+    const targetMain = OUTPUT.targetDur - introMeta.dur;
+    
+    if (targetMain <= 0) {
+        return 2.0;  // 인트로가 3분 이상이면 최대 속도
+    }
+    
+    const ratio = vidMeta.dur / targetMain;
+    return Math.max(1.0, Math.min(2.0, ratio));
 }
 
 /* ========== MAIN GENERATION ========== */
@@ -224,7 +259,6 @@ async function writeFiles() {
     }
 }
 
-// 인트로: 720p 스케일
 async function prepareIntro() {
     const filter = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
                    `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
@@ -241,11 +275,9 @@ async function prepareIntro() {
     );
 }
 
-// 본편: 속도+크롭+스케일 단일 패스
 async function processMain() {
-    const speedRatio = calcSpeed(vidMeta.dur);
+    const speedRatio = calcSpeed();
     
-    // 비디오 필터 (최소화)
     let vf = `setpts=PTS/${speedRatio}`;
     
     if (preset && PRESETS[preset]) {
@@ -258,7 +290,6 @@ async function processMain() {
     vf += `,scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease`;
     vf += `,pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
     
-    // 오디오 필터
     let af = speedRatio <= 2.0 
         ? `atempo=${speedRatio}` 
         : `atempo=2.0,atempo=${(speedRatio / 2).toFixed(3)}`;
@@ -276,7 +307,6 @@ async function processMain() {
     );
 }
 
-// concat: 스트림 복사
 async function concatVideos() {
     const concatList = "file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n";
     ffmpeg.FS('writeFile', 'concat.txt', new TextEncoder().encode(concatList));
@@ -290,7 +320,6 @@ async function concatVideos() {
     );
 }
 
-// BGM 믹싱
 async function mixBgm() {
     await ffmpeg.run(
         '-i', 'output.mp4',
@@ -346,12 +375,6 @@ function fmtDur(sec) {
     return `${m}분 ${s}초`;
 }
 
-function calcSpeed(dur) {
-    const targetMain = OUTPUT.targetDur - OUTPUT.introDur;
-    const ratio = dur / targetMain;
-    return Math.max(1.0, Math.min(2.0, ratio));
-}
-
 async function getVidMeta(file) {
     return new Promise((resolve, reject) => {
         const vid = document.createElement('video');
@@ -377,7 +400,7 @@ function reset() {
     bgmFile = null;
     preset = null;
     vidMeta = { dur: 0, w: 0, h: 0 };
-    introMeta = { dur: 0 };
+    introMeta = { dur: 0, w: 0, h: 0 };
     
     el('vidIn').value = '';
     el('introIn').value = '';
