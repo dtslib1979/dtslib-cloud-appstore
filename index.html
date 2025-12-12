@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
     <title>DTS Cloud AppStore</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -10,41 +11,55 @@
             background: #000;
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            padding: 20px;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
         }
         h1 {
-            text-align: center;
-            margin-bottom: 30px;
+            font-size: 32px;
+            margin-bottom: 8px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
         }
         .app-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 20px;
-            max-width: 800px;
+            max-width: 600px;
             margin: 0 auto;
         }
         .app-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             border-radius: 20px;
             padding: 3px;
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: all 0.3s;
+            text-decoration: none;
         }
-        .app-card:hover { transform: scale(1.05); }
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(76,175,80,0.3);
+        }
         .app-inner {
             background: #111;
             border-radius: 17px;
-            padding: 20px;
+            padding: 25px 15px;
             text-align: center;
             height: 100%;
         }
         .app-icon {
             width: 60px;
             height: 60px;
-            margin: 0 auto 10px;
+            margin: 0 auto 12px;
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             border-radius: 15px;
             display: flex;
@@ -53,69 +68,77 @@
             font-size: 30px;
         }
         .app-name {
+            color: #fff;
             font-size: 14px;
             font-weight: 600;
+            margin-bottom: 5px;
         }
         .app-desc {
+            color: rgba(255,255,255,0.5);
             font-size: 11px;
-            opacity: 0.7;
-            margin-top: 5px;
         }
-        .real {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            animation: pulse 2s infinite;
+        .app-badge {
+            display: inline-block;
+            background: #4CAF50;
+            color: #fff;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-weight: 600;
         }
-        .working {
-            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        .coming-soon {
+            background: linear-gradient(135deg, #333 0%, #222 100%);
+            pointer-events: none;
         }
-        .beta {
-            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+        .coming-soon .app-badge {
+            background: #666;
         }
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: rgba(255,255,255,0.3);
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <h1>🚀 DTS Cloud AppStore</h1>
+    <div class="header">
+        <h1>🚀 DTS Cloud AppStore</h1>
+        <p class="subtitle">박씨 전용 PWA 공장</p>
+    </div>
+    
     <div class="app-grid">
-        <div class="app-card" onclick="location.href='./bilingual-aligner/'">
+        <a href="./auto-shorts/" class="app-card">
             <div class="app-inner">
-                <div class="app-icon real">📘</div>
+                <div class="app-icon">🎬</div>
+                <div class="app-name">Auto Shorts</div>
+                <div class="app-desc">6~10초→2분 변환</div>
+                <span class="app-badge">v1.0</span>
+            </div>
+        </a>
+        
+        <a href="./bilingual-aligner/" class="app-card">
+            <div class="app-inner">
+                <div class="app-icon">📘</div>
                 <div class="app-name">Bilingual Aligner</div>
                 <div class="app-desc">한영 문장 정렬</div>
+                <span class="app-badge">LIVE</span>
             </div>
-        </div>
-        <div class="app-card" onclick="location.href='./auto-shorts-v3/'">
+        </a>
+        
+        <div class="app-card coming-soon">
             <div class="app-inner">
-                <div class="app-icon real">🎬</div>
-                <div class="app-name">Shorts v3 (REAL)</div>
-                <div class="app-desc">실제 2분 MP4 생성</div>
-            </div>
-        </div>
-        <div class="app-card" onclick="location.href='./auto-shorts-v2/'">
-            <div class="app-inner">
-                <div class="app-icon working">✅</div>
-                <div class="app-name">Shorts v2</div>
-                <div class="app-desc">데모 버전</div>
-            </div>
-        </div>
-        <div class="app-card" onclick="location.href='./shorts-maker/'">
-            <div class="app-inner">
-                <div class="app-icon beta">🎥</div>
-                <div class="app-name">Shorts v1</div>
-                <div class="app-desc">베타</div>
-            </div>
-        </div>
-        <div class="app-card" onclick="location.href='./auto-shorts-maker/'">
-            <div class="app-inner">
-                <div class="app-icon beta">📹</div>
-                <div class="app-name">Auto Shorts v1.1</div>
-                <div class="app-desc">SAB-free</div>
+                <div class="app-icon">🎯</div>
+                <div class="app-name">Coming Soon</div>
+                <div class="app-desc">새 앱 준비중</div>
+                <span class="app-badge">SOON</span>
             </div>
         </div>
     </div>
+    
+    <footer>
+        <p>DTS Cloud AppStore by PARKSY CTO</p>
+    </footer>
 </body>
 </html>
