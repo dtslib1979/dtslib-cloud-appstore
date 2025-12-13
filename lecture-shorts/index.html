@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎓 Lecture Shorts Factory v2.1</title>
+    <title>🎓 Lecture Shorts Factory v2.2</title>
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./icons/icon-192x192.png">
     <meta name="theme-color" content="#1a1a2e">
@@ -17,7 +17,7 @@
             <h1>🎓 Lecture Shorts Factory</h1>
             <p class="subtitle">4분 강의 → 3분 쇼츠 자동 변환</p>
             <div class="version-row">
-                <span class="version">v2.1.0</span>
+                <span class="version">v2.2.0</span>
                 <span id="engineInfo" class="engine-badge">검사 중...</span>
             </div>
         </header>
@@ -30,6 +30,11 @@
         <!-- Browser Warning -->
         <div id="browserWarn" class="browser-warning" style="display:none;">
             ⚠️ Chrome/Edge 권장 (WebCodecs 하드웨어 가속)
+        </div>
+
+        <!-- Background Warning (v2.2.0) -->
+        <div id="bgTip" class="bg-tip">
+            💡 <strong>중요:</strong> 인코딩 중 화면을 켜두세요. 백그라운드 전환 시 중단될 수 있습니다.
         </div>
 
         <main>
@@ -129,7 +134,7 @@
         </main>
 
         <footer>
-            <p>DTS Cloud AppStore | WebCodecs + mp4-muxer</p>
+            <p>DTS Cloud AppStore | WebCodecs + Wake Lock</p>
         </footer>
     </div>
 
