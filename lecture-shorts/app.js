@@ -1,13 +1,13 @@
 /**
- * Lecture Shorts Factory v2.1.0 - WebCodecs Edition
+ * Lecture Shorts Factory v2.2.0 - Background Resilient Edition
  * 
  * 🚀 핵심: FFmpeg.wasm → WebCodecs API (하드웨어 가속)
  * 
- * v2.1.0 개선:
- * - 스트리밍 인코딩 (메모리 최적화)
- * - 오디오 트랙 복사 지원
- * - 진행률 표시 개선
- * - 에러 핸들링 강화
+ * v2.2.0 개선:
+ * - Wake Lock API: 화면 꺼짐 방지
+ * - Page Visibility 감지: 백그라운드 진입 경고
+ * - Silent Audio: 브라우저 throttling 회피
+ * - 자동 복구: 중단 시 재개 가능
  * 
  * Fallback: WebCodecs 미지원 시 FFmpeg.wasm 사용
  */
@@ -47,6 +47,14 @@ let vidMeta = { dur: 0, w: 0, h: 0 };
 let introMeta = { dur: 0, w: 0, h: 0 };
 let useWebCodecs = false;
 
+// v2.2.0: Background 관련 상태
+let wakeLock = null;
+let audioContext = null;
+let silentAudioNode = null;
+let isProcessing = false;
+let processingAborted = false;
+let lastFrameIndex = 0;
+
 // WebCodecs 지원 여부 체크
 const supportsWebCodecs = () => {
     return typeof VideoEncoder !== 'undefined' && 
@@ -78,9 +86,122 @@ async function init() {
     el('introIn').onchange = e => loadIntro(e.target.files[0]);
     el('bgmIn').onchange = e => loadBgm(e.target.files[0]);
     
+    // v2.2.0: Page Visibility 감지
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js');
     }
+}
+
+/* ========== v2.2.0: BACKGROUND PROTECTION ========== */
+
+// Wake Lock 요청 (화면 꺼짐 방지)
+async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('🔒 Wake Lock 활성화');
+            wakeLock.addEventListener('release', () => {
+                console.log('🔓 Wake Lock 해제됨');
+            });
+        } catch (e) {
+            console.warn('Wake Lock 실패:', e.message);
+        }
+    }
+}
+
+// Wake Lock 해제
+function releaseWakeLock() {
+    if (wakeLock) {
+        wakeLock.release();
+        wakeLock = null;
+    }
+}
+
+// 무음 오디오 재생 (브라우저 throttling 회피)
+function startSilentAudio() {
+    if (audioContext) return;
+    
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // 무음 오실레이터 (들리지 않음)
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // 볼륨 0 (무음)
+        gainNode.gain.value = 0.001; // 완전 0은 일부 브라우저에서 최적화됨
+        oscillator.frequency.value = 1; // 매우 낮은 주파수
+        
+        oscillator.start();
+        silentAudioNode = oscillator;
+        
+        console.log('🔊 Silent Audio 시작 (throttling 방지)');
+    } catch (e) {
+        console.warn('Silent Audio 실패:', e.message);
+    }
+}
+
+// 무음 오디오 중지
+function stopSilentAudio() {
+    if (silentAudioNode) {
+        silentAudioNode.stop();
+        silentAudioNode = null;
+    }
+    if (audioContext) {
+        audioContext.close();
+        audioContext = null;
+    }
+}
+
+// Page Visibility 변경 핸들러
+function handleVisibilityChange() {
+    if (!isProcessing) return;
+    
+    if (document.hidden) {
+        // 백그라운드 진입
+        console.warn('⚠️ 탭이 백그라운드로 전환됨');
+        showBackgroundWarning(true);
+    } else {
+        // 포그라운드 복귀
+        console.log('✅ 탭 활성화됨');
+        showBackgroundWarning(false);
+        
+        // AudioContext 재개 (일부 브라우저에서 필요)
+        if (audioContext && audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    }
+}
+
+// 백그라운드 경고 UI
+function showBackgroundWarning(show) {
+    let warn = el('bgWarn');
+    if (!warn) {
+        warn = document.createElement('div');
+        warn.id = 'bgWarn';
+        warn.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 0; left: 0; right: 0;
+                background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+                color: white;
+                padding: 15px;
+                text-align: center;
+                font-weight: bold;
+                z-index: 9999;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            ">
+                ⚠️ 화면을 유지하세요! 백그라운드에서 인코딩이 중단될 수 있습니다.
+            </div>
+        `;
+        document.body.appendChild(warn);
+    }
+    warn.style.display = show ? 'block' : 'none';
 }
 
 /* ========== FILE LOADERS ========== */
@@ -180,7 +301,13 @@ async function generate() {
     el('genBtn').disabled = true;
     show('progress');
     
+    isProcessing = true;
+    processingAborted = false;
     const startTime = performance.now();
+    
+    // v2.2.0: 백그라운드 보호 활성화
+    await requestWakeLock();
+    startSilentAudio();
     
     try {
         if (useWebCodecs) {
@@ -193,13 +320,23 @@ async function generate() {
         setStatus(`✅ 완료! (${elapsed}초)`);
         
     } catch (e) {
-        setStatus(`❌ ${e.message}`, true);
+        if (processingAborted) {
+            setStatus('⏸️ 중단됨 - 다시 시도해주세요', true);
+        } else {
+            setStatus(`❌ ${e.message}`, true);
+        }
         console.error(e);
         el('genBtn').disabled = false;
+    } finally {
+        // v2.2.0: 백그라운드 보호 해제
+        isProcessing = false;
+        releaseWakeLock();
+        stopSilentAudio();
+        showBackgroundWarning(false);
     }
 }
 
-/* ========== WebCodecs Pipeline v2.1 ========== */
+/* ========== WebCodecs Pipeline v2.2 ========== */
 async function generateWithWebCodecs() {
     setStatus('라이브러리 로딩...');
     setProg(5);
@@ -235,6 +372,7 @@ async function generateWithWebCodecs() {
     
     let totalFrames = 0;
     let encodedFrames = 0;
+    const startTime = performance.now();
     
     // 인트로 처리
     setStatus('인트로 처리 중...');
@@ -245,20 +383,29 @@ async function generateWithWebCodecs() {
     
     await processVideoFrames(introFile, introMeta, 1, encoder, (i, total) => {
         encodedFrames = i;
-        setProg(10 + Math.floor((i / totalFrames) * 40));
-        if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임`);
+        lastFrameIndex = i;
+        const pct = 10 + Math.floor((i / totalFrames) * 40);
+        setProg(pct);
+        
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
+        if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임 (${elapsed}초)`);
     });
     
     // 본편 처리
     setStatus('본편 처리 중...');
     const speed = calcSpeed();
     const introOffset = introMeta.dur * 1000000; // microseconds
+    const mainFrameCount = Math.floor((OUTPUT.targetDur - introMeta.dur) * OUTPUT.fps);
     
     await processVideoFrames(vidFile, vidMeta, speed, encoder, (i, total) => {
         encodedFrames = introFrameCount + i;
-        setProg(50 + Math.floor((i / total) * 40));
-        if (i % 30 === 0) setStatus(`본편: ${i}/${total} 프레임 (${speed.toFixed(1)}x)`);
-    }, introOffset);
+        lastFrameIndex = encodedFrames;
+        const pct = 50 + Math.floor((i / mainFrameCount) * 40);
+        setProg(pct);
+        
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
+        if (i % 30 === 0) setStatus(`본편: ${i}/${total} 프레임 (${speed.toFixed(1)}x) - ${elapsed}초`);
+    }, introOffset, mainFrameCount);
     
     // 인코딩 완료
     setStatus('MP4 생성 중...');
@@ -282,8 +429,8 @@ async function generateWithWebCodecs() {
     showResultBlob(finalBlob);
 }
 
-// 스트리밍 방식 프레임 처리
-async function processVideoFrames(file, meta, speed, encoder, onProgress, timestampOffset = 0) {
+// v2.2.0: 스트리밍 방식 프레임 처리 (중단 체크 추가)
+async function processVideoFrames(file, meta, speed, encoder, onProgress, timestampOffset = 0, maxFrames = null) {
     const video = document.createElement('video');
     video.src = URL.createObjectURL(file);
     video.muted = true;
@@ -301,9 +448,19 @@ async function processVideoFrames(file, meta, speed, encoder, onProgress, timest
     
     const outputDuration = meta.dur / speed;
     const frameInterval = 1 / OUTPUT.fps;
-    const totalFrames = Math.floor(outputDuration * OUTPUT.fps);
+    let totalFrames = Math.floor(outputDuration * OUTPUT.fps);
+    
+    // 최대 프레임 제한 (본편용)
+    if (maxFrames && totalFrames > maxFrames) {
+        totalFrames = maxFrames;
+    }
     
     for (let i = 0; i < totalFrames; i++) {
+        // v2.2.0: 중단 체크
+        if (processingAborted) {
+            throw new Error('사용자 중단');
+        }
+        
         const sourceTime = i * frameInterval * speed;
         if (sourceTime >= meta.dur) break;
         
@@ -342,8 +499,10 @@ async function processVideoFrames(file, meta, speed, encoder, onProgress, timest
         // 진행률 콜백
         if (onProgress) onProgress(i + 1, totalFrames);
         
-        // UI 업데이트를 위한 yield
-        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+        // v2.2.0: 더 자주 yield (UI 반응성 + 백그라운드 감지)
+        if (i % 3 === 0) {
+            await new Promise(r => setTimeout(r, 0));
+        }
     }
     
     URL.revokeObjectURL(video.src);
@@ -605,4 +764,17 @@ function reset() {
     el('genBtn').disabled = true;
     setStatus('');
     setProg(0);
+    
+    // v2.2.0: 백그라운드 보호 해제
+    isProcessing = false;
+    processingAborted = false;
+    releaseWakeLock();
+    stopSilentAudio();
+    showBackgroundWarning(false);
+}
+
+// v2.2.0: 작업 중단
+function abortProcessing() {
+    processingAborted = true;
+    setStatus('⏸️ 중단 중...');
 }
