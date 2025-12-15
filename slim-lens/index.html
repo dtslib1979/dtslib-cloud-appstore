@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Slim Lens - Horizontal Photo Slimmer PWA">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Slim Lens</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Slim Lens</h1>
+            <p class="tagline">Horizontal Photo Slimmer</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Upload Area -->
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden>
+                <div class="upload-content">
+                    <span class="upload-icon">+</span>
+                    <span class="upload-text">Tap to upload image</span>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="canvas-container" id="canvasContainer" style="display: none;">
+                <canvas id="previewCanvas"></canvas>
+                <div class="center-line" id="centerLine" style="display: none;"></div>
+            </div>
+
+            <!-- Mode Selector -->
+            <div class="mode-selector" id="modeSelector" style="display: none;">
+                <button class="mode-btn active" data-mode="basic">Basic</button>
+                <button class="mode-btn" data-mode="natural">Natural</button>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls" id="controls" style="display: none;">
+                <!-- Basic Mode Controls -->
+                <div class="control-group" id="basicControls">
+                    <label class="control-label">
+                        <span>Scale X</span>
+                        <span class="control-value" id="scaleXValue">0.92</span>
+                    </label>
+                    <input type="range" id="scaleXSlider" min="0.7" max="1.0" step="0.01" value="0.92">
+                </div>
+
+                <!-- Natural Mode Controls -->
+                <div class="control-group" id="naturalControls" style="display: none;">
+                    <label class="control-label">
+                        <span>Strength (k)</span>
+                        <span class="control-value" id="strengthValue">0.18</span>
+                    </label>
+                    <input type="range" id="strengthSlider" min="0.0" max="0.35" step="0.01" value="0.18">
+
+                    <label class="control-label">
+                        <span>Curve (p)</span>
+                        <span class="control-value" id="curveValue">2.2</span>
+                    </label>
+                    <input type="range" id="curveSlider" min="1.0" max="4.0" step="0.1" value="2.2">
+
+                    <p class="tap-hint">Tap image to set center point</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons" id="actionButtons" style="display: none;">
+                <button class="btn btn-secondary" id="resetBtn">Reset</button>
+                <button class="btn btn-primary" id="downloadBtn">Download</button>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <a href="../" class="back-link">Back to AppStore</a>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Register service worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .catch(err => console.log('SW registration failed:', err));
+        }
+    </script>
+</body>
+</html>
