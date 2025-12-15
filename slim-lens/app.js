@@ -31,6 +31,9 @@
     let warpLUT = null;
     let lutWidth = 0;
 
+    // AI-Safe Constants
+    const DEFAULT_SCALE_Y = 1.04; // Vertical micro-compensation
+
     // DOM Elements
     const fileInput = document.getElementById('fileInput');
     const uploadArea = document.getElementById('uploadArea');
@@ -42,6 +45,10 @@
     const basicControls = document.getElementById('basicControls');
     const naturalControls = document.getElementById('naturalControls');
     const actionButtons = document.getElementById('actionButtons');
+    const aiOptions = document.getElementById('aiOptions');
+    const aiExport = document.getElementById('aiExport');
+    const aspectRatioSelect = document.getElementById('aspectRatioSelect');
+    const downloadAiBtn = document.getElementById('downloadAiBtn');
 
     // Sliders
     const scaleXSlider = document.getElementById('scaleXSlider');
@@ -84,6 +91,7 @@
         // Action buttons
         resetBtn.addEventListener('click', resetParameters);
         downloadBtn.addEventListener('click', handleDownload);
+        downloadAiBtn.addEventListener('click', handleDownloadForAI);
     }
 
     // File handling
@@ -143,6 +151,8 @@
         modeSelector.style.display = 'flex';
         controls.style.display = 'block';
         actionButtons.style.display = 'flex';
+        aiOptions.style.display = 'block';
+        aiExport.style.display = 'block';
     }
 
     // Mode handling
@@ -478,6 +488,106 @@
         const ts = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const suffix = currentMode === 'basic' ? `scale${scaleX.toFixed(2)}` : `warp${strength.toFixed(2)}`;
         return `slimlens_${ts}_${suffix}.png`;
+    }
+
+    // AI-Safe Download Handler
+    function handleDownloadForAI() {
+        if (!originalImage) return;
+
+        downloadAiBtn.textContent = 'Processing...';
+        downloadAiBtn.disabled = true;
+
+        setTimeout(() => {
+            try {
+                // STEP 1: Generate slimmed image at full resolution
+                const slimmedCanvas = document.createElement('canvas');
+                const slimmedCtx = slimmedCanvas.getContext('2d');
+                const w = originalImage.width;
+                const h = originalImage.height;
+
+                slimmedCanvas.width = w;
+                slimmedCanvas.height = h;
+
+                if (currentMode === 'basic') {
+                    const scaledWidth = w * scaleX;
+                    const offsetX = (w - scaledWidth) / 2;
+                    slimmedCtx.drawImage(originalImage, offsetX, 0, scaledWidth, h);
+                } else {
+                    applyFullResWarp(slimmedCanvas, slimmedCtx, w, h);
+                }
+
+                // STEP 2: Aspect Ratio Lock via Padding
+                const aspectRatio = aspectRatioSelect.value;
+                const [targetW, targetH] = aspectRatio === '9:16' ? [9, 16] : [16, 9];
+
+                // Calculate target dimensions based on slimmed image
+                let finalW, finalH;
+                const slimmedRatio = w / h;
+                const targetRatio = targetW / targetH;
+
+                if (slimmedRatio > targetRatio) {
+                    // Image is wider than target, height determines size
+                    finalW = w;
+                    finalH = Math.round(w / targetRatio);
+                } else {
+                    // Image is taller than target, width determines size
+                    finalH = h;
+                    finalW = Math.round(h * targetRatio);
+                }
+
+                // STEP 3: Apply Vertical Micro-Compensation (scaleY)
+                const compensatedH = Math.round(h * DEFAULT_SCALE_Y);
+
+                // Create final canvas with target aspect ratio
+                const finalCanvas = document.createElement('canvas');
+                const finalCtx = finalCanvas.getContext('2d');
+
+                // Ensure final dimensions accommodate the stretched image
+                finalCanvas.width = Math.max(finalW, w);
+                finalCanvas.height = Math.max(finalH, compensatedH);
+
+                // Recalculate to maintain exact aspect ratio
+                const currentRatio = finalCanvas.width / finalCanvas.height;
+                if (Math.abs(currentRatio - targetRatio) > 0.01) {
+                    if (currentRatio > targetRatio) {
+                        finalCanvas.height = Math.round(finalCanvas.width / targetRatio);
+                    } else {
+                        finalCanvas.width = Math.round(finalCanvas.height * targetRatio);
+                    }
+                }
+
+                // Clear with transparent background
+                finalCtx.clearRect(0, 0, finalCanvas.width, finalCanvas.height);
+
+                // Center the slimmed image with vertical stretch
+                const drawX = (finalCanvas.width - w) / 2;
+                const drawY = (finalCanvas.height - compensatedH) / 2;
+
+                // Draw slimmed image with vertical micro-compensation
+                finalCtx.drawImage(slimmedCanvas, drawX, drawY, w, compensatedH);
+
+                // STEP 4: Export
+                const dataUrl = finalCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = generateAiFilename();
+                link.href = dataUrl;
+                link.click();
+
+            } catch (e) {
+                console.error('AI Export error:', e);
+                alert('AI Export failed. Please try again.');
+            }
+
+            downloadAiBtn.textContent = 'Download for AI';
+            downloadAiBtn.disabled = false;
+        }, 50);
+    }
+
+    function generateAiFilename() {
+        const date = new Date();
+        const ts = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const aspect = aspectRatioSelect.value.replace(':', 'x');
+        return `slimlens_${ts}_${aspect}_ai-safe.png`;
     }
 
     // Start app
