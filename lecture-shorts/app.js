@@ -1218,13 +1218,13 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
             const framesFromEnd = totalFrames - 1 - i;
 
             if (effectType === 'transition' && framesFromEnd < effectFrames) {
-                // Transition effect at end of intro (progress 0->1 means effect fading out)
-                const progress = 1 - (framesFromEnd / effectFrames);
+                // Transition effect at end of intro: fade OUT (full image -> effect)
+                const progress = framesFromEnd / effectFrames; // 1 -> 0
                 applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
             } else if (effectType === 'ending' && framesFromEnd < effectFrames) {
-                // Ending effect at end of main video (progress 0->1 means effect fading in)
-                const progress = 1 - (framesFromEnd / effectFrames);
-                applyEndingEffect(ctx, effectName, progress, res.width, res.height);
+                // Ending effect at end of main video: fade OUT (full image -> effect)
+                const progress = framesFromEnd / effectFrames; // 1 -> 0
+                applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
             }
         }
 
@@ -1267,6 +1267,7 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     const { fetchFile } = FFmpeg;
 
     // Write files to FFmpeg
+    log('파일 쓰기 시작...');
     state.ffmpeg.FS('writeFile', 'video.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
     state.ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(state.introFile));
     state.ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(state.vidFile));
@@ -1278,22 +1279,22 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setProg(93);
     log('인트로 오디오 추출');
 
-    // Extract intro audio
+    // Extract intro audio to PCM for reliable concatenation
     await state.ffmpeg.run(
         '-i', 'intro.mp4',
-        '-vn', '-acodec', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-        'intro_audio.m4a'
+        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
+        'intro_audio.wav'
     );
 
     setStatus('본편 오디오 추출...');
     setProg(94);
     log('본편 오디오 추출');
 
-    // Extract main audio (2-step process)
+    // Extract main audio to PCM
     await state.ffmpeg.run(
         '-i', 'lecture.mp4',
-        '-vn', '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-        'lecture_audio_raw.m4a'
+        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
+        'lecture_audio_raw.wav'
     );
 
     setStatus('오디오 속도 조절...');
@@ -1305,25 +1306,24 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
         : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(4)}`;
 
     await state.ffmpeg.run(
-        '-i', 'lecture_audio_raw.m4a',
+        '-i', 'lecture_audio_raw.wav',
         '-filter:a', af,
-        '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-        'main_audio.m4a'
+        '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
+        'main_audio.wav'
     );
 
     setStatus('오디오 합치기...');
     setProg(95);
-    log('인트로 + 본편 오디오 연결');
+    log('인트로 + 본편 오디오 연결 (filter_complex)');
 
-    // Concat intro + main audio
-    state.ffmpeg.FS('writeFile', 'audio_list.txt',
-        new TextEncoder().encode("file 'intro_audio.m4a'\nfile 'main_audio.m4a'\n"));
-
+    // Use filter_complex concat for reliable audio concatenation
     await state.ffmpeg.run(
-        '-f', 'concat', '-safe', '0',
-        '-i', 'audio_list.txt',
-        '-c', 'copy',
-        'combined_audio.m4a'
+        '-i', 'intro_audio.wav',
+        '-i', 'main_audio.wav',
+        '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1[aout]',
+        '-map', '[aout]',
+        '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
+        'combined_audio.wav'
     );
 
     setStatus('영상에 오디오 합성...');
@@ -1335,31 +1335,42 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
         setProg(97);
         log(`BGM 믹싱: 볼륨 ${(state.bgmVolume * 100).toFixed(0)}%`);
 
+        // First convert BGM to consistent format
+        await state.ffmpeg.run(
+            '-stream_loop', '-1',
+            '-i', 'bgm.mp3',
+            '-t', String(state.targetDuration),
+            '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
+            'bgm_loop.wav'
+        );
+
+        // Mix combined audio with BGM
         await state.ffmpeg.run(
             '-i', 'video.mp4',
-            '-i', 'combined_audio.m4a',
-            '-stream_loop', '-1', '-i', 'bgm.mp3',
-            '-t', String(state.targetDuration),
+            '-i', 'combined_audio.wav',
+            '-i', 'bgm_loop.wav',
             '-filter_complex',
-            `[1:a]volume=1[orig];[2:a]volume=${state.bgmVolume.toFixed(2)}[bgm];[orig][bgm]amix=inputs=2:duration=first[aout]`,
+            `[1:a]volume=1.0[voice];[2:a]volume=${state.bgmVolume.toFixed(2)}[music];[voice][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
             '-map', '0:v', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+            '-t', String(state.targetDuration),
             '-shortest',
             'output.mp4'
         );
     } else {
         await state.ffmpeg.run(
             '-i', 'video.mp4',
-            '-i', 'combined_audio.m4a',
-            '-t', String(state.targetDuration),
+            '-i', 'combined_audio.wav',
             '-map', '0:v', '-map', '1:a',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+            '-t', String(state.targetDuration),
             '-shortest',
             'output.mp4'
         );
     }
 
     setProg(99);
+    log('최종 파일 읽기...');
     const data = state.ffmpeg.FS('readFile', 'output.mp4');
 
     // Cleanup
@@ -1532,10 +1543,13 @@ async function showFFmpegResult() {
 }
 
 function cleanupFFmpegFiles() {
-    const files = ['video.mp4', 'intro.mp4', 'lecture.mp4', 'bgm.mp3',
-                   'intro_audio.m4a', 'lecture_audio_raw.m4a', 'main_audio.m4a',
-                   'combined_audio.m4a', 'intro_ready.mp4', 'main_ready.mp4',
-                   'output.mp4', 'final.mp4', 'audio_list.txt', 'concat.txt'];
+    const files = [
+        'video.mp4', 'intro.mp4', 'lecture.mp4', 'bgm.mp3',
+        'intro_audio.m4a', 'lecture_audio_raw.m4a', 'main_audio.m4a', 'combined_audio.m4a',
+        'intro_audio.wav', 'lecture_audio_raw.wav', 'main_audio.wav', 'combined_audio.wav', 'bgm_loop.wav',
+        'intro_ready.mp4', 'main_ready.mp4',
+        'output.mp4', 'final.mp4', 'audio_list.txt', 'concat.txt'
+    ];
 
     files.forEach(f => {
         try { state.ffmpeg.FS('unlink', f); } catch (e) {}
