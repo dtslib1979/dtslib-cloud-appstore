@@ -71,10 +71,26 @@
                 </div>
             </div>
 
+            <!-- AI Export Options -->
+            <div class="ai-options" id="aiOptions" style="display: none;">
+                <label class="ai-option-label">
+                    <span>AI Aspect</span>
+                    <select id="aspectRatioSelect" class="aspect-select">
+                        <option value="9:16" selected>9:16</option>
+                        <option value="16:9">16:9</option>
+                    </select>
+                </label>
+            </div>
+
             <!-- Action Buttons -->
             <div class="action-buttons" id="actionButtons" style="display: none;">
                 <button class="btn btn-secondary" id="resetBtn">Reset</button>
                 <button class="btn btn-primary" id="downloadBtn">Download</button>
+            </div>
+
+            <!-- AI Export Button -->
+            <div class="ai-export" id="aiExport" style="display: none;">
+                <button class="btn btn-ai" id="downloadAiBtn">Download for AI</button>
             </div>
         </main>
 
