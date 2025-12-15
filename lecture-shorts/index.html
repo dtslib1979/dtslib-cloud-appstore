@@ -230,10 +230,89 @@
                 <div id="presetInfo" class="preset-info">크롭 없음</div>
             </section>
 
-            <!-- Step 5: Generate -->
-            <section class="step-card generate-card" id="step5">
+            <!-- Step 5: Transition Effects -->
+            <section class="step-card">
                 <div class="step-header">
                     <span class="step-num">5</span>
+                    <span class="step-title">✨ 트랜지션 효과 <span class="optional">(선택)</span></span>
+                </div>
+                <p class="step-desc">인트로→본편 연결 및 엔딩에 적용</p>
+
+                <div class="effect-section">
+                    <label class="effect-label">🔗 인트로→본편 트랜지션</label>
+                    <div class="effect-buttons" id="transitionEffects">
+                        <button class="effect-btn active" onclick="setTransition('none')" data-effect="none">
+                            <span class="effect-icon">⊘</span>
+                            <span class="effect-name">없음</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('tv')" data-effect="tv">
+                            <span class="effect-icon">📺</span>
+                            <span class="effect-name">TV</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('vhs')" data-effect="vhs">
+                            <span class="effect-icon">📼</span>
+                            <span class="effect-name">VHS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('focus')" data-effect="focus">
+                            <span class="effect-icon">🎯</span>
+                            <span class="effect-name">FOCUS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('tremble')" data-effect="tremble">
+                            <span class="effect-icon">📳</span>
+                            <span class="effect-name">TREMBLE</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('zoom')" data-effect="zoom">
+                            <span class="effect-icon">🔍</span>
+                            <span class="effect-name">ZOOM</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="effect-section">
+                    <label class="effect-label">🎬 엔딩 효과</label>
+                    <div class="effect-buttons" id="endingEffects">
+                        <button class="effect-btn active" onclick="setEnding('none')" data-effect="none">
+                            <span class="effect-icon">⊘</span>
+                            <span class="effect-name">없음</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('tv')" data-effect="tv">
+                            <span class="effect-icon">📺</span>
+                            <span class="effect-name">TV</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('vhs')" data-effect="vhs">
+                            <span class="effect-icon">📼</span>
+                            <span class="effect-name">VHS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('focus')" data-effect="focus">
+                            <span class="effect-icon">🎯</span>
+                            <span class="effect-name">FOCUS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('tremble')" data-effect="tremble">
+                            <span class="effect-icon">📳</span>
+                            <span class="effect-name">TREMBLE</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('zoom')" data-effect="zoom">
+                            <span class="effect-icon">🔍</span>
+                            <span class="effect-name">ZOOM</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="effect-duration">
+                    <label>⏱️ 효과 길이</label>
+                    <select id="effectDuration" onchange="updateEffectDuration()">
+                        <option value="0.5">0.5초 (빠름)</option>
+                        <option value="1" selected>1초 (기본)</option>
+                        <option value="1.5">1.5초 (느림)</option>
+                        <option value="2">2초 (매우 느림)</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Step 6: Generate -->
+            <section class="step-card generate-card" id="step5">
+                <div class="step-header">
+                    <span class="step-num">6</span>
                     <span class="step-title">🚀 변환</span>
                 </div>
 
