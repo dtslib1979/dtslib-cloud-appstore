@@ -3,14 +3,15 @@
  * Simple static cache for offline support
  */
 
-const CACHE_NAME = 'slim-lens-v1';
+const CACHE_NAME = 'slim-lens-v2';
 const ASSETS = [
     './',
     './index.html',
     './style.css',
     './app.js',
     './manifest.json',
-    './icon.png'
+    './icon.png',
+    './icon-192.png'
 ];
 
 // Install - cache static assets
