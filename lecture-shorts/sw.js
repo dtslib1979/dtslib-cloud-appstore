@@ -3,8 +3,8 @@
  * Enhanced caching with update notifications
  */
 
-const CACHE_NAME = 'lecture-shorts-v4.1.0';
-const CACHE_VERSION = '4.1.0';
+const CACHE_NAME = 'lecture-shorts-v5.0.0';
+const CACHE_VERSION = '5.0.0';
 
 // App files to cache
 const APP_FILES = [
