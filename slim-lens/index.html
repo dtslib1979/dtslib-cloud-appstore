@@ -73,13 +73,27 @@
 
             <!-- AI Export Options -->
             <div class="ai-options" id="aiOptions" style="display: none;">
-                <label class="ai-option-label">
-                    <span>AI Aspect</span>
-                    <select id="aspectRatioSelect" class="aspect-select">
-                        <option value="9:16" selected>9:16</option>
-                        <option value="16:9">16:9</option>
-                    </select>
+                <div class="ai-options-row">
+                    <label class="ai-option-label">
+                        <span>Aspect</span>
+                        <select id="aspectRatioSelect" class="aspect-select">
+                            <option value="9:16" selected>9:16</option>
+                            <option value="16:9">16:9</option>
+                        </select>
+                    </label>
+                    <label class="ai-option-label">
+                        <span>BG</span>
+                        <select id="bgModeSelect" class="aspect-select">
+                            <option value="solid" selected>Solid</option>
+                            <option value="blur">Blur</option>
+                        </select>
+                    </label>
+                </div>
+                <label class="control-label">
+                    <span>Y Scale</span>
+                    <span class="control-value" id="yScaleValue">1.03</span>
                 </label>
+                <input type="range" id="yScaleSlider" min="1.00" max="1.06" step="0.01" value="1.03">
             </div>
 
             <!-- Action Buttons -->
@@ -90,7 +104,7 @@
 
             <!-- AI Export Button -->
             <div class="ai-export" id="aiExport" style="display: none;">
-                <button class="btn btn-ai" id="downloadAiBtn">Download for AI</button>
+                <button class="btn btn-ai" id="downloadAiBtn">Download for AI (Lock)</button>
             </div>
         </main>
 
