@@ -1,8 +1,8 @@
 /**
- * Lecture Shorts Factory - Service Worker v2.3.0
+ * Lecture Shorts Factory - Service Worker v3.0
  */
 
-const CACHE_NAME = 'lecture-shorts-v2.3.1';
+const CACHE_NAME = 'lecture-shorts-v3.0';
 
 const APP_FILES = [
     './',
