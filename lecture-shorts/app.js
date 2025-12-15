@@ -1,14 +1,17 @@
 /**
- * Lecture Shorts Factory v2.2.0 - Background Resilient Edition
- * 
+ * Lecture Shorts Factory v2.3.0 - Audio Mixing Edition
+ *
  * 🚀 핵심: FFmpeg.wasm → WebCodecs API (하드웨어 가속)
- * 
- * v2.2.0 개선:
- * - Wake Lock API: 화면 꺼짐 방지
- * - Page Visibility 감지: 백그라운드 진입 경고
- * - Silent Audio: 브라우저 throttling 회피
- * - 자동 복구: 중단 시 재개 가능
- * 
+ *
+ * v2.3.0 개선:
+ * - 원본 영상 오디오 유지
+ * - BGM 볼륨 슬라이더 (0~50%)
+ * - BGM 미리듣기 기능
+ * - 원본 오디오 + BGM 믹싱
+ *
+ * v2.2.0:
+ * - Wake Lock API, Page Visibility, Silent Audio
+ *
  * Fallback: WebCodecs 미지원 시 FFmpeg.wasm 사용
  */
 
@@ -46,6 +49,10 @@ let preset = null;
 let vidMeta = { dur: 0, w: 0, h: 0 };
 let introMeta = { dur: 0, w: 0, h: 0 };
 let useWebCodecs = false;
+
+// v2.3.0: BGM 볼륨 및 미리듣기
+let bgmVolume = 0.1; // 기본 10%
+let bgmPreviewAudio = null;
 
 // v2.2.0: Background 관련 상태
 let wakeLock = null;
@@ -280,13 +287,68 @@ function updateVidInfo() {
 async function loadBgm(file) {
     if (!file) return;
     bgmFile = file;
-    
-    showInfo('bgmInfo', 
+
+    showInfo('bgmInfo',
         `✅ ${file.name}<br>🔊 자동 루프`,
         'success'
     );
-    
+
+    // v2.3.0: 볼륨 컨트롤 표시
+    show('bgmVolControl');
+    initBgmVolumeSlider();
+
     checkReady();
+}
+
+// v2.3.0: BGM 볼륨 슬라이더 초기화
+function initBgmVolumeSlider() {
+    const slider = el('bgmVolSlider');
+    const valueDisplay = el('bgmVolValue');
+
+    slider.oninput = () => {
+        const val = parseInt(slider.value);
+        bgmVolume = val / 100;
+        valueDisplay.textContent = val + '%';
+
+        // 미리듣기 중이면 실시간 반영
+        if (bgmPreviewAudio && !bgmPreviewAudio.paused) {
+            bgmPreviewAudio.volume = bgmVolume;
+        }
+    };
+}
+
+// v2.3.0: BGM 미리듣기
+function previewBgm() {
+    if (!bgmFile) return;
+
+    const btn = el('bgmPreviewBtn');
+
+    // 이미 재생 중이면 정지
+    if (bgmPreviewAudio && !bgmPreviewAudio.paused) {
+        bgmPreviewAudio.pause();
+        bgmPreviewAudio = null;
+        btn.textContent = '▶️ 미리듣기';
+        return;
+    }
+
+    // 새로 재생
+    bgmPreviewAudio = new Audio(URL.createObjectURL(bgmFile));
+    bgmPreviewAudio.volume = bgmVolume;
+    bgmPreviewAudio.play();
+    btn.textContent = '⏹️ 정지';
+
+    // 5초 후 자동 정지 (미리듣기)
+    setTimeout(() => {
+        if (bgmPreviewAudio) {
+            bgmPreviewAudio.pause();
+            bgmPreviewAudio = null;
+            btn.textContent = '▶️ 미리듣기';
+        }
+    }, 5000);
+
+    bgmPreviewAudio.onended = () => {
+        btn.textContent = '▶️ 미리듣기';
+    };
 }
 
 /* ========== PRESET SELECTION ========== */
@@ -440,14 +502,11 @@ async function generateWithWebCodecs() {
     
     const videoBlob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
     
-    // BGM 믹싱 (FFmpeg 사용)
-    let finalBlob = videoBlob;
-    if (bgmFile) {
-        setStatus('BGM 믹싱 중...');
-        setProg(95);
-        finalBlob = await mixBgmWithFFmpeg(videoBlob);
-    }
-    
+    // v2.3.0: 원본 오디오 추출 + BGM 믹싱 (FFmpeg 사용)
+    setStatus('오디오 처리 중...');
+    setProg(92);
+    const finalBlob = await mixAudioWithFFmpeg(videoBlob, speed);
+
     setProg(100);
     showResultBlob(finalBlob);
 }
@@ -544,8 +603,8 @@ async function loadMp4Muxer() {
     });
 }
 
-// FFmpeg로 BGM 믹싱
-async function mixBgmWithFFmpeg(videoBlob) {
+// v2.3.0: 원본 오디오 + BGM 믹싱
+async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('FFmpeg 로딩 중...');
     await initFFmpeg();
 
@@ -554,28 +613,89 @@ async function mixBgmWithFFmpeg(videoBlob) {
     }
 
     const { fetchFile } = FFmpeg;
-    
-    // 비디오 및 BGM 파일 쓰기
+
+    // 파일 쓰기
     ffmpeg.FS('writeFile', 'video.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
-    ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
-    
-    // BGM 믹싱
+    ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(introFile));
+    ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(vidFile));
+    if (bgmFile) {
+        ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
+    }
+
+    setStatus('인트로 오디오 추출...');
+    setProg(93);
+
+    // 1. 인트로 오디오 추출
     await ffmpeg.run(
-        '-i', 'video.mp4',
-        '-stream_loop', '-1',
-        '-i', 'bgm.mp3',
-        '-t', String(OUTPUT.targetDur),
-        '-filter_complex',
-        `[1:a]volume=${OUTPUT.bgmVol}[bgm];[bgm]apad[a]`,
-        '-map', '0:v',
-        '-map', '[a]',
-        '-c:v', 'copy',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-shortest',
-        'output.mp4'
+        '-i', 'intro.mp4',
+        '-vn', '-acodec', 'aac', '-b:a', '128k',
+        'intro_audio.m4a'
     );
-    
+
+    setStatus('본편 오디오 추출...');
+    setProg(94);
+
+    // 2. 본편 오디오 추출 (속도 조절)
+    const targetMainDur = OUTPUT.targetDur - introMeta.dur;
+    const af = mainSpeed <= 2.0 ? `atempo=${mainSpeed}` : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(3)}`;
+
+    await ffmpeg.run(
+        '-i', 'lecture.mp4',
+        '-vn', '-af', af,
+        '-t', String(targetMainDur),
+        '-acodec', 'aac', '-b:a', '128k',
+        'main_audio.m4a'
+    );
+
+    setStatus('오디오 합치기...');
+    setProg(95);
+
+    // 3. 인트로 + 본편 오디오 합치기
+    ffmpeg.FS('writeFile', 'audio_list.txt',
+        new TextEncoder().encode("file 'intro_audio.m4a'\nfile 'main_audio.m4a'\n"));
+
+    await ffmpeg.run(
+        '-f', 'concat', '-safe', '0',
+        '-i', 'audio_list.txt',
+        '-c', 'copy',
+        'combined_audio.m4a'
+    );
+
+    setStatus('영상에 오디오 합성...');
+    setProg(96);
+
+    // 4. BGM 믹싱 여부에 따라 처리
+    if (bgmFile && bgmVolume > 0) {
+        setStatus('BGM 믹싱 중...');
+        setProg(97);
+
+        // 원본 오디오 + BGM 믹싱
+        await ffmpeg.run(
+            '-i', 'video.mp4',
+            '-i', 'combined_audio.m4a',
+            '-stream_loop', '-1', '-i', 'bgm.mp3',
+            '-t', String(OUTPUT.targetDur),
+            '-filter_complex',
+            `[1:a]volume=1[orig];[2:a]volume=${bgmVolume.toFixed(2)}[bgm];[orig][bgm]amix=inputs=2:duration=first[aout]`,
+            '-map', '0:v', '-map', '[aout]',
+            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+            '-shortest',
+            'output.mp4'
+        );
+    } else {
+        // BGM 없이 원본 오디오만
+        await ffmpeg.run(
+            '-i', 'video.mp4',
+            '-i', 'combined_audio.m4a',
+            '-t', String(OUTPUT.targetDur),
+            '-map', '0:v', '-map', '1:a',
+            '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+            '-shortest',
+            'output.mp4'
+        );
+    }
+
+    setProg(99);
     const data = ffmpeg.FS('readFile', 'output.mp4');
     return new Blob([data.buffer], { type: 'video/mp4' });
 }
@@ -736,19 +856,20 @@ async function concatVideos() {
 }
 
 async function mixBgm() {
+    // v2.3.0: bgmVolume 슬라이더 값 사용
     await ffmpeg.run(
         '-i', 'output.mp4',
         '-stream_loop', '-1',
         '-i', 'bgm.mp3',
         '-t', String(OUTPUT.targetDur),
         '-filter_complex',
-        `[0:a]volume=1[a1];[1:a]volume=${OUTPUT.bgmVol}[a2];[a1][a2]amix=inputs=2:duration=first`,
+        `[0:a]volume=1[a1];[1:a]volume=${bgmVolume.toFixed(2)}[a2];[a1][a2]amix=inputs=2:duration=first`,
         '-c:v', 'copy',
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', '192k',
         'final.mp4'
     );
-    
+
     ffmpeg.FS('rename', 'final.mp4', 'output.mp4');
 }
 
@@ -815,10 +936,22 @@ async function getVidMeta(file) {
 function reset() {
     vidFile = introFile = bgmFile = preset = null;
     vidMeta = introMeta = { dur: 0, w: 0, h: 0 };
-    
+
     el('vidIn').value = el('introIn').value = el('bgmIn').value = '';
     el('vidInfo').className = el('introInfo').className = el('bgmInfo').className = 'file-info';
-    
+    el('vidInfo').innerHTML = el('introInfo').innerHTML = el('bgmInfo').innerHTML = '';
+
+    // v2.3.0: BGM 볼륨 초기화
+    hide('bgmVolControl');
+    bgmVolume = 0.1;
+    el('bgmVolSlider').value = 10;
+    el('bgmVolValue').textContent = '10%';
+    if (bgmPreviewAudio) {
+        bgmPreviewAudio.pause();
+        bgmPreviewAudio = null;
+    }
+    el('bgmPreviewBtn').textContent = '▶️ 미리듣기';
+
     setPreset(null);
     hide('result');
     hide('progress');
@@ -826,7 +959,7 @@ function reset() {
     el('genBtn').disabled = true;
     setStatus('');
     setProg(0);
-    
+
     // v2.2.0: 백그라운드 보호 해제
     isProcessing = false;
     processingAborted = false;
