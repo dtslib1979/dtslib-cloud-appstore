@@ -1,8 +1,8 @@
 {
-    "name": "Lecture Shorts Factory v2.2",
+    "name": "Lecture Shorts Factory v2.2.1",
     "short_name": "LectureShorts",
-    "description": "4분 강의 영상을 3분 유튜브 쇼츠로 자동 변환 - WebCodecs HW 가속 + Wake Lock 백그라운드 보호",
-    "version": "2.2.0",
+    "description": "4분 강의 영상을 3분 유튜브 쇼츠로 자동 변환 - WebCodecs HW 가속 + FFmpeg 동적 로딩",
+    "version": "2.2.1",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",

@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
     useWebCodecs = supportsWebCodecs();
-    
+
     if (useWebCodecs) {
         console.log('✅ WebCodecs API (하드웨어 가속)');
         el('engineInfo').innerHTML = '🚀 WebCodecs (HW 가속)';
@@ -77,20 +77,43 @@ async function init() {
         el('engineInfo').innerHTML = '⚙️ FFmpeg.wasm';
         el('engineInfo').className = 'engine-badge ffmpeg';
     }
-    
+
+    // FFmpeg CDN 상태 확인 (BGM 믹싱에 필요)
+    checkFFmpegStatus();
+
     if (navigator.deviceMemory && navigator.deviceMemory < 4) {
         show('memWarn');
     }
-    
+
     el('vidIn').onchange = e => loadVid(e.target.files[0]);
     el('introIn').onchange = e => loadIntro(e.target.files[0]);
     el('bgmIn').onchange = e => loadBgm(e.target.files[0]);
-    
+
     // v2.2.0: Page Visibility 감지
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js');
+    }
+}
+
+// FFmpeg CDN 로드 상태 확인
+function checkFFmpegStatus() {
+    const bgmInfo = el('bgmInfo');
+
+    if (typeof FFmpeg === 'undefined') {
+        console.warn('⚠️ FFmpeg CDN 아직 로드 안됨');
+        // BGM 선택 시 경고 표시
+        el('bgmIn').addEventListener('change', function handler() {
+            if (typeof FFmpeg === 'undefined') {
+                showInfo('bgmInfo',
+                    '⚠️ FFmpeg 로딩 중... 잠시 후 다시 시도하세요',
+                    'warn'
+                );
+            }
+        }, { once: true });
+    } else {
+        console.log('✅ FFmpeg CDN 로드됨');
     }
 }
 
@@ -523,8 +546,13 @@ async function loadMp4Muxer() {
 
 // FFmpeg로 BGM 믹싱
 async function mixBgmWithFFmpeg(videoBlob) {
+    setStatus('FFmpeg 로딩 중...');
     await initFFmpeg();
-    
+
+    if (typeof FFmpeg === 'undefined' || !FFmpeg.fetchFile) {
+        throw new Error('FFmpeg 초기화 실패');
+    }
+
     const { fetchFile } = FFmpeg;
     
     // 비디오 및 BGM 파일 쓰기
@@ -588,20 +616,54 @@ async function generateWithFFmpeg() {
 
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
-    
+
+    // FFmpeg CDN 로드 확인
+    if (typeof FFmpeg === 'undefined') {
+        console.warn('FFmpeg 미로드 - 수동 로드 시도');
+        await loadFFmpegScript();
+    }
+
+    // 여전히 없으면 에러
+    if (typeof FFmpeg === 'undefined') {
+        throw new Error('FFmpeg 로드 실패 - 네트워크 확인 후 새로고침하세요');
+    }
+
     const { createFFmpeg } = FFmpeg;
     ffmpeg = createFFmpeg({
         log: true,
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
-    
+
     ffmpeg.setProgress(({ ratio }) => {
         if (ratio > 0) {
             el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
         }
     });
-    
+
     await ffmpeg.load();
+}
+
+// FFmpeg CDN 스크립트 동적 로드
+async function loadFFmpegScript() {
+    return new Promise((resolve, reject) => {
+        // 이미 로드되어 있으면 스킵
+        if (typeof FFmpeg !== 'undefined') {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+        script.onload = () => {
+            console.log('✅ FFmpeg 스크립트 로드 완료');
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('❌ FFmpeg 스크립트 로드 실패');
+            reject(new Error('FFmpeg CDN 로드 실패'));
+        };
+        document.head.appendChild(script);
+    });
 }
 
 async function writeFiles() {
