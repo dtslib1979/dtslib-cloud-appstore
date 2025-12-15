@@ -31,8 +31,12 @@
     let warpLUT = null;
     let lutWidth = 0;
 
-    // AI-Safe Constants
-    const DEFAULT_SCALE_Y = 1.04; // Vertical micro-compensation
+    // AI Lock Frame Constants
+    const DEFAULT_Y_SCALE = 1.03;
+    const TARGET_RESOLUTIONS = {
+        '9:16': { w: 1080, h: 1920 },
+        '16:9': { w: 1920, h: 1080 }
+    };
 
     // DOM Elements
     const fileInput = document.getElementById('fileInput');
@@ -48,6 +52,9 @@
     const aiOptions = document.getElementById('aiOptions');
     const aiExport = document.getElementById('aiExport');
     const aspectRatioSelect = document.getElementById('aspectRatioSelect');
+    const bgModeSelect = document.getElementById('bgModeSelect');
+    const yScaleSlider = document.getElementById('yScaleSlider');
+    const yScaleValue = document.getElementById('yScaleValue');
     const downloadAiBtn = document.getElementById('downloadAiBtn');
 
     // Sliders
@@ -92,6 +99,11 @@
         resetBtn.addEventListener('click', resetParameters);
         downloadBtn.addEventListener('click', handleDownload);
         downloadAiBtn.addEventListener('click', handleDownloadForAI);
+
+        // Y Scale slider for AI export
+        yScaleSlider.addEventListener('input', (e) => {
+            yScaleValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
     }
 
     // File handling
@@ -490,7 +502,7 @@
         return `slimlens_${ts}_${suffix}.png`;
     }
 
-    // AI-Safe Download Handler
+    // AI Lock Frame Download Handler
     function handleDownloadForAI() {
         if (!originalImage) return;
 
@@ -502,71 +514,60 @@
                 // STEP 1: Generate slimmed image at full resolution
                 const slimmedCanvas = document.createElement('canvas');
                 const slimmedCtx = slimmedCanvas.getContext('2d');
-                const w = originalImage.width;
-                const h = originalImage.height;
+                const srcW = originalImage.width;
+                const srcH = originalImage.height;
 
-                slimmedCanvas.width = w;
-                slimmedCanvas.height = h;
+                slimmedCanvas.width = srcW;
+                slimmedCanvas.height = srcH;
 
                 if (currentMode === 'basic') {
-                    const scaledWidth = w * scaleX;
-                    const offsetX = (w - scaledWidth) / 2;
-                    slimmedCtx.drawImage(originalImage, offsetX, 0, scaledWidth, h);
+                    const scaledWidth = srcW * scaleX;
+                    const offsetX = (srcW - scaledWidth) / 2;
+                    slimmedCtx.drawImage(originalImage, offsetX, 0, scaledWidth, srcH);
                 } else {
-                    applyFullResWarp(slimmedCanvas, slimmedCtx, w, h);
+                    applyFullResWarp(slimmedCanvas, slimmedCtx, srcW, srcH);
                 }
 
-                // STEP 2: Aspect Ratio Lock via Padding
+                // STEP 2: Create target frame with exact video resolution
                 const aspectRatio = aspectRatioSelect.value;
-                const [targetW, targetH] = aspectRatio === '9:16' ? [9, 16] : [16, 9];
+                const target = TARGET_RESOLUTIONS[aspectRatio];
+                const targetW = target.w;
+                const targetH = target.h;
 
-                // Calculate target dimensions based on slimmed image
-                let finalW, finalH;
-                const slimmedRatio = w / h;
-                const targetRatio = targetW / targetH;
-
-                if (slimmedRatio > targetRatio) {
-                    // Image is wider than target, height determines size
-                    finalW = w;
-                    finalH = Math.round(w / targetRatio);
-                } else {
-                    // Image is taller than target, width determines size
-                    finalH = h;
-                    finalW = Math.round(h * targetRatio);
-                }
-
-                // STEP 3: Apply Vertical Micro-Compensation (scaleY)
-                const compensatedH = Math.round(h * DEFAULT_SCALE_Y);
-
-                // Create final canvas with target aspect ratio
+                // Create final canvas at exact target resolution
                 const finalCanvas = document.createElement('canvas');
                 const finalCtx = finalCanvas.getContext('2d');
+                finalCanvas.width = targetW;
+                finalCanvas.height = targetH;
 
-                // Ensure final dimensions accommodate the stretched image
-                finalCanvas.width = Math.max(finalW, w);
-                finalCanvas.height = Math.max(finalH, compensatedH);
+                // STEP 3: Calculate scale to FIT (not fill) - preserve aspect ratio
+                const fitScale = Math.min(targetW / srcW, targetH / srcH);
 
-                // Recalculate to maintain exact aspect ratio
-                const currentRatio = finalCanvas.width / finalCanvas.height;
-                if (Math.abs(currentRatio - targetRatio) > 0.01) {
-                    if (currentRatio > targetRatio) {
-                        finalCanvas.height = Math.round(finalCanvas.width / targetRatio);
-                    } else {
-                        finalCanvas.width = Math.round(finalCanvas.height * targetRatio);
-                    }
+                // Apply Y micro-scale for AI anti-restore
+                const yScale = parseFloat(yScaleSlider.value);
+                const drawW = Math.round(srcW * fitScale);
+                const drawH = Math.round(srcH * fitScale * yScale);
+
+                // Center position
+                const drawX = Math.round((targetW - drawW) / 2);
+                const drawY = Math.round((targetH - drawH) / 2);
+
+                // STEP 4: Draw background
+                const bgMode = bgModeSelect.value;
+
+                if (bgMode === 'blur') {
+                    // Blur background: draw scaled-up blurred version first
+                    drawBlurredBackground(finalCtx, slimmedCanvas, targetW, targetH);
+                } else {
+                    // Solid background: dark neutral color
+                    finalCtx.fillStyle = '#111111';
+                    finalCtx.fillRect(0, 0, targetW, targetH);
                 }
 
-                // Clear with transparent background
-                finalCtx.clearRect(0, 0, finalCanvas.width, finalCanvas.height);
+                // STEP 5: Draw centered subject with Y micro-scale
+                finalCtx.drawImage(slimmedCanvas, drawX, drawY, drawW, drawH);
 
-                // Center the slimmed image with vertical stretch
-                const drawX = (finalCanvas.width - w) / 2;
-                const drawY = (finalCanvas.height - compensatedH) / 2;
-
-                // Draw slimmed image with vertical micro-compensation
-                finalCtx.drawImage(slimmedCanvas, drawX, drawY, w, compensatedH);
-
-                // STEP 4: Export
+                // STEP 6: Export
                 const dataUrl = finalCanvas.toDataURL('image/png');
                 const link = document.createElement('a');
                 link.download = generateAiFilename();
@@ -578,16 +579,60 @@
                 alert('AI Export failed. Please try again.');
             }
 
-            downloadAiBtn.textContent = 'Download for AI';
+            downloadAiBtn.textContent = 'Download for AI (Lock)';
             downloadAiBtn.disabled = false;
         }, 50);
+    }
+
+    // Simple blur via downscale-upscale technique
+    function drawBlurredBackground(ctx, srcCanvas, targetW, targetH) {
+        const blurCanvas = document.createElement('canvas');
+        const blurCtx = blurCanvas.getContext('2d');
+
+        // Downscale for blur effect (smaller = more blur)
+        const blurScale = 0.05;
+        const smallW = Math.max(16, Math.round(srcCanvas.width * blurScale));
+        const smallH = Math.max(16, Math.round(srcCanvas.height * blurScale));
+
+        blurCanvas.width = smallW;
+        blurCanvas.height = smallH;
+
+        // Draw small version (this creates blur)
+        blurCtx.drawImage(srcCanvas, 0, 0, smallW, smallH);
+
+        // Calculate cover dimensions to fill target
+        const srcRatio = srcCanvas.width / srcCanvas.height;
+        const targetRatio = targetW / targetH;
+
+        let coverW, coverH;
+        if (srcRatio > targetRatio) {
+            coverH = targetH;
+            coverW = Math.round(targetH * srcRatio);
+        } else {
+            coverW = targetW;
+            coverH = Math.round(targetW / srcRatio);
+        }
+
+        const coverX = Math.round((targetW - coverW) / 2);
+        const coverY = Math.round((targetH - coverH) / 2);
+
+        // Disable image smoothing for pixelated blur effect, then enable for upscale
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'low';
+
+        // Draw blurred background to cover entire canvas
+        ctx.drawImage(blurCanvas, coverX, coverY, coverW, coverH);
+
+        // Add dark overlay for better contrast
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillRect(0, 0, targetW, targetH);
     }
 
     function generateAiFilename() {
         const date = new Date();
         const ts = date.toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const aspect = aspectRatioSelect.value.replace(':', 'x');
-        return `slimlens_${ts}_${aspect}_ai-safe.png`;
+        return `slimlens_${ts}_${aspect}_ai-lock.png`;
     }
 
     // Start app
