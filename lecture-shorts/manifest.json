@@ -2,7 +2,7 @@
     "name": "Lecture Shorts Factory v2.3",
     "short_name": "LectureShorts",
     "description": "4분 강의 영상을 3분 유튜브 쇼츠로 자동 변환 - 원본 오디오 유지 + BGM 볼륨 조절",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
