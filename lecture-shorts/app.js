@@ -625,10 +625,10 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('인트로 오디오 추출...');
     setProg(93);
 
-    // 1. 인트로 오디오 추출
+    // 1. 인트로 오디오 추출 (포맷 통일: 44100Hz, stereo)
     await ffmpeg.run(
         '-i', 'intro.mp4',
-        '-vn', '-acodec', 'aac', '-b:a', '128k',
+        '-vn', '-acodec', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         'intro_audio.m4a'
     );
 
@@ -636,14 +636,13 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setProg(94);
 
     // 2. 본편 오디오 추출 (속도 조절)
-    const targetMainDur = OUTPUT.targetDur - introMeta.dur;
+    // atempo 필터가 속도에 맞게 길이를 자동 조절함
     const af = mainSpeed <= 2.0 ? `atempo=${mainSpeed}` : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(3)}`;
 
     await ffmpeg.run(
         '-i', 'lecture.mp4',
         '-vn', '-af', af,
-        '-t', String(targetMainDur),
-        '-acodec', 'aac', '-b:a', '128k',
+        '-acodec', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         'main_audio.m4a'
     );
 
