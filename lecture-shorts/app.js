@@ -1,5 +1,5 @@
 /**
- * Lecture Shorts Factory v4.0 Pro
+ * Lecture Shorts Factory v4.1 Pro
  * Professional PWA for Video Processing
  *
  * Features:
@@ -13,6 +13,7 @@
  * - File Validation
  * - Memory Management
  * - Drag & Drop Support
+ * - Transition Effects (TV, VHS, Focus, Tremble, Zoom)
  */
 
 'use strict';
@@ -100,6 +101,11 @@ const state = {
 
     // Theme
     theme: 'dark',
+
+    // Transition Effects
+    transitionEffect: 'none',
+    endingEffect: 'none',
+    effectDuration: 1.0,
 
     // Result
     resultBlob: null,
@@ -394,6 +400,281 @@ function resetSettings() {
     log('설정 초기화됨');
 }
 
+/* ========== TRANSITION EFFECTS ========== */
+function setTransition(effect) {
+    state.transitionEffect = effect;
+
+    // Update UI buttons
+    const buttons = document.querySelectorAll('#transitionEffects .effect-btn');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    updateSummary();
+    log(`트랜지션 효과: ${effect}`);
+}
+
+function setEnding(effect) {
+    state.endingEffect = effect;
+
+    // Update UI buttons
+    const buttons = document.querySelectorAll('#endingEffects .effect-btn');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    updateSummary();
+    log(`엔딩 효과: ${effect}`);
+}
+
+function updateEffectDuration() {
+    const select = el('effectDuration');
+    if (select) {
+        state.effectDuration = parseFloat(select.value);
+        log(`효과 길이: ${state.effectDuration}초`);
+    }
+}
+
+/**
+ * Apply transition effect to canvas context
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {string} effect - Effect type (tv, vhs, focus, tremble, zoom)
+ * @param {number} progress - Effect progress 0-1 (0=start, 1=end)
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ */
+function applyTransitionEffect(ctx, effect, progress, width, height) {
+    switch (effect) {
+        case 'tv':
+            applyTVEffect(ctx, progress, width, height);
+            break;
+        case 'vhs':
+            applyVHSEffect(ctx, progress, width, height);
+            break;
+        case 'focus':
+            applyFocusEffect(ctx, progress, width, height);
+            break;
+        case 'tremble':
+            applyTrembleEffect(ctx, progress, width, height);
+            break;
+        case 'zoom':
+            applyZoomEffect(ctx, progress, width, height);
+            break;
+    }
+}
+
+/**
+ * TV Effect - Black bars closing/opening from center (like old TV turning off/on)
+ */
+function applyTVEffect(ctx, progress, width, height) {
+    // Save current canvas content
+    const imageData = ctx.getImageData(0, 0, width, height);
+
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Calculate effect
+    const effectProgress = Math.pow(progress, 0.5); // Ease in
+    const barHeight = (height / 2) * (1 - effectProgress);
+
+    // Draw content in the remaining space
+    const visibleHeight = height - (barHeight * 2);
+
+    if (visibleHeight > 0) {
+        // Create temporary canvas for scaling
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Draw scaled content
+        ctx.drawImage(tempCanvas, 0, 0, width, height, 0, barHeight, width, visibleHeight);
+    }
+
+    // Add scanlines for TV effect
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    for (let y = 0; y < height; y += 4) {
+        ctx.fillRect(0, y, width, 2);
+    }
+
+    // Add CRT glow effect
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - progress)})`;
+    ctx.fillRect(0, 0, width, height);
+}
+
+/**
+ * VHS Effect - Distortion, color shift, noise
+ */
+function applyVHSEffect(ctx, progress, width, height) {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    const intensity = (1 - progress) * 0.8; // Stronger at start, fading out
+
+    // Horizontal shift (tracking error)
+    const shiftAmount = Math.sin(progress * Math.PI * 4) * 10 * intensity;
+
+    // Color channel separation
+    const redShift = Math.floor(5 * intensity);
+    const blueShift = -Math.floor(5 * intensity);
+
+    // Apply effects
+    for (let y = 0; y < height; y++) {
+        const rowOffset = y * width * 4;
+
+        // Random horizontal glitch lines
+        if (Math.random() < 0.05 * intensity) {
+            for (let x = 0; x < width; x++) {
+                const i = rowOffset + x * 4;
+                data[i] = data[i] * 0.8 + 50;     // R
+                data[i + 1] = data[i + 1] * 0.7;  // G
+                data[i + 2] = data[i + 2] * 0.9;  // B
+            }
+        }
+
+        // Add noise
+        for (let x = 0; x < width; x++) {
+            const i = rowOffset + x * 4;
+            const noise = (Math.random() - 0.5) * 40 * intensity;
+            data[i] = Math.max(0, Math.min(255, data[i] + noise));
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Add VHS tracking lines
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * intensity})`;
+    const lineY = (Math.sin(progress * Math.PI * 8) * 0.5 + 0.5) * height;
+    ctx.fillRect(0, lineY, width, 3);
+}
+
+/**
+ * Focus Effect - Blur to sharp (or sharp to blur)
+ */
+function applyFocusEffect(ctx, progress, width, height) {
+    // Use CSS filter for blur (applied via canvas filter)
+    const blurAmount = Math.max(0, (1 - progress) * 15); // 15px blur fading to sharp
+
+    if (blurAmount > 0.5) {
+        // Save current state
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        // Apply simple box blur
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Multi-pass blur simulation
+        ctx.globalAlpha = 0.2;
+        const passes = Math.ceil(blurAmount / 3);
+        for (let i = 0; i < passes; i++) {
+            const offset = i * 2;
+            ctx.drawImage(tempCanvas, -offset, 0);
+            ctx.drawImage(tempCanvas, offset, 0);
+            ctx.drawImage(tempCanvas, 0, -offset);
+            ctx.drawImage(tempCanvas, 0, offset);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Add vignette for focus effect
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.7);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, `rgba(0,0,0,${0.5 * (1 - progress)})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    }
+}
+
+/**
+ * Tremble/Shake Effect - Screen shake
+ */
+function applyTrembleEffect(ctx, progress, width, height) {
+    const intensity = (1 - progress) * 15; // Shake amount in pixels
+
+    if (intensity > 0.5) {
+        // Save current content
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        // Random shake offset
+        const shakeX = (Math.random() - 0.5) * intensity * 2;
+        const shakeY = (Math.random() - 0.5) * intensity * 2;
+        const rotation = (Math.random() - 0.5) * 0.02 * intensity;
+
+        // Clear and redraw with offset
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Apply transformation
+        ctx.save();
+        ctx.translate(width/2 + shakeX, height/2 + shakeY);
+        ctx.rotate(rotation);
+        ctx.drawImage(tempCanvas, -width/2, -height/2);
+        ctx.restore();
+
+        // Add motion blur effect lines
+        ctx.fillStyle = `rgba(255,255,255,${0.05 * (1 - progress)})`;
+        for (let i = 0; i < 3; i++) {
+            ctx.fillRect(0, Math.random() * height, width, 1);
+        }
+    }
+}
+
+/**
+ * Zoom Effect - Zoom in/out transition
+ */
+function applyZoomEffect(ctx, progress, width, height) {
+    // Zoom out: starts big, ends at normal size
+    const scale = 1 + (1 - progress) * 0.5; // 1.5x to 1x
+
+    if (scale > 1.01) {
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Clear and draw zoomed
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scale;
+        const offsetX = (width - scaledWidth) / 2;
+        const offsetY = (height - scaledHeight) / 2;
+
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+        // Add radial fade for zoom effect
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.6);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, `rgba(0,0,0,${0.3 * (1 - progress)})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    }
+}
+
+/**
+ * Apply ending effect (inverse of transition - fades out)
+ */
+function applyEndingEffect(ctx, effect, progress, width, height) {
+    // Ending effects work in reverse (1 to 0 progression)
+    applyTransitionEffect(ctx, effect, 1 - progress, width, height);
+}
+
 /* ========== DRAG & DROP ========== */
 function handleDragOver(e) {
     e.preventDefault();
@@ -555,6 +836,16 @@ function updateSummary() {
     const qual = CONFIG.quality[state.quality];
     const speed = calcSpeed();
 
+    // Effect name mapping for display
+    const effectNames = {
+        'none': '없음',
+        'tv': 'TV',
+        'vhs': 'VHS',
+        'focus': 'FOCUS',
+        'tremble': 'TREMBLE',
+        'zoom': 'ZOOM'
+    };
+
     el('summaryContent').innerHTML = `
         <ul>
             <li>📐 해상도: ${res.width}×${res.height}</li>
@@ -562,8 +853,10 @@ function updateSummary() {
             <li>🎬 FPS: ${state.fps}</li>
             <li>📊 품질: ${state.quality} (${(qual.bitrate / 1000000).toFixed(1)}Mbps)</li>
             <li>⚡ 재생속도: ${speed.toFixed(2)}x</li>
-            ${state.bgmFile ? `<li>🎵 BGM: ${state.bgmVolume * 100}%</li>` : ''}
+            ${state.bgmFile ? `<li>🎵 BGM: ${Math.round(state.bgmVolume * 100)}%</li>` : ''}
             ${state.devicePreset ? `<li>📱 크롭: ${CONFIG.devices[state.devicePreset].name}</li>` : ''}
+            ${state.transitionEffect !== 'none' ? `<li>✨ 트랜지션: ${effectNames[state.transitionEffect]} (${state.effectDuration}초)</li>` : ''}
+            ${state.endingEffect !== 'none' ? `<li>🎬 엔딩: ${effectNames[state.endingEffect]} (${state.effectDuration}초)</li>` : ''}
         </ul>
     `;
     show('summary');
@@ -781,28 +1074,44 @@ async function generateWithWebCodecs() {
     setStatus('인트로 처리 중...');
     setProg(10);
     log('인트로 프레임 처리 시작');
+    if (state.transitionEffect !== 'none') {
+        log(`트랜지션 효과: ${state.transitionEffect} (${state.effectDuration}초)`);
+    }
 
     const introFrames = Math.floor(state.introMeta.dur * state.fps);
     const mainFrames = Math.floor((state.targetDuration - state.introMeta.dur) * state.fps);
     const totalFrames = introFrames + mainFrames;
 
+    // Intro with transition effect at the end
+    const introEffectConfig = state.transitionEffect !== 'none'
+        ? { type: 'transition', position: 'end' }
+        : null;
+
     await processVideoFrames(state.introFile, state.introMeta, 1, encoder, res, (i, total) => {
         const pct = 10 + Math.floor((i / totalFrames) * 40);
         setProg(pct);
         if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임`);
-    });
+    }, 0, null, introEffectConfig);
 
     // Process Main Video
     setStatus('본편 처리 중...');
     const speed = calcSpeed();
     const introOffset = state.introMeta.dur * 1000000; // microseconds
     log(`본편 처리 시작 (속도: ${speed.toFixed(2)}x)`);
+    if (state.endingEffect !== 'none') {
+        log(`엔딩 효과: ${state.endingEffect} (${state.effectDuration}초)`);
+    }
+
+    // Main video with ending effect at the end
+    const mainEffectConfig = state.endingEffect !== 'none'
+        ? { type: 'ending', position: 'end' }
+        : null;
 
     await processVideoFrames(state.vidFile, state.vidMeta, speed, encoder, res, (i, total) => {
         const pct = 50 + Math.floor((i / mainFrames) * 40);
         setProg(pct);
         if (i % 30 === 0) setStatus(`본편: ${i}/${total} (${speed.toFixed(1)}x)`);
-    }, introOffset, mainFrames);
+    }, introOffset, mainFrames, mainEffectConfig);
 
     // Finalize video
     setStatus('MP4 생성 중...');
@@ -824,7 +1133,19 @@ async function generateWithWebCodecs() {
     showResult(finalBlob);
 }
 
-async function processVideoFrames(file, meta, speed, encoder, res, onProgress, timestampOffset = 0, maxFrames = null) {
+/**
+ * Process video frames with optional transition/ending effects
+ * @param {File} file - Video file
+ * @param {Object} meta - Video metadata
+ * @param {number} speed - Playback speed
+ * @param {VideoEncoder} encoder - WebCodecs encoder
+ * @param {Object} res - Resolution config
+ * @param {Function} onProgress - Progress callback
+ * @param {number} timestampOffset - Timestamp offset in microseconds
+ * @param {number} maxFrames - Maximum frames to process
+ * @param {Object} effectConfig - Effect configuration {type: 'transition'|'ending'|'none', position: 'end'}
+ */
+async function processVideoFrames(file, meta, speed, encoder, res, onProgress, timestampOffset = 0, maxFrames = null, effectConfig = null) {
     const video = document.createElement('video');
     video.src = URL.createObjectURL(file);
     video.muted = true;
@@ -846,6 +1167,20 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
 
     if (maxFrames && totalFrames > maxFrames) {
         totalFrames = maxFrames;
+    }
+
+    // Calculate effect frames
+    const effectFrames = Math.floor(state.effectDuration * state.fps);
+    let effectType = null;
+    let effectName = 'none';
+
+    if (effectConfig) {
+        effectType = effectConfig.type;
+        if (effectType === 'transition') {
+            effectName = state.transitionEffect;
+        } else if (effectType === 'ending') {
+            effectName = state.endingEffect;
+        }
     }
 
     for (let i = 0; i < totalFrames; i++) {
@@ -877,6 +1212,21 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
         const dy = (res.height - dh) / 2;
 
         ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
+
+        // Apply effects at the end of the video segment
+        if (effectName !== 'none' && effectType) {
+            const framesFromEnd = totalFrames - 1 - i;
+
+            if (effectType === 'transition' && framesFromEnd < effectFrames) {
+                // Transition effect at end of intro (progress 0->1 means effect fading out)
+                const progress = 1 - (framesFromEnd / effectFrames);
+                applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
+            } else if (effectType === 'ending' && framesFromEnd < effectFrames) {
+                // Ending effect at end of main video (progress 0->1 means effect fading in)
+                const progress = 1 - (framesFromEnd / effectFrames);
+                applyEndingEffect(ctx, effectName, progress, res.width, res.height);
+            }
+        }
 
         // Create and encode frame
         const timestamp = timestampOffset + (i * frameInterval * 1000000);
@@ -1280,6 +1630,21 @@ function reset() {
 
     // Reset device preset
     setPreset(null);
+
+    // Reset transition effects
+    state.transitionEffect = 'none';
+    state.endingEffect = 'none';
+    state.effectDuration = 1.0;
+
+    // Reset effect buttons in UI
+    document.querySelectorAll('#transitionEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
+    document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
+    const effectDurationSelect = el('effectDuration');
+    if (effectDurationSelect) effectDurationSelect.value = '1';
 
     // Clear result
     if (state.resultUrl) {

@@ -1,8 +1,8 @@
 {
-    "name": "Lecture Shorts Factory v4.0 Pro",
+    "name": "Lecture Shorts Factory v4.1 Pro",
     "short_name": "LectureShorts",
-    "description": "강의 영상을 유튜브 쇼츠로 자동 변환 - Pro Edition with WebCodecs",
-    "version": "4.0.0",
+    "description": "강의 영상을 유튜브 쇼츠로 자동 변환 - Pro Edition with Transition Effects",
+    "version": "4.1.0",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",

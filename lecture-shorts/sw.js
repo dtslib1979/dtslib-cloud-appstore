@@ -1,10 +1,10 @@
 /**
- * Lecture Shorts Factory - Service Worker v4.0 Pro
+ * Lecture Shorts Factory - Service Worker v4.1 Pro
  * Enhanced caching with update notifications
  */
 
-const CACHE_NAME = 'lecture-shorts-v4.0.0';
-const CACHE_VERSION = '4.0.0';
+const CACHE_NAME = 'lecture-shorts-v4.1.0';
+const CACHE_VERSION = '4.1.0';
 
 // App files to cache
 const APP_FILES = [
