@@ -2,7 +2,7 @@
     "name": "Lecture Shorts Factory v4.1 Pro",
     "short_name": "LectureShorts",
     "description": "강의 영상을 유튜브 쇼츠로 자동 변환 - Pro Edition with Transition Effects",
-    "version": "5.0.0",
+    "version": "5.5.0",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
