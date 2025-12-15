@@ -444,22 +444,33 @@ function updateEffectDuration() {
  * @param {number} height - Canvas height
  */
 function applyTransitionEffect(ctx, effect, progress, width, height) {
-    switch (effect) {
-        case 'tv':
-            applyTVEffect(ctx, progress, width, height);
-            break;
-        case 'vhs':
-            applyVHSEffect(ctx, progress, width, height);
-            break;
-        case 'focus':
-            applyFocusEffect(ctx, progress, width, height);
-            break;
-        case 'tremble':
-            applyTrembleEffect(ctx, progress, width, height);
-            break;
-        case 'zoom':
-            applyZoomEffect(ctx, progress, width, height);
-            break;
+    if (!ctx || !effect) {
+        console.error('Invalid ctx or effect:', ctx, effect);
+        return;
+    }
+
+    try {
+        switch (effect) {
+            case 'tv':
+                applyTVEffect(ctx, progress, width, height);
+                break;
+            case 'vhs':
+                applyVHSEffect(ctx, progress, width, height);
+                break;
+            case 'focus':
+                applyFocusEffect(ctx, progress, width, height);
+                break;
+            case 'tremble':
+                applyTrembleEffect(ctx, progress, width, height);
+                break;
+            case 'zoom':
+                applyZoomEffect(ctx, progress, width, height);
+                break;
+            default:
+                console.warn('Unknown effect:', effect);
+        }
+    } catch (e) {
+        console.error('Effect error:', e);
     }
 }
 
@@ -469,25 +480,27 @@ function applyTransitionEffect(ctx, effect, progress, width, height) {
  */
 function applyTVEffect(ctx, progress, width, height) {
     // 검은 바가 위아래에서 닫히는 효과
-    const barSize = (height / 2) * (1 - progress);
+    const barSize = Math.floor((height / 2) * (1 - progress));
 
-    // 위쪽 검은 바
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, width, barSize);
+    if (barSize > 0) {
+        // 위쪽 검은 바
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, width, barSize);
 
-    // 아래쪽 검은 바
-    ctx.fillRect(0, height - barSize, width, barSize);
+        // 아래쪽 검은 바
+        ctx.fillRect(0, height - barSize, width, barSize);
 
-    // 스캔라인 효과
-    ctx.fillStyle = `rgba(0, 0, 0, ${0.3 * (1 - progress)})`;
-    for (let y = 0; y < height; y += 3) {
-        ctx.fillRect(0, y, width, 1);
+        // 스캔라인 효과 (더 강하게)
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.4 * (1 - progress)})`;
+        for (let y = 0; y < height; y += 2) {
+            ctx.fillRect(0, y, width, 1);
+        }
     }
 
     // 마지막에 흰색 수평선 (TV 꺼질 때)
-    if (progress < 0.1) {
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, height / 2 - 2, width, 4);
+    if (progress < 0.15) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, height / 2 - 3, width, 6);
     }
 }
 
@@ -1124,6 +1137,7 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
         } else if (effectType === 'ending') {
             effectName = state.endingEffect;
         }
+        log(`⚙️ 효과 설정: type=${effectType}, name=${effectName}, frames=${effectFrames}, total=${totalFrames}`);
     }
 
     for (let i = 0; i < totalFrames; i++) {
@@ -1164,9 +1178,12 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
                 // progress: 1 (시작) -> 0 (끝, 완전히 효과 적용)
                 const progress = framesFromEnd / effectFrames;
 
-                // 첫 프레임에서만 로그
+                // 첫 프레임과 마지막 프레임에서 로그
                 if (framesFromEnd === effectFrames - 1) {
-                    log(`🎬 ${effectType} 효과 시작: ${effectName}`);
+                    log(`🎬 ${effectType} 효과 시작: ${effectName} (progress=${progress.toFixed(2)})`);
+                }
+                if (framesFromEnd === 0) {
+                    log(`🎬 ${effectType} 효과 완료: ${effectName} (progress=${progress.toFixed(2)})`);
                 }
 
                 applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
