@@ -248,6 +248,50 @@ input[type="range"]::-moz-range-thumb {
     transform: scale(0.98);
 }
 
+.btn-ai {
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+.btn-ai:active {
+    transform: scale(0.98);
+}
+
+/* AI Options */
+.ai-options {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+.ai-option-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.aspect-select {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.aspect-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.ai-export {
+    margin-top: -8px;
+}
+
 /* Footer */
 .app-footer {
     text-align: center;
