@@ -635,14 +635,24 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('본편 오디오 추출...');
     setProg(94);
 
-    // 2. 본편 오디오 추출 (속도 조절)
-    // atempo 필터가 속도에 맞게 길이를 자동 조절함
-    const af = mainSpeed <= 2.0 ? `atempo=${mainSpeed}` : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(3)}`;
-
+    // 2. 본편 오디오 추출 (2단계: 추출 → 속도조절)
+    // Step 2a: 먼저 원본 오디오 추출
     await ffmpeg.run(
         '-i', 'lecture.mp4',
-        '-vn', '-af', af,
-        '-acodec', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+        '-vn',
+        '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+        'lecture_audio_raw.m4a'
+    );
+
+    setStatus('오디오 속도 조절...');
+
+    // Step 2b: 속도 조절 (atempo는 0.5~2.0 범위만 지원)
+    const af = mainSpeed <= 2.0 ? `atempo=${mainSpeed.toFixed(4)}` : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(4)}`;
+
+    await ffmpeg.run(
+        '-i', 'lecture_audio_raw.m4a',
+        '-filter:a', af,
+        '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         'main_audio.m4a'
     );
 
