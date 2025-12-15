@@ -1,16 +1,14 @@
 /**
- * Lecture Shorts Factory v2.3.0 - Audio Mixing Edition
+ * Lecture Shorts Factory v3.0 - Final Release
  *
- * 🚀 핵심: FFmpeg.wasm → WebCodecs API (하드웨어 가속)
+ * 🚀 핵심: WebCodecs API (하드웨어 가속) + FFmpeg.wasm (오디오)
  *
- * v2.3.0 개선:
- * - 원본 영상 오디오 유지
+ * v3.0 기능:
+ * - 원본 강의 오디오 100% 유지
  * - BGM 볼륨 슬라이더 (0~50%)
- * - BGM 미리듣기 기능
- * - 원본 오디오 + BGM 믹싱
- *
- * v2.2.0:
- * - Wake Lock API, Page Visibility, Silent Audio
+ * - BGM 미리듣기 (5초)
+ * - 인트로 + 본편 오디오 믹싱
+ * - Wake Lock API (백그라운드 보호)
  *
  * Fallback: WebCodecs 미지원 시 FFmpeg.wasm 사용
  */
