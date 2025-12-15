@@ -3,8 +3,8 @@
  * Enhanced caching with update notifications
  */
 
-const CACHE_NAME = 'lecture-shorts-v5.5.0';
-const CACHE_VERSION = '5.5.0';
+const CACHE_NAME = 'lecture-shorts-v6.0.0';
+const CACHE_VERSION = '6.0.0';
 
 // App files to cache
 const APP_FILES = [
@@ -21,7 +21,7 @@ const CDN_FILES = [
     'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
     'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.wasm',
     'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js',
-    'https://cdn.jsdelivr.net/npm/mp4-muxer@5.5.0/build/mp4-muxer.min.js'
+    'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/build/mp4-muxer.min.js'
 ];
 
 // Install event - cache app files
