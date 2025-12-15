@@ -1,597 +1,1251 @@
 /**
- * Lecture Shorts Factory v3.0 - Final Release
+ * Lecture Shorts Factory v4.1 Pro
+ * Professional PWA for Video Processing
  *
- * 🚀 핵심: WebCodecs API (하드웨어 가속) + FFmpeg.wasm (오디오)
- *
- * v3.0 기능:
- * - 원본 강의 오디오 100% 유지
- * - BGM 볼륨 슬라이더 (0~50%)
- * - BGM 미리듣기 (5초)
- * - 인트로 + 본편 오디오 믹싱
- * - Wake Lock API (백그라운드 보호)
- *
- * Fallback: WebCodecs 미지원 시 FFmpeg.wasm 사용
+ * Features:
+ * - WebCodecs API (Hardware Acceleration)
+ * - FFmpeg.wasm (Audio Processing)
+ * - Configurable Output Settings
+ * - Dark/Light Theme
+ * - Keyboard Shortcuts
+ * - Settings Persistence (LocalStorage)
+ * - ETA Calculation
+ * - File Validation
+ * - Memory Management
+ * - Drag & Drop Support
+ * - Transition Effects (TV, VHS, Focus, Tremble, Zoom)
  */
 
-/* ========== DEVICE PRESETS ========== */
-const PRESETS = {
-    TAB_S9: {
-        name: 'Galaxy Tab S9',
-        topCutPct: 0.055,
-        bottomCutPct: 0.090,
-        yShiftPct: -0.060
-    },
-    S25_ULTRA: {
-        name: 'Galaxy S25 Ultra',
-        topCutPct: 0.090,
-        bottomCutPct: 0.040,
-        yShiftPct: -0.085
-    }
-};
+'use strict';
 
-/* ========== OUTPUT SPECS ========== */
-const OUTPUT = {
-    width: 720,
-    height: 1280,
-    targetDur: 180,
-    bgmVol: 0.1,
-    fps: 30,
-    bitrate: 2_500_000
+/* ========== CONFIGURATION ========== */
+const CONFIG = {
+    // Quality Presets
+    quality: {
+        low: { bitrate: 1_500_000, crf: 28, preset: 'ultrafast' },
+        medium: { bitrate: 2_500_000, crf: 23, preset: 'fast' },
+        high: { bitrate: 4_000_000, crf: 18, preset: 'medium' }
+    },
+
+    // Resolution Presets
+    resolution: {
+        480: { width: 480, height: 854 },
+        720: { width: 720, height: 1280 },
+        1080: { width: 1080, height: 1920 }
+    },
+
+    // Default Settings
+    defaults: {
+        quality: 'medium',
+        resolution: 720,
+        targetDuration: 180, // 3 minutes
+        fps: 30,
+        bgmVolume: 0.1
+    },
+
+    // Limits
+    limits: {
+        maxFileSize: 500 * 1024 * 1024, // 500MB
+        maxDuration: 600, // 10 minutes
+        minDuration: 30 // 30 seconds
+    },
+
+    // Device Presets for Cropping
+    devices: {
+        TAB_S9: { name: 'Galaxy Tab S9', topCutPct: 0.055, bottomCutPct: 0.090, yShiftPct: -0.060 },
+        S25_ULTRA: { name: 'Galaxy S25 Ultra', topCutPct: 0.090, bottomCutPct: 0.040, yShiftPct: -0.085 }
+    },
+
+    // Storage Keys
+    storage: {
+        settings: 'lectureShorts_settings_v4',
+        theme: 'lectureShorts_theme'
+    }
 };
 
 /* ========== STATE ========== */
-let vidFile = null;
-let introFile = null;
-let bgmFile = null;
-let preset = null;
-let vidMeta = { dur: 0, w: 0, h: 0 };
-let introMeta = { dur: 0, w: 0, h: 0 };
-let useWebCodecs = false;
+const state = {
+    // Files
+    vidFile: null,
+    introFile: null,
+    bgmFile: null,
 
-// v2.3.0: BGM 볼륨 및 미리듣기
-let bgmVolume = 0.1; // 기본 10%
-let bgmPreviewAudio = null;
+    // Metadata
+    vidMeta: { dur: 0, w: 0, h: 0 },
+    introMeta: { dur: 0, w: 0, h: 0 },
 
-// v2.2.0: Background 관련 상태
-let wakeLock = null;
-let audioContext = null;
-let silentAudioNode = null;
-let isProcessing = false;
-let processingAborted = false;
-let lastFrameIndex = 0;
+    // Settings
+    quality: CONFIG.defaults.quality,
+    resolution: CONFIG.defaults.resolution,
+    targetDuration: CONFIG.defaults.targetDuration,
+    fps: CONFIG.defaults.fps,
+    bgmVolume: CONFIG.defaults.bgmVolume,
+    devicePreset: null,
 
-// WebCodecs 지원 여부 체크
-const supportsWebCodecs = () => {
-    return typeof VideoEncoder !== 'undefined' && 
-           typeof VideoDecoder !== 'undefined' &&
-           typeof VideoFrame !== 'undefined';
+    // Processing
+    useWebCodecs: false,
+    isProcessing: false,
+    processingAborted: false,
+    startTime: 0,
+
+    // Background Protection
+    wakeLock: null,
+    audioContext: null,
+    silentAudioNode: null,
+
+    // BGM Preview
+    bgmPreviewAudio: null,
+
+    // FFmpeg
+    ffmpeg: null,
+
+    // Theme
+    theme: 'dark',
+
+    // Transition Effects
+    transitionEffect: 'none',
+    endingEffect: 'none',
+    effectDuration: 1.0,
+
+    // Result
+    resultBlob: null,
+    resultUrl: null
 };
 
-/* ========== INIT ========== */
+/* ========== UTILITY FUNCTIONS ========== */
+const el = id => document.getElementById(id);
+const show = id => { const e = el(id); if(e) e.style.display = 'block'; };
+const hide = id => { const e = el(id); if(e) e.style.display = 'none'; };
+
+function formatDuration(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}분 ${s}초`;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function formatETA(seconds) {
+    if (seconds < 60) return `약 ${Math.ceil(seconds)}초`;
+    if (seconds < 3600) return `약 ${Math.ceil(seconds / 60)}분`;
+    return `약 ${Math.floor(seconds / 3600)}시간 ${Math.ceil((seconds % 3600) / 60)}분`;
+}
+
+function showInfo(id, html, cls = '') {
+    const e = el(id);
+    if (!e) return;
+    e.innerHTML = html;
+    e.className = 'file-info show ' + cls;
+}
+
+function log(msg) {
+    console.log(`[LectureShorts] ${msg}`);
+    const logEl = el('progressLog');
+    if (logEl) {
+        const time = new Date().toLocaleTimeString();
+        logEl.innerHTML += `<div>[${time}] ${msg}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+}
+
+/* ========== INITIALIZATION ========== */
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    useWebCodecs = supportsWebCodecs();
+    log('v4.0 Pro 초기화...');
 
-    if (useWebCodecs) {
-        console.log('✅ WebCodecs API (하드웨어 가속)');
-        el('engineInfo').innerHTML = '🚀 WebCodecs (HW 가속)';
-        el('engineInfo').className = 'engine-badge webcodecs';
-    } else {
-        console.log('⚠️ FFmpeg.wasm 폴백');
-        el('engineInfo').innerHTML = '⚙️ FFmpeg.wasm';
-        el('engineInfo').className = 'engine-badge ffmpeg';
-    }
+    // Check WebCodecs support
+    state.useWebCodecs = checkWebCodecsSupport();
+    updateEngineInfo();
 
-    // FFmpeg CDN 상태 확인 (BGM 믹싱에 필요)
-    checkFFmpegStatus();
-
+    // Check memory
     if (navigator.deviceMemory && navigator.deviceMemory < 4) {
         show('memWarn');
     }
 
-    el('vidIn').onchange = e => loadVid(e.target.files[0]);
-    el('introIn').onchange = e => loadIntro(e.target.files[0]);
-    el('bgmIn').onchange = e => loadBgm(e.target.files[0]);
+    // Load saved settings and theme
+    loadSettings();
+    loadTheme();
 
-    // v2.2.0: Page Visibility 감지
+    // Setup event listeners
+    setupEventListeners();
+
+    // Register service worker
+    registerServiceWorker();
+
+    log('초기화 완료');
+}
+
+function checkWebCodecsSupport() {
+    const supported = typeof VideoEncoder !== 'undefined' &&
+                      typeof VideoDecoder !== 'undefined' &&
+                      typeof VideoFrame !== 'undefined';
+    log(`WebCodecs: ${supported ? '지원' : '미지원'}`);
+    return supported;
+}
+
+function updateEngineInfo() {
+    const badge = el('engineInfo');
+    if (!badge) return;
+
+    if (state.useWebCodecs) {
+        badge.innerHTML = '🚀 WebCodecs';
+        badge.className = 'engine-badge webcodecs';
+    } else {
+        badge.innerHTML = '⚙️ FFmpeg';
+        badge.className = 'engine-badge ffmpeg';
+    }
+}
+
+function setupEventListeners() {
+    // File inputs
+    el('vidIn').onchange = e => handleFileSelect(e.target.files[0], 'vid');
+    el('introIn').onchange = e => handleFileSelect(e.target.files[0], 'intro');
+    el('bgmIn').onchange = e => handleFileSelect(e.target.files[0], 'bgm');
+
+    // BGM Volume slider
+    const slider = el('bgmVolSlider');
+    if (slider) {
+        slider.oninput = () => {
+            state.bgmVolume = parseInt(slider.value) / 100;
+            el('bgmVolValue').textContent = slider.value + '%';
+            if (state.bgmPreviewAudio && !state.bgmPreviewAudio.paused) {
+                state.bgmPreviewAudio.volume = state.bgmVolume;
+            }
+        };
+    }
+
+    // Page visibility
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    // Keyboard shortcuts
+    document.addEventListener('keydown', handleKeyboard);
+
+    // Service worker updates
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            show('updateBanner');
+        });
     }
 }
 
-// FFmpeg CDN 로드 상태 확인
-function checkFFmpegStatus() {
-    const bgmInfo = el('bgmInfo');
+/* ========== KEYBOARD SHORTCUTS ========== */
+function handleKeyboard(e) {
+    // Ignore if in input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return;
+    }
 
-    if (typeof FFmpeg === 'undefined') {
-        console.warn('⚠️ FFmpeg CDN 아직 로드 안됨');
-        // BGM 선택 시 경고 표시
-        el('bgmIn').addEventListener('change', function handler() {
-            if (typeof FFmpeg === 'undefined') {
-                showInfo('bgmInfo',
-                    '⚠️ FFmpeg 로딩 중... 잠시 후 다시 시도하세요',
-                    'warn'
-                );
+    // Escape - close modal or abort
+    if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal[style*="block"]');
+        if (modals.length > 0) {
+            modals.forEach(m => m.style.display = 'none');
+        } else if (state.isProcessing) {
+            abortProcessing();
+        }
+        return;
+    }
+
+    // Don't process other shortcuts if modal is open
+    const modalOpen = document.querySelector('.modal[style*="block"]');
+    if (modalOpen) return;
+
+    switch(e.key.toLowerCase()) {
+        case 'enter':
+            if (!el('genBtn').disabled && !state.isProcessing) {
+                generate();
             }
-        }, { once: true });
-    } else {
-        console.log('✅ FFmpeg CDN 로드됨');
+            break;
+        case 'r':
+            if (!state.isProcessing) reset();
+            break;
+        case 't':
+            toggleTheme();
+            break;
+        case 's':
+            toggleSettings();
+            break;
+        case '1':
+            el('vidIn').click();
+            break;
+        case '2':
+            el('introIn').click();
+            break;
+        case '3':
+            el('bgmIn').click();
+            break;
+        case '?':
+            showHelp();
+            break;
     }
 }
 
-/* ========== v2.2.0: BACKGROUND PROTECTION ========== */
+/* ========== THEME ========== */
+function toggleTheme() {
+    state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', state.theme);
+    el('themeIcon').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+    localStorage.setItem(CONFIG.storage.theme, state.theme);
+    log(`테마 변경: ${state.theme}`);
+}
 
-// Wake Lock 요청 (화면 꺼짐 방지)
+function loadTheme() {
+    const saved = localStorage.getItem(CONFIG.storage.theme);
+    if (saved) {
+        state.theme = saved;
+        document.documentElement.setAttribute('data-theme', state.theme);
+        el('themeIcon').textContent = state.theme === 'dark' ? '🌙' : '☀️';
+    }
+}
+
+/* ========== SETTINGS ========== */
+function toggleSettings() {
+    const content = el('settingsContent');
+    const header = document.querySelector('.settings-header');
+    const isOpen = content.style.display !== 'none';
+
+    content.style.display = isOpen ? 'none' : 'block';
+    header.setAttribute('aria-expanded', !isOpen);
+}
+
+function setQuality(q) {
+    state.quality = q;
+    ['qualityLow', 'qualityMid', 'qualityHigh'].forEach(id => {
+        el(id).classList.toggle('active', id === 'quality' + q.charAt(0).toUpperCase() + q.slice(1));
+    });
+    updateSummary();
+}
+
+function updateResolution() {
+    state.resolution = parseInt(el('resolutionSelect').value);
+    updateSummary();
+}
+
+function updateDuration() {
+    const min = parseInt(el('targetMin').value) || 0;
+    const sec = parseInt(el('targetSec').value) || 0;
+    state.targetDuration = Math.max(CONFIG.limits.minDuration, Math.min(CONFIG.limits.maxDuration, min * 60 + sec));
+    updateSummary();
+}
+
+function updateFps() {
+    state.fps = parseInt(el('fpsSelect').value);
+    updateSummary();
+}
+
+function saveSettings() {
+    const settings = {
+        quality: state.quality,
+        resolution: state.resolution,
+        targetDuration: state.targetDuration,
+        fps: state.fps,
+        bgmVolume: state.bgmVolume
+    };
+    localStorage.setItem(CONFIG.storage.settings, JSON.stringify(settings));
+    log('설정 저장됨');
+    alert('✅ 설정이 저장되었습니다.');
+}
+
+function loadSettings() {
+    try {
+        const saved = localStorage.getItem(CONFIG.storage.settings);
+        if (saved) {
+            const settings = JSON.parse(saved);
+            state.quality = settings.quality || CONFIG.defaults.quality;
+            state.resolution = settings.resolution || CONFIG.defaults.resolution;
+            state.targetDuration = settings.targetDuration || CONFIG.defaults.targetDuration;
+            state.fps = settings.fps || CONFIG.defaults.fps;
+            state.bgmVolume = settings.bgmVolume ?? CONFIG.defaults.bgmVolume;
+
+            // Update UI
+            applySettingsToUI();
+            log('저장된 설정 로드됨');
+        }
+    } catch (e) {
+        console.warn('설정 로드 실패:', e);
+    }
+}
+
+function applySettingsToUI() {
+    // Quality
+    setQuality(state.quality);
+
+    // Resolution
+    el('resolutionSelect').value = state.resolution;
+
+    // Duration
+    el('targetMin').value = Math.floor(state.targetDuration / 60);
+    el('targetSec').value = state.targetDuration % 60;
+
+    // FPS
+    el('fpsSelect').value = state.fps;
+
+    // BGM Volume
+    el('bgmVolSlider').value = Math.round(state.bgmVolume * 100);
+    el('bgmVolValue').textContent = Math.round(state.bgmVolume * 100) + '%';
+}
+
+function resetSettings() {
+    state.quality = CONFIG.defaults.quality;
+    state.resolution = CONFIG.defaults.resolution;
+    state.targetDuration = CONFIG.defaults.targetDuration;
+    state.fps = CONFIG.defaults.fps;
+    state.bgmVolume = CONFIG.defaults.bgmVolume;
+    applySettingsToUI();
+    log('설정 초기화됨');
+}
+
+/* ========== TRANSITION EFFECTS ========== */
+function setTransition(effect) {
+    state.transitionEffect = effect;
+
+    // Update UI buttons
+    const buttons = document.querySelectorAll('#transitionEffects .effect-btn');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    updateSummary();
+    log(`트랜지션 효과: ${effect}`);
+}
+
+function setEnding(effect) {
+    state.endingEffect = effect;
+
+    // Update UI buttons
+    const buttons = document.querySelectorAll('#endingEffects .effect-btn');
+    buttons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    updateSummary();
+    log(`엔딩 효과: ${effect}`);
+}
+
+function updateEffectDuration() {
+    const select = el('effectDuration');
+    if (select) {
+        state.effectDuration = parseFloat(select.value);
+        log(`효과 길이: ${state.effectDuration}초`);
+    }
+}
+
+/**
+ * Apply transition effect to canvas context
+ * @param {CanvasRenderingContext2D} ctx - Canvas context
+ * @param {string} effect - Effect type (tv, vhs, focus, tremble, zoom)
+ * @param {number} progress - Effect progress 0-1 (0=start, 1=end)
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ */
+function applyTransitionEffect(ctx, effect, progress, width, height) {
+    switch (effect) {
+        case 'tv':
+            applyTVEffect(ctx, progress, width, height);
+            break;
+        case 'vhs':
+            applyVHSEffect(ctx, progress, width, height);
+            break;
+        case 'focus':
+            applyFocusEffect(ctx, progress, width, height);
+            break;
+        case 'tremble':
+            applyTrembleEffect(ctx, progress, width, height);
+            break;
+        case 'zoom':
+            applyZoomEffect(ctx, progress, width, height);
+            break;
+    }
+}
+
+/**
+ * TV Effect - Black bars closing/opening from center (like old TV turning off/on)
+ */
+function applyTVEffect(ctx, progress, width, height) {
+    // Save current canvas content
+    const imageData = ctx.getImageData(0, 0, width, height);
+
+    // Clear canvas
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // Calculate effect
+    const effectProgress = Math.pow(progress, 0.5); // Ease in
+    const barHeight = (height / 2) * (1 - effectProgress);
+
+    // Draw content in the remaining space
+    const visibleHeight = height - (barHeight * 2);
+
+    if (visibleHeight > 0) {
+        // Create temporary canvas for scaling
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Draw scaled content
+        ctx.drawImage(tempCanvas, 0, 0, width, height, 0, barHeight, width, visibleHeight);
+    }
+
+    // Add scanlines for TV effect
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    for (let y = 0; y < height; y += 4) {
+        ctx.fillRect(0, y, width, 2);
+    }
+
+    // Add CRT glow effect
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - progress)})`;
+    ctx.fillRect(0, 0, width, height);
+}
+
+/**
+ * VHS Effect - Distortion, color shift, noise
+ */
+function applyVHSEffect(ctx, progress, width, height) {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    const intensity = (1 - progress) * 0.8; // Stronger at start, fading out
+
+    // Horizontal shift (tracking error)
+    const shiftAmount = Math.sin(progress * Math.PI * 4) * 10 * intensity;
+
+    // Color channel separation
+    const redShift = Math.floor(5 * intensity);
+    const blueShift = -Math.floor(5 * intensity);
+
+    // Apply effects
+    for (let y = 0; y < height; y++) {
+        const rowOffset = y * width * 4;
+
+        // Random horizontal glitch lines
+        if (Math.random() < 0.05 * intensity) {
+            for (let x = 0; x < width; x++) {
+                const i = rowOffset + x * 4;
+                data[i] = data[i] * 0.8 + 50;     // R
+                data[i + 1] = data[i + 1] * 0.7;  // G
+                data[i + 2] = data[i + 2] * 0.9;  // B
+            }
+        }
+
+        // Add noise
+        for (let x = 0; x < width; x++) {
+            const i = rowOffset + x * 4;
+            const noise = (Math.random() - 0.5) * 40 * intensity;
+            data[i] = Math.max(0, Math.min(255, data[i] + noise));
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+        }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Add VHS tracking lines
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * intensity})`;
+    const lineY = (Math.sin(progress * Math.PI * 8) * 0.5 + 0.5) * height;
+    ctx.fillRect(0, lineY, width, 3);
+}
+
+/**
+ * Focus Effect - Blur to sharp (or sharp to blur)
+ */
+function applyFocusEffect(ctx, progress, width, height) {
+    // Use CSS filter for blur (applied via canvas filter)
+    const blurAmount = Math.max(0, (1 - progress) * 15); // 15px blur fading to sharp
+
+    if (blurAmount > 0.5) {
+        // Save current state
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        // Apply simple box blur
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Multi-pass blur simulation
+        ctx.globalAlpha = 0.2;
+        const passes = Math.ceil(blurAmount / 3);
+        for (let i = 0; i < passes; i++) {
+            const offset = i * 2;
+            ctx.drawImage(tempCanvas, -offset, 0);
+            ctx.drawImage(tempCanvas, offset, 0);
+            ctx.drawImage(tempCanvas, 0, -offset);
+            ctx.drawImage(tempCanvas, 0, offset);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Add vignette for focus effect
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.7);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, `rgba(0,0,0,${0.5 * (1 - progress)})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    }
+}
+
+/**
+ * Tremble/Shake Effect - Screen shake
+ */
+function applyTrembleEffect(ctx, progress, width, height) {
+    const intensity = (1 - progress) * 15; // Shake amount in pixels
+
+    if (intensity > 0.5) {
+        // Save current content
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        // Random shake offset
+        const shakeX = (Math.random() - 0.5) * intensity * 2;
+        const shakeY = (Math.random() - 0.5) * intensity * 2;
+        const rotation = (Math.random() - 0.5) * 0.02 * intensity;
+
+        // Clear and redraw with offset
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Apply transformation
+        ctx.save();
+        ctx.translate(width/2 + shakeX, height/2 + shakeY);
+        ctx.rotate(rotation);
+        ctx.drawImage(tempCanvas, -width/2, -height/2);
+        ctx.restore();
+
+        // Add motion blur effect lines
+        ctx.fillStyle = `rgba(255,255,255,${0.05 * (1 - progress)})`;
+        for (let i = 0; i < 3; i++) {
+            ctx.fillRect(0, Math.random() * height, width, 1);
+        }
+    }
+}
+
+/**
+ * Zoom Effect - Zoom in/out transition
+ */
+function applyZoomEffect(ctx, progress, width, height) {
+    // Zoom out: starts big, ends at normal size
+    const scale = 1 + (1 - progress) * 0.5; // 1.5x to 1x
+
+    if (scale > 1.01) {
+        const imageData = ctx.getImageData(0, 0, width, height);
+
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Clear and draw zoomed
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, width, height);
+
+        const scaledWidth = width * scale;
+        const scaledHeight = height * scale;
+        const offsetX = (width - scaledWidth) / 2;
+        const offsetY = (height - scaledHeight) / 2;
+
+        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight);
+
+        // Add radial fade for zoom effect
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.6);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, `rgba(0,0,0,${0.3 * (1 - progress)})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+    }
+}
+
+/**
+ * Apply ending effect (inverse of transition - fades out)
+ */
+function applyEndingEffect(ctx, effect, progress, width, height) {
+    // Ending effects work in reverse (1 to 0 progression)
+    applyTransitionEffect(ctx, effect, 1 - progress, width, height);
+}
+
+/* ========== DRAG & DROP ========== */
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('dragover');
+}
+
+function handleDrop(e, type) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.remove('dragover');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFileSelect(files[0], type);
+    }
+}
+
+/* ========== FILE HANDLING ========== */
+async function handleFileSelect(file, type) {
+    if (!file) return;
+
+    // Validate file
+    const validation = validateFile(file, type);
+    if (!validation.valid) {
+        showInfo(type + 'Info', `❌ ${validation.error}`, 'error');
+        return;
+    }
+
+    try {
+        if (type === 'vid') {
+            state.vidFile = file;
+            state.vidMeta = await getVideoMeta(file);
+            updateVidInfo();
+        } else if (type === 'intro') {
+            state.introFile = file;
+            state.introMeta = await getVideoMeta(file);
+            updateIntroInfo();
+        } else if (type === 'bgm') {
+            state.bgmFile = file;
+            showInfo('bgmInfo', `✅ ${file.name}<br>🔊 자동 루프`, 'success');
+            show('bgmVolControl');
+        }
+
+        checkReady();
+        updateSummary();
+    } catch (e) {
+        showInfo(type + 'Info', `❌ ${e.message}`, 'error');
+    }
+}
+
+function validateFile(file, type) {
+    // Size check
+    if (file.size > CONFIG.limits.maxFileSize) {
+        return { valid: false, error: `파일이 너무 큽니다 (최대 ${formatFileSize(CONFIG.limits.maxFileSize)})` };
+    }
+
+    // Type check
+    if (type === 'bgm') {
+        if (!file.type.startsWith('audio/')) {
+            return { valid: false, error: '오디오 파일만 지원됩니다' };
+        }
+    } else {
+        if (!file.type.startsWith('video/')) {
+            return { valid: false, error: '비디오 파일만 지원됩니다' };
+        }
+    }
+
+    // Show warning for large files
+    if (file.size > 200 * 1024 * 1024) {
+        const warn = el('fileSizeWarn');
+        warn.textContent = `⚠️ ${formatFileSize(file.size)} - 큰 파일은 처리 시간이 오래 걸릴 수 있습니다`;
+        show('fileSizeWarn');
+    }
+
+    return { valid: true };
+}
+
+async function getVideoMeta(file) {
+    return new Promise((resolve, reject) => {
+        const vid = document.createElement('video');
+        vid.preload = 'metadata';
+        vid.onloadedmetadata = () => {
+            resolve({
+                dur: vid.duration,
+                w: vid.videoWidth,
+                h: vid.videoHeight
+            });
+            URL.revokeObjectURL(vid.src);
+        };
+        vid.onerror = () => reject(new Error('비디오 메타데이터 로드 실패'));
+        vid.src = URL.createObjectURL(file);
+    });
+}
+
+function updateVidInfo() {
+    const speed = calcSpeed();
+    const targetMain = state.targetDuration - state.introMeta.dur;
+    const speedClass = speed >= 2.0 ? 'warn' : 'success';
+
+    showInfo('vidInfo',
+        `✅ ${state.vidFile.name}<br>` +
+        `📐 ${state.vidMeta.w}×${state.vidMeta.h} → ${state.resolution}p<br>` +
+        `⏱️ ${formatDuration(state.vidMeta.dur)} → ${formatDuration(targetMain)} (${speed.toFixed(2)}x)<br>` +
+        `📦 ${formatFileSize(state.vidFile.size)}`,
+        speedClass
+    );
+}
+
+function updateIntroInfo() {
+    let warn = '';
+    if (state.introMeta.dur > 120) warn = ' ⚠️ 2분 초과';
+
+    showInfo('introInfo',
+        `✅ ${state.introFile.name}<br>⏱️ ${formatDuration(state.introMeta.dur)}${warn}`,
+        state.introMeta.dur > 120 ? 'warn' : 'success'
+    );
+
+    // Update video info if already loaded
+    if (state.vidFile) updateVidInfo();
+}
+
+/* ========== DEVICE PRESET ========== */
+function setPreset(key) {
+    state.devicePreset = key;
+
+    el('btnTabS9').classList.toggle('active', key === 'TAB_S9');
+    el('btnS25').classList.toggle('active', key === 'S25_ULTRA');
+    el('btnNone').classList.toggle('active', key === null);
+
+    if (key && CONFIG.devices[key]) {
+        const p = CONFIG.devices[key];
+        el('presetInfo').textContent = `Top: ${(p.topCutPct * 100).toFixed(1)}% | Bottom: ${(p.bottomCutPct * 100).toFixed(1)}%`;
+    } else {
+        el('presetInfo').textContent = '크롭 없음';
+    }
+
+    updateSummary();
+}
+
+/* ========== SUMMARY & READY CHECK ========== */
+function checkReady() {
+    el('genBtn').disabled = !(state.vidFile && state.introFile);
+}
+
+function calcSpeed() {
+    const targetMain = state.targetDuration - state.introMeta.dur;
+    if (targetMain <= 0) return 2.0;
+    return Math.max(1.0, Math.min(2.0, state.vidMeta.dur / targetMain));
+}
+
+function updateSummary() {
+    if (!state.vidFile || !state.introFile) {
+        hide('summary');
+        return;
+    }
+
+    const res = CONFIG.resolution[state.resolution];
+    const qual = CONFIG.quality[state.quality];
+    const speed = calcSpeed();
+
+    // Effect name mapping for display
+    const effectNames = {
+        'none': '없음',
+        'tv': 'TV',
+        'vhs': 'VHS',
+        'focus': 'FOCUS',
+        'tremble': 'TREMBLE',
+        'zoom': 'ZOOM'
+    };
+
+    el('summaryContent').innerHTML = `
+        <ul>
+            <li>📐 해상도: ${res.width}×${res.height}</li>
+            <li>⏱️ 목표 길이: ${formatDuration(state.targetDuration)}</li>
+            <li>🎬 FPS: ${state.fps}</li>
+            <li>📊 품질: ${state.quality} (${(qual.bitrate / 1000000).toFixed(1)}Mbps)</li>
+            <li>⚡ 재생속도: ${speed.toFixed(2)}x</li>
+            ${state.bgmFile ? `<li>🎵 BGM: ${Math.round(state.bgmVolume * 100)}%</li>` : ''}
+            ${state.devicePreset ? `<li>📱 크롭: ${CONFIG.devices[state.devicePreset].name}</li>` : ''}
+            ${state.transitionEffect !== 'none' ? `<li>✨ 트랜지션: ${effectNames[state.transitionEffect]} (${state.effectDuration}초)</li>` : ''}
+            ${state.endingEffect !== 'none' ? `<li>🎬 엔딩: ${effectNames[state.endingEffect]} (${state.effectDuration}초)</li>` : ''}
+        </ul>
+    `;
+    show('summary');
+}
+
+/* ========== BGM PREVIEW ========== */
+function previewBgm() {
+    if (!state.bgmFile) return;
+
+    const btn = el('bgmPreviewBtn');
+
+    // Stop if playing
+    if (state.bgmPreviewAudio && !state.bgmPreviewAudio.paused) {
+        state.bgmPreviewAudio.pause();
+        state.bgmPreviewAudio = null;
+        btn.textContent = '▶️ 미리듣기 (5초)';
+        return;
+    }
+
+    // Play
+    state.bgmPreviewAudio = new Audio(URL.createObjectURL(state.bgmFile));
+    state.bgmPreviewAudio.volume = state.bgmVolume;
+    state.bgmPreviewAudio.play();
+    btn.textContent = '⏹️ 정지';
+
+    // Auto stop after 5 seconds
+    setTimeout(() => {
+        if (state.bgmPreviewAudio) {
+            state.bgmPreviewAudio.pause();
+            state.bgmPreviewAudio = null;
+            btn.textContent = '▶️ 미리듣기 (5초)';
+        }
+    }, 5000);
+
+    state.bgmPreviewAudio.onended = () => {
+        btn.textContent = '▶️ 미리듣기 (5초)';
+    };
+}
+
+/* ========== BACKGROUND PROTECTION ========== */
 async function requestWakeLock() {
     if ('wakeLock' in navigator) {
         try {
-            wakeLock = await navigator.wakeLock.request('screen');
-            console.log('🔒 Wake Lock 활성화');
-            wakeLock.addEventListener('release', () => {
-                console.log('🔓 Wake Lock 해제됨');
-            });
+            state.wakeLock = await navigator.wakeLock.request('screen');
+            log('Wake Lock 활성화');
+            state.wakeLock.addEventListener('release', () => log('Wake Lock 해제됨'));
         } catch (e) {
             console.warn('Wake Lock 실패:', e.message);
         }
     }
 }
 
-// Wake Lock 해제
 function releaseWakeLock() {
-    if (wakeLock) {
-        wakeLock.release();
-        wakeLock = null;
+    if (state.wakeLock) {
+        state.wakeLock.release();
+        state.wakeLock = null;
     }
 }
 
-// 무음 오디오 재생 (브라우저 throttling 회피)
 function startSilentAudio() {
-    if (audioContext) return;
-    
+    if (state.audioContext) return;
+
     try {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // 무음 오실레이터 (들리지 않음)
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
+        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = state.audioContext.createOscillator();
+        const gainNode = state.audioContext.createGain();
+
         oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // 볼륨 0 (무음)
-        gainNode.gain.value = 0.001; // 완전 0은 일부 브라우저에서 최적화됨
-        oscillator.frequency.value = 1; // 매우 낮은 주파수
-        
+        gainNode.connect(state.audioContext.destination);
+        gainNode.gain.value = 0.001;
+        oscillator.frequency.value = 1;
         oscillator.start();
-        silentAudioNode = oscillator;
-        
-        console.log('🔊 Silent Audio 시작 (throttling 방지)');
+        state.silentAudioNode = oscillator;
+
+        log('Silent Audio 시작');
     } catch (e) {
         console.warn('Silent Audio 실패:', e.message);
     }
 }
 
-// 무음 오디오 중지
 function stopSilentAudio() {
-    if (silentAudioNode) {
-        silentAudioNode.stop();
-        silentAudioNode = null;
+    if (state.silentAudioNode) {
+        state.silentAudioNode.stop();
+        state.silentAudioNode = null;
     }
-    if (audioContext) {
-        audioContext.close();
-        audioContext = null;
+    if (state.audioContext) {
+        state.audioContext.close();
+        state.audioContext = null;
     }
 }
 
-// Page Visibility 변경 핸들러
 function handleVisibilityChange() {
-    if (!isProcessing) return;
-    
+    if (!state.isProcessing) return;
+
     if (document.hidden) {
-        // 백그라운드 진입
-        console.warn('⚠️ 탭이 백그라운드로 전환됨');
-        showBackgroundWarning(true);
+        log('⚠️ 백그라운드 전환됨');
     } else {
-        // 포그라운드 복귀
-        console.log('✅ 탭 활성화됨');
-        showBackgroundWarning(false);
-        
-        // AudioContext 재개 (일부 브라우저에서 필요)
-        if (audioContext && audioContext.state === 'suspended') {
-            audioContext.resume();
+        log('✅ 포그라운드 복귀');
+        if (state.audioContext && state.audioContext.state === 'suspended') {
+            state.audioContext.resume();
         }
     }
-}
-
-// 백그라운드 경고 UI
-function showBackgroundWarning(show) {
-    let warn = el('bgWarn');
-    if (!warn) {
-        warn = document.createElement('div');
-        warn.id = 'bgWarn';
-        warn.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 0; left: 0; right: 0;
-                background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
-                color: white;
-                padding: 15px;
-                text-align: center;
-                font-weight: bold;
-                z-index: 9999;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            ">
-                ⚠️ 화면을 유지하세요! 백그라운드에서 인코딩이 중단될 수 있습니다.
-            </div>
-        `;
-        document.body.appendChild(warn);
-    }
-    warn.style.display = show ? 'block' : 'none';
-}
-
-/* ========== FILE LOADERS ========== */
-async function loadVid(file) {
-    if (!file) return;
-    vidFile = file;
-    
-    try {
-        vidMeta = await getVidMeta(file);
-        updateVidInfo();
-        checkReady();
-    } catch (e) {
-        showInfo('vidInfo', `❌ ${e.message}`, 'warn');
-    }
-}
-
-async function loadIntro(file) {
-    if (!file) return;
-    introFile = file;
-    
-    try {
-        introMeta = await getVidMeta(file);
-        
-        let warn = '';
-        if (introMeta.dur > 120) warn = ' ⚠️ 2분 초과';
-        
-        showInfo('introInfo', 
-            `✅ ${file.name}<br>⏱️ ${fmtDur(introMeta.dur)}${warn}`,
-            introMeta.dur > 120 ? 'warn' : 'success'
-        );
-        
-        updateVidInfo();
-        checkReady();
-    } catch (e) {
-        showInfo('introInfo', `❌ ${e.message}`, 'warn');
-    }
-}
-
-function updateVidInfo() {
-    if (!vidMeta.dur) return;
-    
-    const speed = calcSpeed();
-    const targetMain = OUTPUT.targetDur - introMeta.dur;
-    
-    showInfo('vidInfo', 
-        `✅ ${vidFile.name}<br>` +
-        `📐 ${vidMeta.w}×${vidMeta.h} → 720p<br>` +
-        `⏱️ ${fmtDur(vidMeta.dur)} → ${fmtDur(targetMain)} (${speed.toFixed(2)}x)`,
-        speed >= 2.0 ? 'warn' : 'success'
-    );
-}
-
-async function loadBgm(file) {
-    if (!file) return;
-    bgmFile = file;
-
-    showInfo('bgmInfo',
-        `✅ ${file.name}<br>🔊 자동 루프`,
-        'success'
-    );
-
-    // v2.3.0: 볼륨 컨트롤 표시
-    show('bgmVolControl');
-    initBgmVolumeSlider();
-
-    checkReady();
-}
-
-// v2.3.0: BGM 볼륨 슬라이더 초기화
-function initBgmVolumeSlider() {
-    const slider = el('bgmVolSlider');
-    const valueDisplay = el('bgmVolValue');
-
-    slider.oninput = () => {
-        const val = parseInt(slider.value);
-        bgmVolume = val / 100;
-        valueDisplay.textContent = val + '%';
-
-        // 미리듣기 중이면 실시간 반영
-        if (bgmPreviewAudio && !bgmPreviewAudio.paused) {
-            bgmPreviewAudio.volume = bgmVolume;
-        }
-    };
-}
-
-// v2.3.0: BGM 미리듣기
-function previewBgm() {
-    if (!bgmFile) return;
-
-    const btn = el('bgmPreviewBtn');
-
-    // 이미 재생 중이면 정지
-    if (bgmPreviewAudio && !bgmPreviewAudio.paused) {
-        bgmPreviewAudio.pause();
-        bgmPreviewAudio = null;
-        btn.textContent = '▶️ 미리듣기';
-        return;
-    }
-
-    // 새로 재생
-    bgmPreviewAudio = new Audio(URL.createObjectURL(bgmFile));
-    bgmPreviewAudio.volume = bgmVolume;
-    bgmPreviewAudio.play();
-    btn.textContent = '⏹️ 정지';
-
-    // 5초 후 자동 정지 (미리듣기)
-    setTimeout(() => {
-        if (bgmPreviewAudio) {
-            bgmPreviewAudio.pause();
-            bgmPreviewAudio = null;
-            btn.textContent = '▶️ 미리듣기';
-        }
-    }, 5000);
-
-    bgmPreviewAudio.onended = () => {
-        btn.textContent = '▶️ 미리듣기';
-    };
-}
-
-/* ========== PRESET SELECTION ========== */
-function setPreset(key) {
-    preset = key;
-    
-    el('btnTabS9').classList.toggle('active', key === 'TAB_S9');
-    el('btnS25').classList.toggle('active', key === 'S25_ULTRA');
-    el('btnNone').classList.toggle('active', key === null);
-    
-    if (key && PRESETS[key]) {
-        const p = PRESETS[key];
-        el('presetInfo').innerHTML = 
-            `Top: ${(p.topCutPct * 100).toFixed(1)}% | ` +
-            `Bottom: ${(p.bottomCutPct * 100).toFixed(1)}%`;
-    } else {
-        el('presetInfo').innerHTML = '크롭 없음';
-    }
-    
-    checkReady();
-}
-
-function checkReady() {
-    el('genBtn').disabled = !(vidFile && introFile);
-}
-
-function calcSpeed() {
-    const targetMain = OUTPUT.targetDur - introMeta.dur;
-    if (targetMain <= 0) return 2.0;
-    return Math.max(1.0, Math.min(2.0, vidMeta.dur / targetMain));
 }
 
 /* ========== MAIN GENERATION ========== */
 async function generate() {
     el('genBtn').disabled = true;
     show('progress');
-    
-    isProcessing = true;
-    processingAborted = false;
-    const startTime = performance.now();
-    
-    // v2.2.0: 백그라운드 보호 활성화
+    hide('step5');
+
+    state.isProcessing = true;
+    state.processingAborted = false;
+    state.startTime = performance.now();
+
+    // Clear previous result
+    if (state.resultUrl) {
+        URL.revokeObjectURL(state.resultUrl);
+        state.resultUrl = null;
+    }
+
+    // Background protection
     await requestWakeLock();
     startSilentAudio();
-    
+
+    log('처리 시작...');
+
     try {
-        if (useWebCodecs) {
+        if (state.useWebCodecs) {
             await generateWithWebCodecs();
         } else {
             await generateWithFFmpeg();
         }
-        
-        const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+        const elapsed = ((performance.now() - state.startTime) / 1000).toFixed(1);
         setStatus(`✅ 완료! (${elapsed}초)`);
-        
+        log(`처리 완료: ${elapsed}초`);
+
     } catch (e) {
-        if (processingAborted) {
-            setStatus('⏸️ 중단됨 - 다시 시도해주세요', true);
+        if (state.processingAborted) {
+            setStatus('⏸️ 중단됨', true);
+            log('사용자에 의해 중단됨');
         } else {
             setStatus(`❌ ${e.message}`, true);
+            log(`오류: ${e.message}`);
         }
         console.error(e);
         el('genBtn').disabled = false;
+        show('step5');
     } finally {
-        // v2.2.0: 백그라운드 보호 해제
-        isProcessing = false;
+        state.isProcessing = false;
         releaseWakeLock();
         stopSilentAudio();
-        showBackgroundWarning(false);
     }
 }
 
-/* ========== WebCodecs Pipeline v2.2 ========== */
+function setStatus(msg, isError = false) {
+    const e = el('status');
+    e.textContent = msg;
+    e.className = 'status' + (isError ? ' error' : '');
+}
+
+function setProg(pct) {
+    el('progFill').style.width = pct + '%';
+    el('progText').textContent = pct + '%';
+
+    // Calculate ETA
+    if (pct > 5 && pct < 100) {
+        const elapsed = (performance.now() - state.startTime) / 1000;
+        const estimated = (elapsed / pct) * (100 - pct);
+        el('etaText').textContent = `남은 시간: ${formatETA(estimated)}`;
+    } else {
+        el('etaText').textContent = '';
+    }
+}
+
+function abortProcessing() {
+    state.processingAborted = true;
+    setStatus('⏸️ 중단 중...');
+    log('중단 요청...');
+}
+
+/* ========== WebCodecs Pipeline ========== */
 async function generateWithWebCodecs() {
     setStatus('라이브러리 로딩...');
     setProg(5);
     await loadMp4Muxer();
-    
+
+    const res = CONFIG.resolution[state.resolution];
+    const qual = CONFIG.quality[state.quality];
     const { Muxer, ArrayBufferTarget } = Mp4Muxer;
-    
-    // Muxer 초기화
+
+    // Initialize Muxer
     const muxer = new Muxer({
         target: new ArrayBufferTarget(),
-        video: {
-            codec: 'avc',
-            width: OUTPUT.width,
-            height: OUTPUT.height
-        },
+        video: { codec: 'avc', width: res.width, height: res.height },
         fastStart: 'in-memory'
     });
-    
-    // VideoEncoder 초기화
+
+    // Initialize Encoder
     const encoder = new VideoEncoder({
         output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
         error: e => { throw new Error(`인코더 오류: ${e.message}`); }
     });
-    
+
     await encoder.configure({
         codec: 'avc1.42001f',
-        width: OUTPUT.width,
-        height: OUTPUT.height,
-        bitrate: OUTPUT.bitrate,
-        framerate: OUTPUT.fps,
+        width: res.width,
+        height: res.height,
+        bitrate: qual.bitrate,
+        framerate: state.fps,
         hardwareAcceleration: 'prefer-hardware'
     });
-    
-    let totalFrames = 0;
-    let encodedFrames = 0;
-    const startTime = performance.now();
-    
-    // 인트로 처리
+
+    // Process Intro
     setStatus('인트로 처리 중...');
     setProg(10);
-    
-    const introFrameCount = Math.floor(introMeta.dur * OUTPUT.fps);
-    totalFrames = introFrameCount + Math.floor((OUTPUT.targetDur - introMeta.dur) * OUTPUT.fps);
-    
-    await processVideoFrames(introFile, introMeta, 1, encoder, (i, total) => {
-        encodedFrames = i;
-        lastFrameIndex = i;
+    log('인트로 프레임 처리 시작');
+    if (state.transitionEffect !== 'none') {
+        log(`트랜지션 효과: ${state.transitionEffect} (${state.effectDuration}초)`);
+    }
+
+    const introFrames = Math.floor(state.introMeta.dur * state.fps);
+    const mainFrames = Math.floor((state.targetDuration - state.introMeta.dur) * state.fps);
+    const totalFrames = introFrames + mainFrames;
+
+    // Intro with transition effect at the end
+    const introEffectConfig = state.transitionEffect !== 'none'
+        ? { type: 'transition', position: 'end' }
+        : null;
+
+    await processVideoFrames(state.introFile, state.introMeta, 1, encoder, res, (i, total) => {
         const pct = 10 + Math.floor((i / totalFrames) * 40);
         setProg(pct);
-        
-        const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
-        if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임 (${elapsed}초)`);
-    });
-    
-    // 본편 처리
+        if (i % 30 === 0) setStatus(`인트로: ${i}/${total} 프레임`);
+    }, 0, null, introEffectConfig);
+
+    // Process Main Video
     setStatus('본편 처리 중...');
     const speed = calcSpeed();
-    const introOffset = introMeta.dur * 1000000; // microseconds
-    const mainFrameCount = Math.floor((OUTPUT.targetDur - introMeta.dur) * OUTPUT.fps);
-    
-    await processVideoFrames(vidFile, vidMeta, speed, encoder, (i, total) => {
-        encodedFrames = introFrameCount + i;
-        lastFrameIndex = encodedFrames;
-        const pct = 50 + Math.floor((i / mainFrameCount) * 40);
+    const introOffset = state.introMeta.dur * 1000000; // microseconds
+    log(`본편 처리 시작 (속도: ${speed.toFixed(2)}x)`);
+    if (state.endingEffect !== 'none') {
+        log(`엔딩 효과: ${state.endingEffect} (${state.effectDuration}초)`);
+    }
+
+    // Main video with ending effect at the end
+    const mainEffectConfig = state.endingEffect !== 'none'
+        ? { type: 'ending', position: 'end' }
+        : null;
+
+    await processVideoFrames(state.vidFile, state.vidMeta, speed, encoder, res, (i, total) => {
+        const pct = 50 + Math.floor((i / mainFrames) * 40);
         setProg(pct);
-        
-        const elapsed = ((performance.now() - startTime) / 1000).toFixed(0);
-        if (i % 30 === 0) setStatus(`본편: ${i}/${total} 프레임 (${speed.toFixed(1)}x) - ${elapsed}초`);
-    }, introOffset, mainFrameCount);
-    
-    // 인코딩 완료
+        if (i % 30 === 0) setStatus(`본편: ${i}/${total} (${speed.toFixed(1)}x)`);
+    }, introOffset, mainFrames, mainEffectConfig);
+
+    // Finalize video
     setStatus('MP4 생성 중...');
     setProg(90);
-    
+
     await encoder.flush();
     encoder.close();
     muxer.finalize();
-    
+
     const videoBlob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
-    
-    // v2.3.0: 원본 오디오 추출 + BGM 믹싱 (FFmpeg 사용)
+    log(`비디오 생성 완료: ${formatFileSize(videoBlob.size)}`);
+
+    // Mix audio
     setStatus('오디오 처리 중...');
     setProg(92);
     const finalBlob = await mixAudioWithFFmpeg(videoBlob, speed);
 
     setProg(100);
-    showResultBlob(finalBlob);
+    showResult(finalBlob);
 }
 
-// v2.2.0: 스트리밍 방식 프레임 처리 (중단 체크 추가)
-async function processVideoFrames(file, meta, speed, encoder, onProgress, timestampOffset = 0, maxFrames = null) {
+/**
+ * Process video frames with optional transition/ending effects
+ * @param {File} file - Video file
+ * @param {Object} meta - Video metadata
+ * @param {number} speed - Playback speed
+ * @param {VideoEncoder} encoder - WebCodecs encoder
+ * @param {Object} res - Resolution config
+ * @param {Function} onProgress - Progress callback
+ * @param {number} timestampOffset - Timestamp offset in microseconds
+ * @param {number} maxFrames - Maximum frames to process
+ * @param {Object} effectConfig - Effect configuration {type: 'transition'|'ending'|'none', position: 'end'}
+ */
+async function processVideoFrames(file, meta, speed, encoder, res, onProgress, timestampOffset = 0, maxFrames = null, effectConfig = null) {
     const video = document.createElement('video');
     video.src = URL.createObjectURL(file);
     video.muted = true;
     video.playsInline = true;
-    
+
     await new Promise((resolve, reject) => {
         video.onloadeddata = resolve;
         video.onerror = () => reject(new Error('비디오 로드 실패'));
     });
-    
+
     const canvas = document.createElement('canvas');
-    canvas.width = OUTPUT.width;
-    canvas.height = OUTPUT.height;
+    canvas.width = res.width;
+    canvas.height = res.height;
     const ctx = canvas.getContext('2d', { alpha: false });
-    
+
     const outputDuration = meta.dur / speed;
-    const frameInterval = 1 / OUTPUT.fps;
-    let totalFrames = Math.floor(outputDuration * OUTPUT.fps);
-    
-    // 최대 프레임 제한 (본편용)
+    const frameInterval = 1 / state.fps;
+    let totalFrames = Math.floor(outputDuration * state.fps);
+
     if (maxFrames && totalFrames > maxFrames) {
         totalFrames = maxFrames;
     }
-    
-    for (let i = 0; i < totalFrames; i++) {
-        // v2.2.0: 중단 체크
-        if (processingAborted) {
-            throw new Error('사용자 중단');
+
+    // Calculate effect frames
+    const effectFrames = Math.floor(state.effectDuration * state.fps);
+    let effectType = null;
+    let effectName = 'none';
+
+    if (effectConfig) {
+        effectType = effectConfig.type;
+        if (effectType === 'transition') {
+            effectName = state.transitionEffect;
+        } else if (effectType === 'ending') {
+            effectName = state.endingEffect;
         }
-        
+    }
+
+    for (let i = 0; i < totalFrames; i++) {
+        if (state.processingAborted) throw new Error('사용자 중단');
+
         const sourceTime = i * frameInterval * speed;
         if (sourceTime >= meta.dur) break;
-        
-        // Seek to frame
+
         video.currentTime = sourceTime;
         await new Promise(r => { video.onseeked = r; });
-        
-        // 크롭 계산
+
+        // Calculate crop
         let sx = 0, sy = 0, sw = video.videoWidth, sh = video.videoHeight;
-        
-        if (preset && PRESETS[preset]) {
-            const p = PRESETS[preset];
+
+        if (state.devicePreset && CONFIG.devices[state.devicePreset]) {
+            const p = CONFIG.devices[state.devicePreset];
             sy = Math.floor(video.videoHeight * p.topCutPct);
             sh = Math.floor(video.videoHeight * (1 - p.topCutPct - p.bottomCutPct));
         }
-        
-        // Canvas에 그리기 (letterbox)
+
+        // Draw to canvas (letterbox)
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, OUTPUT.width, OUTPUT.height);
-        
-        const scale = Math.min(OUTPUT.width / sw, OUTPUT.height / sh);
+        ctx.fillRect(0, 0, res.width, res.height);
+
+        const scale = Math.min(res.width / sw, res.height / sh);
         const dw = sw * scale;
         const dh = sh * scale;
-        const dx = (OUTPUT.width - dw) / 2;
-        const dy = (OUTPUT.height - dh) / 2;
-        
+        const dx = (res.width - dw) / 2;
+        const dy = (res.height - dh) / 2;
+
         ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
-        
-        // VideoFrame 생성 및 인코딩
+
+        // Apply effects at the end of the video segment
+        if (effectName !== 'none' && effectType) {
+            const framesFromEnd = totalFrames - 1 - i;
+
+            if (effectType === 'transition' && framesFromEnd < effectFrames) {
+                // Transition effect at end of intro (progress 0->1 means effect fading out)
+                const progress = 1 - (framesFromEnd / effectFrames);
+                applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
+            } else if (effectType === 'ending' && framesFromEnd < effectFrames) {
+                // Ending effect at end of main video (progress 0->1 means effect fading in)
+                const progress = 1 - (framesFromEnd / effectFrames);
+                applyEndingEffect(ctx, effectName, progress, res.width, res.height);
+            }
+        }
+
+        // Create and encode frame
         const timestamp = timestampOffset + (i * frameInterval * 1000000);
         const frame = new VideoFrame(canvas, { timestamp });
-        
         encoder.encode(frame, { keyFrame: i % 60 === 0 });
         frame.close();
-        
-        // 진행률 콜백
+
         if (onProgress) onProgress(i + 1, totalFrames);
-        
-        // v2.2.0: 더 자주 yield (UI 반응성 + 백그라운드 감지)
-        if (i % 3 === 0) {
-            await new Promise(r => setTimeout(r, 0));
-        }
+
+        // Yield to main thread periodically
+        if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
     }
-    
+
     URL.revokeObjectURL(video.src);
 }
 
-// mp4-muxer CDN 로딩
 async function loadMp4Muxer() {
     if (window.Mp4Muxer) return;
-    
+
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/build/mp4-muxer.min.js';
@@ -601,7 +1255,7 @@ async function loadMp4Muxer() {
     });
 }
 
-// v2.3.0: 원본 오디오 + BGM 믹싱
+/* ========== Audio Mixing with FFmpeg ========== */
 async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('FFmpeg 로딩 중...');
     await initFFmpeg();
@@ -612,19 +1266,20 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
 
     const { fetchFile } = FFmpeg;
 
-    // 파일 쓰기
-    ffmpeg.FS('writeFile', 'video.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
-    ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(introFile));
-    ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(vidFile));
-    if (bgmFile) {
-        ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
+    // Write files to FFmpeg
+    state.ffmpeg.FS('writeFile', 'video.mp4', new Uint8Array(await videoBlob.arrayBuffer()));
+    state.ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(state.introFile));
+    state.ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(state.vidFile));
+    if (state.bgmFile) {
+        state.ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(state.bgmFile));
     }
 
     setStatus('인트로 오디오 추출...');
     setProg(93);
+    log('인트로 오디오 추출');
 
-    // 1. 인트로 오디오 추출 (포맷 통일: 44100Hz, stereo)
-    await ffmpeg.run(
+    // Extract intro audio
+    await state.ffmpeg.run(
         '-i', 'intro.mp4',
         '-vn', '-acodec', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         'intro_audio.m4a'
@@ -632,22 +1287,24 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
 
     setStatus('본편 오디오 추출...');
     setProg(94);
+    log('본편 오디오 추출');
 
-    // 2. 본편 오디오 추출 (2단계: 추출 → 속도조절)
-    // Step 2a: 먼저 원본 오디오 추출
-    await ffmpeg.run(
+    // Extract main audio (2-step process)
+    await state.ffmpeg.run(
         '-i', 'lecture.mp4',
-        '-vn',
-        '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+        '-vn', '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
         'lecture_audio_raw.m4a'
     );
 
     setStatus('오디오 속도 조절...');
+    log(`오디오 속도 조절: ${mainSpeed.toFixed(2)}x`);
 
-    // Step 2b: 속도 조절 (atempo는 0.5~2.0 범위만 지원)
-    const af = mainSpeed <= 2.0 ? `atempo=${mainSpeed.toFixed(4)}` : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(4)}`;
+    // Speed adjust (atempo supports 0.5-2.0)
+    const af = mainSpeed <= 2.0
+        ? `atempo=${mainSpeed.toFixed(4)}`
+        : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(4)}`;
 
-    await ffmpeg.run(
+    await state.ffmpeg.run(
         '-i', 'lecture_audio_raw.m4a',
         '-filter:a', af,
         '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
@@ -656,12 +1313,13 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
 
     setStatus('오디오 합치기...');
     setProg(95);
+    log('인트로 + 본편 오디오 연결');
 
-    // 3. 인트로 + 본편 오디오 합치기
-    ffmpeg.FS('writeFile', 'audio_list.txt',
+    // Concat intro + main audio
+    state.ffmpeg.FS('writeFile', 'audio_list.txt',
         new TextEncoder().encode("file 'intro_audio.m4a'\nfile 'main_audio.m4a'\n"));
 
-    await ffmpeg.run(
+    await state.ffmpeg.run(
         '-f', 'concat', '-safe', '0',
         '-i', 'audio_list.txt',
         '-c', 'copy',
@@ -671,30 +1329,29 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('영상에 오디오 합성...');
     setProg(96);
 
-    // 4. BGM 믹싱 여부에 따라 처리
-    if (bgmFile && bgmVolume > 0) {
+    // Mix with BGM or just add audio
+    if (state.bgmFile && state.bgmVolume > 0) {
         setStatus('BGM 믹싱 중...');
         setProg(97);
+        log(`BGM 믹싱: 볼륨 ${(state.bgmVolume * 100).toFixed(0)}%`);
 
-        // 원본 오디오 + BGM 믹싱
-        await ffmpeg.run(
+        await state.ffmpeg.run(
             '-i', 'video.mp4',
             '-i', 'combined_audio.m4a',
             '-stream_loop', '-1', '-i', 'bgm.mp3',
-            '-t', String(OUTPUT.targetDur),
+            '-t', String(state.targetDuration),
             '-filter_complex',
-            `[1:a]volume=1[orig];[2:a]volume=${bgmVolume.toFixed(2)}[bgm];[orig][bgm]amix=inputs=2:duration=first[aout]`,
+            `[1:a]volume=1[orig];[2:a]volume=${state.bgmVolume.toFixed(2)}[bgm];[orig][bgm]amix=inputs=2:duration=first[aout]`,
             '-map', '0:v', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
             '-shortest',
             'output.mp4'
         );
     } else {
-        // BGM 없이 원본 오디오만
-        await ffmpeg.run(
+        await state.ffmpeg.run(
             '-i', 'video.mp4',
             '-i', 'combined_audio.m4a',
-            '-t', String(OUTPUT.targetDur),
+            '-t', String(state.targetDuration),
             '-map', '0:v', '-map', '1:a',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
             '-shortest',
@@ -703,77 +1360,77 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     }
 
     setProg(99);
-    const data = ffmpeg.FS('readFile', 'output.mp4');
+    const data = state.ffmpeg.FS('readFile', 'output.mp4');
+
+    // Cleanup
+    cleanupFFmpegFiles();
+
     return new Blob([data.buffer], { type: 'video/mp4' });
 }
 
 /* ========== FFmpeg Fallback ========== */
-let ffmpeg = null;
-
 async function generateWithFFmpeg() {
     setStatus('FFmpeg 로딩...');
     setProg(5);
     await initFFmpeg();
-    
+
     setStatus('파일 준비...');
     setProg(10);
-    await writeFiles();
-    
+    await writeFilesToFFmpeg();
+
     setStatus('인트로 처리...');
     setProg(15);
-    await prepareIntro();
-    
+    await prepareIntroFFmpeg();
+
     setStatus('본편 처리... (시간 소요)');
     setProg(20);
-    await processMain();
-    
+    await processMainFFmpeg();
+
     setStatus('영상 합치기...');
     setProg(80);
-    await concatVideos();
-    
-    if (bgmFile) {
+    await concatVideosFFmpeg();
+
+    if (state.bgmFile) {
         setStatus('BGM 믹싱...');
         setProg(90);
-        await mixBgm();
+        await mixBgmFFmpeg();
     }
-    
+
     setProg(100);
-    await showResult();
+    await showFFmpegResult();
 }
 
 async function initFFmpeg() {
-    if (ffmpeg && ffmpeg.isLoaded()) return;
+    if (state.ffmpeg && state.ffmpeg.isLoaded()) return;
 
-    // FFmpeg CDN 로드 확인
+    // Load FFmpeg script if not available
     if (typeof FFmpeg === 'undefined') {
-        console.warn('FFmpeg 미로드 - 수동 로드 시도');
+        log('FFmpeg 스크립트 로드...');
         await loadFFmpegScript();
     }
 
-    // 여전히 없으면 에러
     if (typeof FFmpeg === 'undefined') {
         throw new Error('FFmpeg 로드 실패 - 네트워크 확인 후 새로고침하세요');
     }
 
     const { createFFmpeg } = FFmpeg;
-    ffmpeg = createFFmpeg({
+    state.ffmpeg = createFFmpeg({
         log: true,
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
 
-    ffmpeg.setProgress(({ ratio }) => {
+    state.ffmpeg.setProgress(({ ratio }) => {
         if (ratio > 0) {
             el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
         }
     });
 
-    await ffmpeg.load();
+    await state.ffmpeg.load();
+    log('FFmpeg 로드 완료');
 }
 
-// FFmpeg CDN 스크립트 동적 로드
 async function loadFFmpegScript() {
     return new Promise((resolve, reject) => {
-        // 이미 로드되어 있으면 스킵
         if (typeof FFmpeg !== 'undefined') {
             resolve();
             return;
@@ -782,201 +1439,280 @@ async function loadFFmpegScript() {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
         script.onload = () => {
-            console.log('✅ FFmpeg 스크립트 로드 완료');
+            log('FFmpeg 스크립트 로드 완료');
             resolve();
         };
-        script.onerror = () => {
-            console.error('❌ FFmpeg 스크립트 로드 실패');
-            reject(new Error('FFmpeg CDN 로드 실패'));
-        };
+        script.onerror = () => reject(new Error('FFmpeg CDN 로드 실패'));
         document.head.appendChild(script);
     });
 }
 
-async function writeFiles() {
+async function writeFilesToFFmpeg() {
     const { fetchFile } = FFmpeg;
-    ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(vidFile));
-    ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(introFile));
-    if (bgmFile) {
-        ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(bgmFile));
+    state.ffmpeg.FS('writeFile', 'lecture.mp4', await fetchFile(state.vidFile));
+    state.ffmpeg.FS('writeFile', 'intro.mp4', await fetchFile(state.introFile));
+    if (state.bgmFile) {
+        state.ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(state.bgmFile));
     }
 }
 
-async function prepareIntro() {
-    const vf = `scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease,` +
-               `pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
-    
-    await ffmpeg.run(
+async function prepareIntroFFmpeg() {
+    const res = CONFIG.resolution[state.resolution];
+    const vf = `scale=${res.width}:${res.height}:force_original_aspect_ratio=decrease,pad=${res.width}:${res.height}:(ow-iw)/2:(oh-ih)/2:black`;
+
+    await state.ffmpeg.run(
         '-i', 'intro.mp4',
         '-vf', vf,
-        '-r', String(OUTPUT.fps),
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '26',
-        '-c:a', 'aac',
-        '-b:a', '128k',
+        '-r', String(state.fps),
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26',
+        '-c:a', 'aac', '-b:a', '128k',
         'intro_ready.mp4'
     );
 }
 
-async function processMain() {
+async function processMainFFmpeg() {
+    const res = CONFIG.resolution[state.resolution];
     const speed = calcSpeed();
-    
+
     let vf = `setpts=PTS/${speed}`;
-    
-    if (preset && PRESETS[preset]) {
-        const p = PRESETS[preset];
+
+    if (state.devicePreset && CONFIG.devices[state.devicePreset]) {
+        const p = CONFIG.devices[state.devicePreset];
         const cropH = 1 - p.topCutPct - p.bottomCutPct;
         vf += `,crop=in_w:in_h*${cropH.toFixed(4)}:0:in_h*${p.topCutPct.toFixed(4)}`;
     }
-    
-    vf += `,scale=${OUTPUT.width}:${OUTPUT.height}:force_original_aspect_ratio=decrease`;
-    vf += `,pad=${OUTPUT.width}:${OUTPUT.height}:(ow-iw)/2:(oh-ih)/2:black`;
-    
+
+    vf += `,scale=${res.width}:${res.height}:force_original_aspect_ratio=decrease`;
+    vf += `,pad=${res.width}:${res.height}:(ow-iw)/2:(oh-ih)/2:black`;
+
     const af = speed <= 2.0 ? `atempo=${speed}` : `atempo=2.0,atempo=${(speed/2).toFixed(3)}`;
-    
-    await ffmpeg.run(
+
+    await state.ffmpeg.run(
         '-i', 'lecture.mp4',
         '-vf', vf,
         '-af', af,
-        '-r', String(OUTPUT.fps),
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '26',
-        '-c:a', 'aac',
-        '-b:a', '128k',
+        '-r', String(state.fps),
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26',
+        '-c:a', 'aac', '-b:a', '128k',
         'main_ready.mp4'
     );
 }
 
-async function concatVideos() {
-    ffmpeg.FS('writeFile', 'concat.txt', 
+async function concatVideosFFmpeg() {
+    state.ffmpeg.FS('writeFile', 'concat.txt',
         new TextEncoder().encode("file 'intro_ready.mp4'\nfile 'main_ready.mp4'\n"));
-    
-    await ffmpeg.run(
-        '-f', 'concat',
-        '-safe', '0',
+
+    await state.ffmpeg.run(
+        '-f', 'concat', '-safe', '0',
         '-i', 'concat.txt',
         '-c', 'copy',
         'output.mp4'
     );
 }
 
-async function mixBgm() {
-    // v2.3.0: bgmVolume 슬라이더 값 사용
-    await ffmpeg.run(
+async function mixBgmFFmpeg() {
+    await state.ffmpeg.run(
         '-i', 'output.mp4',
-        '-stream_loop', '-1',
-        '-i', 'bgm.mp3',
-        '-t', String(OUTPUT.targetDur),
+        '-stream_loop', '-1', '-i', 'bgm.mp3',
+        '-t', String(state.targetDuration),
         '-filter_complex',
-        `[0:a]volume=1[a1];[1:a]volume=${bgmVolume.toFixed(2)}[a2];[a1][a2]amix=inputs=2:duration=first`,
-        '-c:v', 'copy',
-        '-c:a', 'aac',
-        '-b:a', '192k',
+        `[0:a]volume=1[a1];[1:a]volume=${state.bgmVolume.toFixed(2)}[a2];[a1][a2]amix=inputs=2:duration=first`,
+        '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
         'final.mp4'
     );
 
-    ffmpeg.FS('rename', 'final.mp4', 'output.mp4');
+    state.ffmpeg.FS('rename', 'final.mp4', 'output.mp4');
 }
 
-async function showResult() {
-    const data = ffmpeg.FS('readFile', 'output.mp4');
+async function showFFmpegResult() {
+    const data = state.ffmpeg.FS('readFile', 'output.mp4');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
-    showResultBlob(blob);
+    cleanupFFmpegFiles();
+    showResult(blob);
 }
 
-function showResultBlob(blob) {
-    const url = URL.createObjectURL(blob);
-    const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
-    
-    el('preview').src = url;
-    el('dlLink').href = url;
-    el('dlLink').download = `lecture_shorts_${Date.now()}.mp4`;
-    
-    // 파일 크기 표시
-    setStatus(`✅ 완료! (${sizeMB}MB)`);
-    
-    show('result');
-    hide('step5');
-}
+function cleanupFFmpegFiles() {
+    const files = ['video.mp4', 'intro.mp4', 'lecture.mp4', 'bgm.mp3',
+                   'intro_audio.m4a', 'lecture_audio_raw.m4a', 'main_audio.m4a',
+                   'combined_audio.m4a', 'intro_ready.mp4', 'main_ready.mp4',
+                   'output.mp4', 'final.mp4', 'audio_list.txt', 'concat.txt'];
 
-/* ========== UTILITIES ========== */
-function el(id) { return document.getElementById(id); }
-function show(id) { el(id).style.display = 'block'; }
-function hide(id) { el(id).style.display = 'none'; }
-
-function showInfo(id, html, cls) {
-    const e = el(id);
-    e.innerHTML = html;
-    e.className = 'file-info show ' + (cls || '');
-}
-
-function setStatus(msg, isErr) {
-    const e = el('status');
-    e.textContent = msg;
-    e.className = 'status' + (isErr ? ' error' : '');
-}
-
-function setProg(pct) {
-    el('progFill').style.width = pct + '%';
-    el('progText').textContent = pct + '%';
-}
-
-function fmtDur(sec) {
-    return `${Math.floor(sec/60)}분 ${Math.floor(sec%60)}초`;
-}
-
-async function getVidMeta(file) {
-    return new Promise((resolve, reject) => {
-        const vid = document.createElement('video');
-        vid.preload = 'metadata';
-        vid.onloadedmetadata = () => {
-            resolve({ dur: vid.duration, w: vid.videoWidth, h: vid.videoHeight });
-            URL.revokeObjectURL(vid.src);
-        };
-        vid.onerror = () => reject(new Error('로드 실패'));
-        vid.src = URL.createObjectURL(file);
+    files.forEach(f => {
+        try { state.ffmpeg.FS('unlink', f); } catch (e) {}
     });
+    log('임시 파일 정리 완료');
 }
 
-function reset() {
-    vidFile = introFile = bgmFile = preset = null;
-    vidMeta = introMeta = { dur: 0, w: 0, h: 0 };
+/* ========== RESULT ========== */
+function showResult(blob) {
+    state.resultBlob = blob;
+    state.resultUrl = URL.createObjectURL(blob);
 
-    el('vidIn').value = el('introIn').value = el('bgmIn').value = '';
-    el('vidInfo').className = el('introInfo').className = el('bgmInfo').className = 'file-info';
-    el('vidInfo').innerHTML = el('introInfo').innerHTML = el('bgmInfo').innerHTML = '';
+    const sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+    const elapsed = ((performance.now() - state.startTime) / 1000).toFixed(1);
 
-    // v2.3.0: BGM 볼륨 초기화
-    hide('bgmVolControl');
-    bgmVolume = 0.1;
-    el('bgmVolSlider').value = 10;
-    el('bgmVolValue').textContent = '10%';
-    if (bgmPreviewAudio) {
-        bgmPreviewAudio.pause();
-        bgmPreviewAudio = null;
+    // Stats
+    el('resultStats').innerHTML = `
+        📦 파일 크기: ${sizeMB}MB | ⏱️ 처리 시간: ${elapsed}초
+    `;
+
+    // Preview
+    el('preview').src = state.resultUrl;
+
+    // Download link
+    el('dlLink').href = state.resultUrl;
+    el('dlLink').download = `lecture_shorts_${Date.now()}.mp4`;
+
+    hide('progress');
+    show('result');
+
+    log(`결과: ${sizeMB}MB, ${elapsed}초`);
+}
+
+async function shareResult() {
+    if (!state.resultBlob) return;
+
+    if (navigator.share && navigator.canShare) {
+        const file = new File([state.resultBlob], 'lecture_shorts.mp4', { type: 'video/mp4' });
+
+        if (navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Lecture Shorts',
+                    text: 'Lecture Shorts Factory로 만든 영상'
+                });
+                log('공유 완료');
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    alert('공유에 실패했습니다.');
+                }
+            }
+            return;
+        }
     }
-    el('bgmPreviewBtn').textContent = '▶️ 미리듣기';
 
+    // Fallback: copy URL
+    alert('이 브라우저에서는 공유 기능을 사용할 수 없습니다.\n다운로드 후 직접 공유해주세요.');
+}
+
+/* ========== RESET ========== */
+function reset() {
+    // Clear files
+    state.vidFile = null;
+    state.introFile = null;
+    state.bgmFile = null;
+    state.vidMeta = { dur: 0, w: 0, h: 0 };
+    state.introMeta = { dur: 0, w: 0, h: 0 };
+
+    // Clear inputs
+    el('vidIn').value = '';
+    el('introIn').value = '';
+    el('bgmIn').value = '';
+
+    // Clear info
+    ['vidInfo', 'introInfo', 'bgmInfo'].forEach(id => {
+        const e = el(id);
+        e.className = 'file-info';
+        e.innerHTML = '';
+    });
+
+    // Reset BGM controls
+    hide('bgmVolControl');
+    state.bgmVolume = CONFIG.defaults.bgmVolume;
+    el('bgmVolSlider').value = Math.round(state.bgmVolume * 100);
+    el('bgmVolValue').textContent = Math.round(state.bgmVolume * 100) + '%';
+    if (state.bgmPreviewAudio) {
+        state.bgmPreviewAudio.pause();
+        state.bgmPreviewAudio = null;
+    }
+    el('bgmPreviewBtn').textContent = '▶️ 미리듣기 (5초)';
+
+    // Reset device preset
     setPreset(null);
+
+    // Reset transition effects
+    state.transitionEffect = 'none';
+    state.endingEffect = 'none';
+    state.effectDuration = 1.0;
+
+    // Reset effect buttons in UI
+    document.querySelectorAll('#transitionEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
+    document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
+    const effectDurationSelect = el('effectDuration');
+    if (effectDurationSelect) effectDurationSelect.value = '1';
+
+    // Clear result
+    if (state.resultUrl) {
+        URL.revokeObjectURL(state.resultUrl);
+        state.resultUrl = null;
+    }
+    state.resultBlob = null;
+
+    // Reset UI
     hide('result');
     hide('progress');
+    hide('summary');
+    hide('fileSizeWarn');
     show('step5');
+
     el('genBtn').disabled = true;
     setStatus('');
     setProg(0);
+    el('progressLog').innerHTML = '';
 
-    // v2.2.0: 백그라운드 보호 해제
-    isProcessing = false;
-    processingAborted = false;
+    // Reset processing state
+    state.isProcessing = false;
+    state.processingAborted = false;
     releaseWakeLock();
     stopSilentAudio();
-    showBackgroundWarning(false);
+
+    log('리셋 완료');
 }
 
-// v2.2.0: 작업 중단
-function abortProcessing() {
-    processingAborted = true;
-    setStatus('⏸️ 중단 중...');
+/* ========== SERVICE WORKER ========== */
+async function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        try {
+            const reg = await navigator.serviceWorker.register('./sw.js');
+            log('Service Worker 등록됨');
+
+            // Check for updates
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        show('updateBanner');
+                    }
+                });
+            });
+        } catch (e) {
+            console.warn('SW 등록 실패:', e);
+        }
+    }
+}
+
+function dismissUpdate() {
+    hide('updateBanner');
+}
+
+/* ========== MODALS ========== */
+function showHelp() {
+    el('helpModal').style.display = 'flex';
+}
+
+function showKeyboardShortcuts() {
+    el('shortcutsModal').style.display = 'flex';
+}
+
+function showAbout() {
+    el('aboutModal').style.display = 'flex';
+}
+
+function closeModal(id) {
+    el(id).style.display = 'none';
 }
