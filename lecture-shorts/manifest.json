@@ -1,13 +1,13 @@
 {
-    "name": "Lecture Shorts Factory v3.0",
+    "name": "Lecture Shorts Factory v4.0 Pro",
     "short_name": "LectureShorts",
-    "description": "4분 강의 영상을 3분 유튜브 쇼츠로 자동 변환 - 원본 오디오 유지 + BGM 볼륨 조절",
-    "version": "3.0.0",
+    "description": "강의 영상을 유튜브 쇼츠로 자동 변환 - Pro Edition with WebCodecs",
+    "version": "4.0.0",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
     "orientation": "portrait",
-    "background_color": "#1a1a2e",
+    "background_color": "#0f0f1a",
     "theme_color": "#e94560",
     "categories": ["utilities", "video", "education"],
     "icons": [
@@ -45,5 +45,7 @@
             "icons": [{ "src": "./icons/icon-192x192.png", "sizes": "192x192" }]
         }
     ],
+    "screenshots": [],
+    "related_applications": [],
     "prefer_related_applications": false
 }
