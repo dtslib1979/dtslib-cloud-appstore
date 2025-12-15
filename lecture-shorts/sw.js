@@ -2,7 +2,7 @@
  * Lecture Shorts Factory - Service Worker v2.2.0
  */
 
-const CACHE_NAME = 'lecture-shorts-v2.2.0';
+const CACHE_NAME = 'lecture-shorts-v2.2.1';
 
 const APP_FILES = [
     './',
