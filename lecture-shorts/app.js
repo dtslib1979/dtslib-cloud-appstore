@@ -1,5 +1,5 @@
 /**
- * Lecture Shorts Factory v4.1 Pro
+ * Lecture Shorts Factory v5.0 Pro
  * Professional PWA for Video Processing
  *
  * Features:
