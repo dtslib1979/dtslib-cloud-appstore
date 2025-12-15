@@ -1,5 +1,5 @@
 /**
- * Lecture Shorts Factory v5.0 Pro
+ * Lecture Shorts Factory v5.5 Pro
  * Professional PWA for Video Processing
  *
  * Features:
@@ -464,207 +464,150 @@ function applyTransitionEffect(ctx, effect, progress, width, height) {
 }
 
 /**
- * TV Effect - Black bars closing/opening from center (like old TV turning off/on)
+ * TV Effect - Black bars closing from top/bottom (like old TV turning off)
+ * progress: 1 = normal, 0 = fully closed (black)
  */
 function applyTVEffect(ctx, progress, width, height) {
-    // Save current canvas content
-    const imageData = ctx.getImageData(0, 0, width, height);
+    // 검은 바가 위아래에서 닫히는 효과
+    const barSize = (height / 2) * (1 - progress);
 
-    // Clear canvas
+    // 위쪽 검은 바
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width, barSize);
 
-    // Calculate effect
-    const effectProgress = Math.pow(progress, 0.5); // Ease in
-    const barHeight = (height / 2) * (1 - effectProgress);
+    // 아래쪽 검은 바
+    ctx.fillRect(0, height - barSize, width, barSize);
 
-    // Draw content in the remaining space
-    const visibleHeight = height - (barHeight * 2);
-
-    if (visibleHeight > 0) {
-        // Create temporary canvas for scaling
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-
-        // Draw scaled content
-        ctx.drawImage(tempCanvas, 0, 0, width, height, 0, barHeight, width, visibleHeight);
+    // 스캔라인 효과
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.3 * (1 - progress)})`;
+    for (let y = 0; y < height; y += 3) {
+        ctx.fillRect(0, y, width, 1);
     }
 
-    // Add scanlines for TV effect
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-    for (let y = 0; y < height; y += 4) {
+    // 마지막에 흰색 수평선 (TV 꺼질 때)
+    if (progress < 0.1) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, height / 2 - 2, width, 4);
+    }
+}
+
+/**
+ * VHS Effect - Distortion, noise, tracking lines
+ * progress: 1 = normal, 0 = max distortion
+ */
+function applyVHSEffect(ctx, progress, width, height) {
+    const intensity = 1 - progress; // 0 -> 1
+
+    // 노이즈 오버레이
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.15 * intensity})`;
+    for (let i = 0; i < 50 * intensity; i++) {
+        const x = Math.random() * width;
+        const y = Math.random() * height;
+        ctx.fillRect(x, y, Math.random() * 3, 1);
+    }
+
+    // 수평 글리치 라인
+    ctx.fillStyle = `rgba(0, 255, 255, ${0.3 * intensity})`;
+    for (let i = 0; i < 5 * intensity; i++) {
+        const y = Math.random() * height;
         ctx.fillRect(0, y, width, 2);
     }
 
-    // Add CRT glow effect
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - progress)})`;
+    // 트래킹 라인 (위에서 아래로)
+    const trackY = ((1 - progress) * 1.5 * height) % height;
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.5 * intensity})`;
+    ctx.fillRect(0, trackY, width, 8);
+    ctx.fillRect(0, trackY + 15, width, 3);
+
+    // 색수차 효과 - 빨간색/파란색 오프셋
+    if (intensity > 0.3) {
+        ctx.globalCompositeOperation = 'screen';
+        ctx.fillStyle = `rgba(255, 0, 0, ${0.1 * intensity})`;
+        ctx.fillRect(3 * intensity, 0, width, height);
+        ctx.fillStyle = `rgba(0, 0, 255, ${0.1 * intensity})`;
+        ctx.fillRect(-3 * intensity, 0, width, height);
+        ctx.globalCompositeOperation = 'source-over';
+    }
+}
+
+/**
+ * Focus Effect - Vignette fade to black
+ * progress: 1 = normal, 0 = fully dark vignette
+ */
+function applyFocusEffect(ctx, progress, width, height) {
+    const intensity = 1 - progress;
+
+    // 방사형 비네팅 (중앙은 밝고 가장자리는 어둡게)
+    const gradient = ctx.createRadialGradient(
+        width / 2, height / 2, 0,
+        width / 2, height / 2, Math.max(width, height) * 0.6
+    );
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.5, `rgba(0,0,0,${0.3 * intensity})`);
+    gradient.addColorStop(1, `rgba(0,0,0,${0.9 * intensity})`);
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+
+    // 페이드 투 블랙
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.7 * intensity})`;
     ctx.fillRect(0, 0, width, height);
 }
 
 /**
- * VHS Effect - Distortion, color shift, noise
- */
-function applyVHSEffect(ctx, progress, width, height) {
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    const intensity = (1 - progress) * 0.8; // Stronger at start, fading out
-
-    // Horizontal shift (tracking error)
-    const shiftAmount = Math.sin(progress * Math.PI * 4) * 10 * intensity;
-
-    // Color channel separation
-    const redShift = Math.floor(5 * intensity);
-    const blueShift = -Math.floor(5 * intensity);
-
-    // Apply effects
-    for (let y = 0; y < height; y++) {
-        const rowOffset = y * width * 4;
-
-        // Random horizontal glitch lines
-        if (Math.random() < 0.05 * intensity) {
-            for (let x = 0; x < width; x++) {
-                const i = rowOffset + x * 4;
-                data[i] = data[i] * 0.8 + 50;     // R
-                data[i + 1] = data[i + 1] * 0.7;  // G
-                data[i + 2] = data[i + 2] * 0.9;  // B
-            }
-        }
-
-        // Add noise
-        for (let x = 0; x < width; x++) {
-            const i = rowOffset + x * 4;
-            const noise = (Math.random() - 0.5) * 40 * intensity;
-            data[i] = Math.max(0, Math.min(255, data[i] + noise));
-            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
-            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
-        }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    // Add VHS tracking lines
-    ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * intensity})`;
-    const lineY = (Math.sin(progress * Math.PI * 8) * 0.5 + 0.5) * height;
-    ctx.fillRect(0, lineY, width, 3);
-}
-
-/**
- * Focus Effect - Blur to sharp (or sharp to blur)
- */
-function applyFocusEffect(ctx, progress, width, height) {
-    // Use CSS filter for blur (applied via canvas filter)
-    const blurAmount = Math.max(0, (1 - progress) * 15); // 15px blur fading to sharp
-
-    if (blurAmount > 0.5) {
-        // Save current state
-        const imageData = ctx.getImageData(0, 0, width, height);
-
-        // Apply simple box blur
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-
-        // Multi-pass blur simulation
-        ctx.globalAlpha = 0.2;
-        const passes = Math.ceil(blurAmount / 3);
-        for (let i = 0; i < passes; i++) {
-            const offset = i * 2;
-            ctx.drawImage(tempCanvas, -offset, 0);
-            ctx.drawImage(tempCanvas, offset, 0);
-            ctx.drawImage(tempCanvas, 0, -offset);
-            ctx.drawImage(tempCanvas, 0, offset);
-        }
-        ctx.globalAlpha = 1.0;
-
-        // Add vignette for focus effect
-        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.7);
-        gradient.addColorStop(0, 'rgba(0,0,0,0)');
-        gradient.addColorStop(1, `rgba(0,0,0,${0.5 * (1 - progress)})`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
-    }
-}
-
-/**
- * Tremble/Shake Effect - Screen shake
+ * Tremble/Shake Effect - Flash and shake simulation
+ * progress: 1 = normal, 0 = max shake/flash
  */
 function applyTrembleEffect(ctx, progress, width, height) {
-    const intensity = (1 - progress) * 15; // Shake amount in pixels
+    const intensity = 1 - progress;
 
-    if (intensity > 0.5) {
-        // Save current content
-        const imageData = ctx.getImageData(0, 0, width, height);
-
-        // Random shake offset
-        const shakeX = (Math.random() - 0.5) * intensity * 2;
-        const shakeY = (Math.random() - 0.5) * intensity * 2;
-        const rotation = (Math.random() - 0.5) * 0.02 * intensity;
-
-        // Clear and redraw with offset
-        ctx.fillStyle = '#000';
+    // 플래시 효과 (흰색 깜빡임)
+    if (Math.random() < intensity * 0.5) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * intensity})`;
         ctx.fillRect(0, 0, width, height);
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
-
-        // Apply transformation
-        ctx.save();
-        ctx.translate(width/2 + shakeX, height/2 + shakeY);
-        ctx.rotate(rotation);
-        ctx.drawImage(tempCanvas, -width/2, -height/2);
-        ctx.restore();
-
-        // Add motion blur effect lines
-        ctx.fillStyle = `rgba(255,255,255,${0.05 * (1 - progress)})`;
-        for (let i = 0; i < 3; i++) {
-            ctx.fillRect(0, Math.random() * height, width, 1);
-        }
     }
+
+    // 검은색 프레임 깜빡임
+    if (Math.random() < intensity * 0.3) {
+        ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * intensity})`;
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    // 수평 글리치 라인
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.4 * intensity})`;
+    for (let i = 0; i < 10 * intensity; i++) {
+        const y = Math.random() * height;
+        const h = Math.random() * 5 + 1;
+        ctx.fillRect(0, y, width, h);
+    }
+
+    // 가장자리 어둡게
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * intensity})`;
+    ctx.fillRect(0, 0, width, height);
 }
 
 /**
- * Zoom Effect - Zoom in/out transition
+ * Zoom Effect - Zoom out with fade to black
+ * progress: 1 = normal, 0 = zoomed out and dark
  */
 function applyZoomEffect(ctx, progress, width, height) {
-    // Zoom out: starts big, ends at normal size
-    const scale = 1 + (1 - progress) * 0.5; // 1.5x to 1x
+    const intensity = 1 - progress;
 
-    if (scale > 1.01) {
-        const imageData = ctx.getImageData(0, 0, width, height);
+    // 중앙으로 수렴하는 원형 페이드
+    const gradient = ctx.createRadialGradient(
+        width / 2, height / 2, 0,
+        width / 2, height / 2, Math.max(width, height) * (0.8 - intensity * 0.5)
+    );
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.7, `rgba(0,0,0,${0.5 * intensity})`);
+    gradient.addColorStop(1, `rgba(0,0,0,${1 * intensity})`);
 
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = width;
-        tempCanvas.height = height;
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCtx.putImageData(imageData, 0, 0);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
 
-        // Clear and draw zoomed
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, width, height);
-
-        const scaledWidth = width * scale;
-        const scaledHeight = height * scale;
-        const offsetX = (width - scaledWidth) / 2;
-        const offsetY = (height - scaledHeight) / 2;
-
-        ctx.drawImage(tempCanvas, offsetX, offsetY, scaledWidth, scaledHeight);
-
-        // Add radial fade for zoom effect
-        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height) * 0.6);
-        gradient.addColorStop(0, 'rgba(0,0,0,0)');
-        gradient.addColorStop(1, `rgba(0,0,0,${0.3 * (1 - progress)})`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
-    }
+    // 추가 페이드
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * intensity})`;
+    ctx.fillRect(0, 0, width, height);
 }
 
 /**
@@ -1217,13 +1160,15 @@ async function processVideoFrames(file, meta, speed, encoder, res, onProgress, t
         if (effectName !== 'none' && effectType) {
             const framesFromEnd = totalFrames - 1 - i;
 
-            if (effectType === 'transition' && framesFromEnd < effectFrames) {
-                // Transition effect at end of intro: fade OUT (full image -> effect)
-                const progress = framesFromEnd / effectFrames; // 1 -> 0
-                applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
-            } else if (effectType === 'ending' && framesFromEnd < effectFrames) {
-                // Ending effect at end of main video: fade OUT (full image -> effect)
-                const progress = framesFromEnd / effectFrames; // 1 -> 0
+            if (framesFromEnd < effectFrames) {
+                // progress: 1 (시작) -> 0 (끝, 완전히 효과 적용)
+                const progress = framesFromEnd / effectFrames;
+
+                // 첫 프레임에서만 로그
+                if (framesFromEnd === effectFrames - 1) {
+                    log(`🎬 ${effectType} 효과 시작: ${effectName}`);
+                }
+
                 applyTransitionEffect(ctx, effectName, progress, res.width, res.height);
             }
         }
