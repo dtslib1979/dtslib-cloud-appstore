@@ -99,6 +99,26 @@ h1 {
     margin-bottom: 12px;
 }
 
+/* Effect Sections */
+.effect-section {
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.effect-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.effect-label {
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
 /* Duration Buttons */
 .duration-buttons {
     display: grid;
