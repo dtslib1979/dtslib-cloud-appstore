@@ -152,11 +152,29 @@ function log(msg) {
     }
 }
 
+/* ========== VERSION LOADER ========== */
+async function loadAppVersion() {
+    try {
+        const res = await fetch('../apps.json');
+        const data = await res.json();
+        const app = data.apps.find(a => a.id === 'lecture-shorts');
+        if (app) {
+            el('appVersion').textContent = `v${app.version}`;
+            log(`버전: ${app.version}`);
+        }
+    } catch (e) {
+        console.warn('버전 로드 실패:', e);
+    }
+}
+
 /* ========== INITIALIZATION ========== */
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    log('v4.0 Pro 초기화...');
+    log('초기화 중...');
+
+    // Load version from apps.json
+    await loadAppVersion();
 
     // Check WebCodecs support
     state.useWebCodecs = checkWebCodecsSupport();

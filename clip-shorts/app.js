@@ -44,6 +44,9 @@ const hide = id => $(id).style.display = 'none';
 
 /* ========== INIT ========== */
 document.addEventListener('DOMContentLoaded', () => {
+    // Load version from apps.json
+    loadAppVersion();
+
     // File input
     $('clipInput').onchange = e => handleFilesSelect(e.target.files);
 
@@ -58,8 +61,23 @@ document.addEventListener('DOMContentLoaded', () => {
         state.normalizeVolume = e.target.checked;
     };
 
-    log('Clip Shorts v1.0 초기화 완료');
+    log('Clip Shorts 초기화 완료');
 });
+
+/* ========== VERSION LOADER ========== */
+async function loadAppVersion() {
+    try {
+        const res = await fetch('../apps.json');
+        const data = await res.json();
+        const app = data.apps.find(a => a.id === 'clip-shorts');
+        if (app) {
+            $('appVersion').textContent = `v${app.version}`;
+            log(`버전: ${app.version}`);
+        }
+    } catch (e) {
+        console.warn('버전 로드 실패:', e);
+    }
+}
 
 /* ========== CLIP DURATION ========== */
 function setClipDuration(dur) {
