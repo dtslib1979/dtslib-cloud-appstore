@@ -34,6 +34,21 @@ function checkMem() {
 }
 checkMem();
 
+// Version loader
+async function loadAppVersion() {
+    try {
+        const res = await fetch('../apps.json');
+        const data = await res.json();
+        const app = data.apps.find(a => a.id === 'auto-shorts');
+        if (app) {
+            $('appVersion').textContent = `v${app.version}`;
+        }
+    } catch (e) {
+        console.warn('버전 로드 실패:', e);
+    }
+}
+loadAppVersion();
+
 // Duration preview
 function getVidDur(file) {
     return new Promise((res, rej) => {
