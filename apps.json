@@ -1,0 +1,50 @@
+{
+  "store": {
+    "name": "DTS Cloud AppStore",
+    "subtitle": "박씨 전용 PWA 공장",
+    "author": "PARKSY CTO"
+  },
+  "apps": [
+    {
+      "id": "lecture-shorts",
+      "name": "Lecture Shorts",
+      "desc": "4분→3분 쇼츠 변환",
+      "icon": "🎓",
+      "version": "6.5 Pro",
+      "badge": "webcodecs",
+      "featured": true
+    },
+    {
+      "id": "auto-shorts",
+      "name": "Auto Shorts",
+      "desc": "6~30초→2분 변환",
+      "icon": "🎬",
+      "version": "1.1",
+      "badge": "default"
+    },
+    {
+      "id": "bilingual-aligner",
+      "name": "Bilingual Aligner",
+      "desc": "한영 문장 정렬",
+      "icon": "📘",
+      "version": "LIVE",
+      "badge": "default"
+    },
+    {
+      "id": "slim-lens",
+      "name": "Slim Lens",
+      "desc": "사진 가로 슬림",
+      "icon": "📷",
+      "version": "2.0",
+      "badge": "new"
+    },
+    {
+      "id": "clip-shorts",
+      "name": "Clip Shorts",
+      "desc": "클립 조합 쇼츠",
+      "icon": "🎬",
+      "version": "1.0",
+      "badge": "new"
+    }
+  ]
+}
