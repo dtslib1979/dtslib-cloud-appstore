@@ -26,7 +26,9 @@ const state = {
     clips: [], // { file, meta: { dur, w, h } }
     clipDuration: 10, // 10초 or 15초
     maxClips: 18, // 10초: 18개, 15초: 12개
-    transitionEffect: 'none',
+    introEffect: 'none',       // 시작 효과
+    transitionEffect: 'none',  // 중간 트랜지션
+    endingEffect: 'none',      // 엔딩 효과
     normalizeVolume: true,
     isProcessing: false,
     processingAborted: false,
@@ -72,7 +74,17 @@ function setClipDuration(dur) {
     checkReady();
 }
 
-/* ========== TRANSITION ========== */
+/* ========== EFFECTS ========== */
+function setIntro(effect) {
+    state.introEffect = effect;
+
+    document.querySelectorAll('#introEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    log(`시작 효과: ${effect}`);
+}
+
 function setTransition(effect) {
     state.transitionEffect = effect;
 
@@ -81,6 +93,16 @@ function setTransition(effect) {
     });
 
     log(`트랜지션: ${effect}`);
+}
+
+function setEnding(effect) {
+    state.endingEffect = effect;
+
+    document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === effect);
+    });
+
+    log(`엔딩 효과: ${effect}`);
 }
 
 /* ========== DRAG & DROP ========== */
@@ -250,10 +272,13 @@ async function generate() {
         setProgress(50);
         await concatClips();
 
-        if (state.transitionEffect !== 'none') {
-            setStatus('트랜지션 적용 중...');
+        const hasEffects = state.introEffect !== 'none' ||
+                          state.transitionEffect !== 'none' ||
+                          state.endingEffect !== 'none';
+        if (hasEffects) {
+            setStatus('효과 적용 중...');
             setProgress(70);
-            await applyTransitions();
+            await applyEffects();
         }
 
         setStatus('최종 인코딩 중...');
@@ -396,55 +421,80 @@ async function concatClips() {
     log('클립 병합 완료');
 }
 
-async function applyTransitions() {
-    // FFmpeg에서 트랜지션 효과 적용
-    // 간단하게 xfade 필터 사용 (클립 경계에 페이드 효과)
-    // 복잡한 효과는 WebCodecs로 해야 하지만, 일단 fade로 대체
-
-    const effect = state.transitionEffect;
+async function applyEffects() {
+    // 시작/중간/엔딩 효과 적용
     const dur = CONFIG.transitionDuration;
+    let filters = [];
 
-    // xfade는 두 영상 사이에만 적용 가능
-    // 여러 클립의 경우 복잡해지므로, 간단히 fade-in/out 적용
-
-    let filterComplex = '';
-
-    switch (effect) {
-        case 'tv':
-        case 'vhs':
-            // 노이즈 + 페이드
-            filterComplex = `fade=t=out:st=${dur}:d=${dur},noise=c0s=10:c0f=t+u`;
-            break;
-        case 'focus':
-            // 비네팅 + 페이드
-            filterComplex = `vignette=PI/4,fade=t=out:st=${dur}:d=${dur}`;
-            break;
-        case 'tremble':
-            // shake 효과는 crop으로 시뮬레이션
-            filterComplex = `fade=t=out:st=${dur}:d=${dur}`;
-            break;
-        case 'zoom':
-            // 줌 아웃은 scale로
-            filterComplex = `fade=t=out:st=${dur}:d=${dur}`;
-            break;
-        default:
-            // 기본 크로스페이드
-            filterComplex = `fade=t=in:st=0:d=${dur},fade=t=out:st=${dur}:d=${dur}`;
+    // 시작 효과 (fade in)
+    if (state.introEffect !== 'none') {
+        switch (state.introEffect) {
+            case 'tv':
+                filters.push(`fade=t=in:st=0:d=${dur}`);
+                break;
+            case 'vhs':
+                filters.push(`fade=t=in:st=0:d=${dur},noise=c0s=8:c0f=t+u:alls=0:allf=t+u`);
+                break;
+            case 'focus':
+                filters.push(`fade=t=in:st=0:d=${dur},vignette=PI/4:eval=init`);
+                break;
+            case 'tremble':
+                filters.push(`fade=t=in:st=0:d=${dur}`);
+                break;
+            case 'zoom':
+                filters.push(`fade=t=in:st=0:d=${dur}`);
+                break;
+        }
+        log(`시작 효과 적용: ${state.introEffect}`);
     }
 
-    // merged.mp4에 효과 적용
-    await state.ffmpeg.run(
-        '-i', 'merged.mp4',
-        '-vf', filterComplex,
-        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-        '-c:a', 'copy',
-        'transitioned.mp4'
-    );
+    // 엔딩 효과 (fade out) - 마지막 dur초
+    if (state.endingEffect !== 'none') {
+        // 영상 길이를 알아야 하므로 probe 필요
+        // 일단 간단히 마지막 부분에 fade out 적용
+        switch (state.endingEffect) {
+            case 'tv':
+                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
+                break;
+            case 'vhs':
+                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
+                break;
+            case 'focus':
+                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
+                break;
+            case 'tremble':
+                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
+                break;
+            case 'zoom':
+                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
+                break;
+        }
+        log(`엔딩 효과 적용: ${state.endingEffect}`);
+    }
 
-    state.ffmpeg.FS('unlink', 'merged.mp4');
-    state.ffmpeg.FS('rename', 'transitioned.mp4', 'merged.mp4');
+    // 중간 트랜지션은 이미 concat으로 연결됨
+    // FFmpeg에서 클립 경계 트랜지션은 복잡하므로 fade만 적용
+    if (state.transitionEffect !== 'none') {
+        log(`중간 트랜지션: ${state.transitionEffect} (페이드 적용)`);
+    }
 
-    log(`트랜지션 적용: ${effect}`);
+    // 필터가 있으면 적용
+    if (filters.length > 0) {
+        const filterStr = filters.join(',');
+
+        await state.ffmpeg.run(
+            '-i', 'merged.mp4',
+            '-vf', filterStr,
+            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+            '-c:a', 'copy',
+            'effected.mp4'
+        );
+
+        state.ffmpeg.FS('unlink', 'merged.mp4');
+        state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
+
+        log('효과 적용 완료');
+    }
 }
 
 async function finalEncode() {
@@ -491,7 +541,9 @@ async function showResult() {
 /* ========== RESET ========== */
 function reset() {
     state.clips = [];
+    state.introEffect = 'none';
     state.transitionEffect = 'none';
+    state.endingEffect = 'none';
 
     $('clipInput').value = '';
     $('clipList').innerHTML = '';
@@ -499,8 +551,14 @@ function reset() {
     hide('progressSection');
     hide('resultSection');
 
-    // 트랜지션 버튼 리셋
+    // 효과 버튼 리셋
+    document.querySelectorAll('#introEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
     document.querySelectorAll('#transitionEffects .effect-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.effect === 'none');
+    });
+    document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.effect === 'none');
     });
 

@@ -67,38 +67,104 @@
                 </div>
             </section>
 
-            <!-- Step 3: Transition Effect -->
+            <!-- Step 3: Effects -->
             <section class="step-card">
                 <div class="step-header">
                     <span class="step-num">3</span>
-                    <span class="step-title">트랜지션 효과</span>
+                    <span class="step-title">효과 설정</span>
                 </div>
-                <p class="step-desc">클립 사이에 적용될 효과</p>
-                <div class="effect-buttons" id="transitionEffects">
-                    <button class="effect-btn active" onclick="setTransition('none')" data-effect="none">
-                        <span class="effect-icon">⊘</span>
-                        <span class="effect-name">없음</span>
-                    </button>
-                    <button class="effect-btn" onclick="setTransition('tv')" data-effect="tv">
-                        <span class="effect-icon">📺</span>
-                        <span class="effect-name">TV</span>
-                    </button>
-                    <button class="effect-btn" onclick="setTransition('vhs')" data-effect="vhs">
-                        <span class="effect-icon">📼</span>
-                        <span class="effect-name">VHS</span>
-                    </button>
-                    <button class="effect-btn" onclick="setTransition('focus')" data-effect="focus">
-                        <span class="effect-icon">🎯</span>
-                        <span class="effect-name">FOCUS</span>
-                    </button>
-                    <button class="effect-btn" onclick="setTransition('tremble')" data-effect="tremble">
-                        <span class="effect-icon">📳</span>
-                        <span class="effect-name">TREMBLE</span>
-                    </button>
-                    <button class="effect-btn" onclick="setTransition('zoom')" data-effect="zoom">
-                        <span class="effect-icon">🔍</span>
-                        <span class="effect-name">ZOOM</span>
-                    </button>
+
+                <!-- Intro Effect -->
+                <div class="effect-section">
+                    <p class="effect-label">🎬 시작 효과 (페이드 인)</p>
+                    <div class="effect-buttons" id="introEffects">
+                        <button class="effect-btn active" onclick="setIntro('none')" data-effect="none">
+                            <span class="effect-icon">⊘</span>
+                            <span class="effect-name">없음</span>
+                        </button>
+                        <button class="effect-btn" onclick="setIntro('tv')" data-effect="tv">
+                            <span class="effect-icon">📺</span>
+                            <span class="effect-name">TV</span>
+                        </button>
+                        <button class="effect-btn" onclick="setIntro('vhs')" data-effect="vhs">
+                            <span class="effect-icon">📼</span>
+                            <span class="effect-name">VHS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setIntro('focus')" data-effect="focus">
+                            <span class="effect-icon">🎯</span>
+                            <span class="effect-name">FOCUS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setIntro('tremble')" data-effect="tremble">
+                            <span class="effect-icon">📳</span>
+                            <span class="effect-name">TREMBLE</span>
+                        </button>
+                        <button class="effect-btn" onclick="setIntro('zoom')" data-effect="zoom">
+                            <span class="effect-icon">🔍</span>
+                            <span class="effect-name">ZOOM</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Middle Transition -->
+                <div class="effect-section">
+                    <p class="effect-label">🔗 중간 트랜지션 (클립 사이)</p>
+                    <div class="effect-buttons" id="transitionEffects">
+                        <button class="effect-btn active" onclick="setTransition('none')" data-effect="none">
+                            <span class="effect-icon">⊘</span>
+                            <span class="effect-name">없음</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('tv')" data-effect="tv">
+                            <span class="effect-icon">📺</span>
+                            <span class="effect-name">TV</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('vhs')" data-effect="vhs">
+                            <span class="effect-icon">📼</span>
+                            <span class="effect-name">VHS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('focus')" data-effect="focus">
+                            <span class="effect-icon">🎯</span>
+                            <span class="effect-name">FOCUS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('tremble')" data-effect="tremble">
+                            <span class="effect-icon">📳</span>
+                            <span class="effect-name">TREMBLE</span>
+                        </button>
+                        <button class="effect-btn" onclick="setTransition('zoom')" data-effect="zoom">
+                            <span class="effect-icon">🔍</span>
+                            <span class="effect-name">ZOOM</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ending Effect -->
+                <div class="effect-section">
+                    <p class="effect-label">🎬 엔딩 효과 (페이드 아웃)</p>
+                    <div class="effect-buttons" id="endingEffects">
+                        <button class="effect-btn active" onclick="setEnding('none')" data-effect="none">
+                            <span class="effect-icon">⊘</span>
+                            <span class="effect-name">없음</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('tv')" data-effect="tv">
+                            <span class="effect-icon">📺</span>
+                            <span class="effect-name">TV</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('vhs')" data-effect="vhs">
+                            <span class="effect-icon">📼</span>
+                            <span class="effect-name">VHS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('focus')" data-effect="focus">
+                            <span class="effect-icon">🎯</span>
+                            <span class="effect-name">FOCUS</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('tremble')" data-effect="tremble">
+                            <span class="effect-icon">📳</span>
+                            <span class="effect-name">TREMBLE</span>
+                        </button>
+                        <button class="effect-btn" onclick="setEnding('zoom')" data-effect="zoom">
+                            <span class="effect-icon">🔍</span>
+                            <span class="effect-name">ZOOM</span>
+                        </button>
+                    </div>
                 </div>
             </section>
 
