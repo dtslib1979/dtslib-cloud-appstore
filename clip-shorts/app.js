@@ -444,6 +444,11 @@ async function applyEffects() {
     const dur = CONFIG.transitionDuration;
     let filters = [];
 
+    // 전체 클립 길이 계산 (3분 제한 적용)
+    let totalDuration = state.clips.reduce((sum, clip) => sum + clip.meta.dur, 0);
+    totalDuration = Math.min(totalDuration, CONFIG.targetDuration);
+    const fadeOutStart = Math.max(0, totalDuration - dur);
+
     // 시작 효과 (fade in)
     if (state.introEffect !== 'none') {
         switch (state.introEffect) {
@@ -451,10 +456,11 @@ async function applyEffects() {
                 filters.push(`fade=t=in:st=0:d=${dur}`);
                 break;
             case 'vhs':
-                filters.push(`fade=t=in:st=0:d=${dur},noise=c0s=8:c0f=t+u:alls=0:allf=t+u`);
+                // noise 필터 제거 (wasm 호환성)
+                filters.push(`fade=t=in:st=0:d=${dur}`);
                 break;
             case 'focus':
-                filters.push(`fade=t=in:st=0:d=${dur},vignette=PI/4:eval=init`);
+                filters.push(`fade=t=in:st=0:d=${dur}`);
                 break;
             case 'tremble':
                 filters.push(`fade=t=in:st=0:d=${dur}`);
@@ -466,32 +472,13 @@ async function applyEffects() {
         log(`시작 효과 적용: ${state.introEffect}`);
     }
 
-    // 엔딩 효과 (fade out) - 마지막 dur초
+    // 엔딩 효과 (fade out) - 실제 duration 사용 (eof 미지원)
     if (state.endingEffect !== 'none') {
-        // 영상 길이를 알아야 하므로 probe 필요
-        // 일단 간단히 마지막 부분에 fade out 적용
-        switch (state.endingEffect) {
-            case 'tv':
-                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
-                break;
-            case 'vhs':
-                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
-                break;
-            case 'focus':
-                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
-                break;
-            case 'tremble':
-                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
-                break;
-            case 'zoom':
-                filters.push(`fade=t=out:st=eof-${dur}:d=${dur}`);
-                break;
-        }
+        filters.push(`fade=t=out:st=${fadeOutStart}:d=${dur}`);
         log(`엔딩 효과 적용: ${state.endingEffect}`);
     }
 
     // 중간 트랜지션은 이미 concat으로 연결됨
-    // FFmpeg에서 클립 경계 트랜지션은 복잡하므로 fade만 적용
     if (state.transitionEffect !== 'none') {
         log(`중간 트랜지션: ${state.transitionEffect} (페이드 적용)`);
     }
@@ -500,22 +487,38 @@ async function applyEffects() {
     if (filters.length > 0) {
         const filterStr = filters.join(',');
 
-        await state.ffmpeg.run(
-            '-i', 'merged.mp4',
-            '-vf', filterStr,
-            '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-            '-c:a', 'copy',
-            'effected.mp4'
-        );
+        try {
+            await state.ffmpeg.run(
+                '-i', 'merged.mp4',
+                '-vf', filterStr,
+                '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+                '-c:a', 'copy',
+                'effected.mp4'
+            );
 
-        state.ffmpeg.FS('unlink', 'merged.mp4');
-        state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
-
-        log('효과 적용 완료');
+            // 파일 존재 확인 후 교체
+            try {
+                state.ffmpeg.FS('readFile', 'effected.mp4');
+                state.ffmpeg.FS('unlink', 'merged.mp4');
+                state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
+                log('효과 적용 완료');
+            } catch (e) {
+                log('효과 적용 건너뜀 (원본 유지)');
+            }
+        } catch (e) {
+            log('효과 적용 실패, 원본으로 진행');
+        }
     }
 }
 
 async function finalEncode() {
+    // merged.mp4 존재 확인
+    try {
+        state.ffmpeg.FS('readFile', 'merged.mp4');
+    } catch (e) {
+        throw new Error('병합된 파일이 없습니다. 다시 시도해주세요.');
+    }
+
     // 3분으로 자르기 (필요시)
     await state.ffmpeg.run(
         '-i', 'merged.mp4',
@@ -526,7 +529,13 @@ async function finalEncode() {
         'output.mp4'
     );
 
-    log('최종 인코딩 완료');
+    // output.mp4 존재 확인
+    try {
+        state.ffmpeg.FS('readFile', 'output.mp4');
+        log('최종 인코딩 완료');
+    } catch (e) {
+        throw new Error('인코딩 실패. 클립 형식을 확인해주세요.');
+    }
 }
 
 async function showResult() {
