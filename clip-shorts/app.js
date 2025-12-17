@@ -2,46 +2,42 @@
  * Clip Shorts v4.0
  * 클립 선택 → 3분 쇼츠 자동 생성
  *
- * Features:
- * - 10초/15초 클립 다중 업로드
- * - 트랜지션 효과 5종 (안정적인 fade 기반)
- * - 배경 음악 삽입/미리듣기/볼륨 조절
- * - 볼륨 평준화 (loudnorm -16 LUFS)
- * - FFmpeg.wasm 기반 처리
+ * v4.0 변경사항:
+ * - filter_complex concat 방식으로 안정적 병합
+ * - 트랜지션 효과 실제 적용
+ * - 배경 음악 믹싱
  */
 
 'use strict';
 
 /* ========== CONFIG ========== */
 const CONFIG = {
-    targetDuration: 180, // 3분
-    resolution: { width: 720, height: 1280 }, // 9:16 세로
+    targetDuration: 180,
+    resolution: { width: 720, height: 1280 },
     fps: 30,
-    transitionDuration: 0.5, // 트랜지션 0.5초
-    bitrate: 2500000,
+    transitionDuration: 0.5,
     audioBitrate: '192k'
 };
 
 /* ========== STATE ========== */
 const state = {
-    clips: [], // { file, meta: { dur, w, h } }
-    clipDuration: 10, // 10초 or 15초
-    maxClips: 18, // 10초: 18개, 15초: 12개
-    introEffect: 'none',       // 시작 효과
-    transitionEffect: 'none',  // 중간 트랜지션
-    endingEffect: 'none',      // 엔딩 효과
+    clips: [],
+    clipDuration: 10,
+    maxClips: 18,
+    introEffect: 'none',
+    transitionEffect: 'none',
+    endingEffect: 'none',
     normalizeVolume: true,
     isProcessing: false,
     processingAborted: false,
     ffmpeg: null,
     startTime: 0,
     resultUrl: null,
-    // 배경 음악 상태
     bgm: {
         file: null,
         url: null,
-        volume: 0.5, // 0~1
-        clipVolume: 1.0, // 원본 클립 볼륨 0~1
+        volume: 0.5,
+        clipVolume: 1.0,
         enabled: false
     }
 };
@@ -112,14 +108,10 @@ function initBGMEvents() {
     }
 
     const playBtn = $('bgmPlayBtn');
-    if (playBtn) {
-        playBtn.onclick = toggleBGMPreview;
-    }
+    if (playBtn) playBtn.onclick = toggleBGMPreview;
 
     const removeBtn = $('bgmRemoveBtn');
-    if (removeBtn) {
-        removeBtn.onclick = removeBGM;
-    }
+    if (removeBtn) removeBtn.onclick = removeBGM;
 }
 
 /* ========== BGM HANDLING ========== */
@@ -129,9 +121,7 @@ function handleBGMSelect(file) {
         return;
     }
 
-    if (state.bgm.url) {
-        URL.revokeObjectURL(state.bgm.url);
-    }
+    if (state.bgm.url) URL.revokeObjectURL(state.bgm.url);
 
     state.bgm.file = file;
     state.bgm.url = URL.createObjectURL(file);
@@ -170,14 +160,9 @@ function toggleBGMPreview() {
 
 function removeBGM() {
     const preview = $('bgmPreview');
-    if (preview) {
-        preview.pause();
-        preview.src = '';
-    }
+    if (preview) { preview.pause(); preview.src = ''; }
 
-    if (state.bgm.url) {
-        URL.revokeObjectURL(state.bgm.url);
-    }
+    if (state.bgm.url) URL.revokeObjectURL(state.bgm.url);
 
     state.bgm.file = null;
     state.bgm.url = null;
@@ -193,8 +178,6 @@ function removeBGM() {
 
     const bgmInput = $('bgmInput');
     if (bgmInput) bgmInput.value = '';
-
-    log('배경 음악 제거됨');
 }
 
 /* ========== VERSION LOADER ========== */
@@ -216,10 +199,8 @@ async function loadAppVersion() {
 function setClipDuration(dur) {
     state.clipDuration = dur;
     state.maxClips = dur === 10 ? 18 : 12;
-
     $('btn10s').classList.toggle('active', dur === 10);
     $('btn15s').classList.toggle('active', dur === 15);
-
     updateClipList();
     checkReady();
 }
@@ -230,7 +211,6 @@ function setIntro(effect) {
     document.querySelectorAll('#introEffects .effect-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.effect === effect);
     });
-    log(`시작 효과: ${effect}`);
 }
 
 function setTransition(effect) {
@@ -238,7 +218,6 @@ function setTransition(effect) {
     document.querySelectorAll('#transitionEffects .effect-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.effect === effect);
     });
-    log(`트랜지션: ${effect}`);
 }
 
 function setEnding(effect) {
@@ -246,7 +225,6 @@ function setEnding(effect) {
     document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.effect === effect);
     });
-    log(`엔딩 효과: ${effect}`);
 }
 
 /* ========== DRAG & DROP ========== */
@@ -266,7 +244,6 @@ function handleDrop(e) {
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.classList.remove('dragover');
-
     if (e.dataTransfer.files.length > 0) {
         handleFilesSelect(e.dataTransfer.files);
     }
@@ -282,7 +259,6 @@ function handleBGMDrop(e) {
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.classList.remove('dragover');
-
     if (e.dataTransfer.files.length > 0) {
         const file = e.dataTransfer.files[0];
         if (file.type.startsWith('audio/')) {
@@ -298,10 +274,7 @@ async function handleFilesSelect(files) {
             alert(`최대 ${state.maxClips}개까지만 추가할 수 있습니다.`);
             break;
         }
-
-        if (!file.type.startsWith('video/')) {
-            continue;
-        }
+        if (!file.type.startsWith('video/')) continue;
 
         try {
             const meta = await getVideoMeta(file);
@@ -310,7 +283,6 @@ async function handleFilesSelect(files) {
             console.error('비디오 메타 로드 실패:', e);
         }
     }
-
     updateClipList();
     checkReady();
 }
@@ -320,11 +292,7 @@ function getVideoMeta(file) {
         const vid = document.createElement('video');
         vid.preload = 'metadata';
         vid.onloadedmetadata = () => {
-            resolve({
-                dur: vid.duration,
-                w: vid.videoWidth,
-                h: vid.videoHeight
-            });
+            resolve({ dur: vid.duration, w: vid.videoWidth, h: vid.videoHeight });
             URL.revokeObjectURL(vid.src);
         };
         vid.onerror = () => reject(new Error('비디오 로드 실패'));
@@ -340,7 +308,6 @@ function removeClip(index) {
 
 function updateClipList() {
     const listEl = $('clipList');
-
     if (state.clips.length === 0) {
         listEl.innerHTML = '';
         hide('clipSummary');
@@ -365,7 +332,6 @@ function updateClipList() {
     });
 
     listEl.innerHTML = html;
-
     $('clipCount').textContent = state.clips.length + '개';
     $('totalDuration').textContent = formatDuration(totalDur);
     show('clipSummary');
@@ -378,8 +344,7 @@ function formatDuration(sec) {
 }
 
 function checkReady() {
-    const hasClips = state.clips.length >= 2;
-    $('genBtn').disabled = !hasClips;
+    $('genBtn').disabled = state.clips.length < 2;
 }
 
 /* ========== LOGGING ========== */
@@ -412,43 +377,6 @@ function setProgress(pct) {
     }
 }
 
-/* ========== TRANSITION FILTER HELPERS ========== */
-function getTransitionFilter(effect, position, clipDur) {
-    const dur = CONFIG.transitionDuration;
-    const fadeOutStart = Math.max(0, clipDur - dur);
-
-    // position: 'first', 'middle', 'last'
-    switch (effect) {
-        case 'tv':
-            if (position === 'first') {
-                return `fade=t=out:st=${fadeOutStart}:d=${dur}`;
-            } else if (position === 'last') {
-                return `fade=t=in:st=0:d=${dur}`;
-            } else {
-                return `fade=t=in:st=0:d=${dur},fade=t=out:st=${fadeOutStart}:d=${dur}`;
-            }
-        case 'vhs':
-            if (position === 'first') {
-                return `fade=t=out:st=${fadeOutStart}:d=${dur},eq=saturation=1.3:enable='gte(t,${fadeOutStart})'`;
-            } else if (position === 'last') {
-                return `fade=t=in:st=0:d=${dur},eq=saturation=1.3:enable='lte(t,${dur})'`;
-            } else {
-                return `fade=t=in:st=0:d=${dur},fade=t=out:st=${fadeOutStart}:d=${dur}`;
-            }
-        case 'focus':
-        case 'tremble':
-        case 'zoom':
-        default:
-            if (position === 'first') {
-                return `fade=t=out:st=${fadeOutStart}:d=${dur}`;
-            } else if (position === 'last') {
-                return `fade=t=in:st=0:d=${dur}`;
-            } else {
-                return `fade=t=in:st=0:d=${dur},fade=t=out:st=${fadeOutStart}:d=${dur}`;
-            }
-    }
-}
-
 /* ========== MAIN GENERATION ========== */
 async function generate() {
     if (state.clips.length < 2) return;
@@ -463,61 +391,52 @@ async function generate() {
     $('progressLog').innerHTML = '';
 
     try {
-        // Step 1: FFmpeg 로드
+        // 1. FFmpeg 로드
         setStatus('FFmpeg 로딩 중...');
         setProgress(5);
         await initFFmpeg();
 
-        // Step 2: 파일 준비
+        // 2. 파일 준비
         setStatus('파일 준비 중...');
         setProgress(10);
         await writeClipsToFFmpeg();
 
-        // Step 3: BGM 로드
+        // 3. BGM 로드
         if (state.bgm.enabled && state.bgm.file) {
-            setStatus('배경 음악 준비 중...');
             await writeBGMToFFmpeg();
         }
 
-        // Step 4: 볼륨 평준화
-        if (state.normalizeVolume) {
-            setStatus('볼륨 평준화 중...');
-            setProgress(15);
-            await normalizeAllClips();
-        }
-
-        // Step 5: 클립 리사이즈 + 트랜지션 효과 적용
+        // 4. 각 클립 전처리 (리사이즈 + 트랜지션 효과)
         setStatus('클립 처리 중...');
-        setProgress(30);
-        await processClipsWithEffects();
+        setProgress(20);
+        await preprocessClips();
 
-        // Step 6: 클립 병합
+        // 5. filter_complex로 병합
         setStatus('클립 병합 중...');
-        setProgress(60);
-        await concatClips();
+        setProgress(50);
+        await mergeClipsWithFilterComplex();
 
-        // Step 7: 시작/엔딩 효과
+        // 6. 시작/엔딩 효과
         if (state.introEffect !== 'none' || state.endingEffect !== 'none') {
             setStatus('시작/엔딩 효과 적용 중...');
             setProgress(70);
             await applyIntroEndingEffects();
         }
 
-        // Step 8: BGM 믹싱
+        // 7. BGM 믹싱
         if (state.bgm.enabled && state.bgm.file) {
             setStatus('배경 음악 믹싱 중...');
             setProgress(80);
             await mixBGM();
         }
 
-        // Step 9: 최종 인코딩
+        // 8. 최종 인코딩
         setStatus('최종 인코딩 중...');
         setProgress(90);
         await finalEncode();
 
         setProgress(100);
         setStatus('완료!');
-
         await showResult();
 
     } catch (e) {
@@ -553,14 +472,6 @@ async function initFFmpeg() {
         corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     });
 
-    state.ffmpeg.setProgress(({ ratio }) => {
-        if (ratio > 0 && ratio < 1) {
-            const basePct = parseInt($('progressText')?.textContent) || 0;
-            const addPct = Math.floor(ratio * 5);
-            setProgress(Math.min(basePct + addPct, 99));
-        }
-    });
-
     await state.ffmpeg.load();
     log('FFmpeg 로드 완료');
 }
@@ -570,10 +481,8 @@ async function writeClipsToFFmpeg() {
 
     for (let i = 0; i < state.clips.length; i++) {
         if (state.processingAborted) throw new Error('중단됨');
-
         const clip = state.clips[i];
-        const filename = `clip_${i}.mp4`;
-        state.ffmpeg.FS('writeFile', filename, await fetchFile(clip.file));
+        state.ffmpeg.FS('writeFile', `input_${i}.mp4`, await fetchFile(clip.file));
         log(`클립 ${i + 1}/${state.clips.length} 로드`);
     }
 }
@@ -584,171 +493,132 @@ async function writeBGMToFFmpeg() {
     log('배경 음악 로드 완료');
 }
 
-async function normalizeAllClips() {
-    for (let i = 0; i < state.clips.length; i++) {
-        if (state.processingAborted) throw new Error('중단됨');
+/* ========== 클립 전처리 ========== */
+async function preprocessClips() {
+    const vfBase = `scale=${CONFIG.resolution.width}:${CONFIG.resolution.height}:force_original_aspect_ratio=decrease,pad=${CONFIG.resolution.width}:${CONFIG.resolution.height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${CONFIG.fps}`;
 
-        const input = `clip_${i}.mp4`;
-        const output = `norm_${i}.mp4`;
-
-        await state.ffmpeg.run(
-            '-i', input,
-            '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11',
-            '-c:v', 'copy',
-            '-c:a', 'aac', '-b:a', CONFIG.audioBitrate,
-            output
-        );
-
-        state.ffmpeg.FS('unlink', input);
-        state.ffmpeg.FS('rename', output, input);
-
-        log(`볼륨 평준화 ${i + 1}/${state.clips.length}`);
-        setProgress(15 + Math.floor((i / state.clips.length) * 15));
-    }
-}
-
-async function processClipsWithEffects() {
-    const vf_base = `scale=${CONFIG.resolution.width}:${CONFIG.resolution.height}:force_original_aspect_ratio=decrease,pad=${CONFIG.resolution.width}:${CONFIG.resolution.height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1`;
     const hasTransition = state.transitionEffect !== 'none';
+    const fadeDur = CONFIG.transitionDuration;
 
     for (let i = 0; i < state.clips.length; i++) {
         if (state.processingAborted) throw new Error('중단됨');
 
-        const input = `clip_${i}.mp4`;
-        const output = `ready_${i}.mp4`;
         const clipDur = state.clips[i].meta.dur;
+        const fadeOutStart = Math.max(0, clipDur - fadeDur);
 
-        let vf = vf_base;
+        let vf = vfBase;
 
-        // 트랜지션 효과 적용 (중간 클립들에 fade in/out)
-        if (hasTransition && state.clips.length > 1) {
-            let position;
+        // 트랜지션 효과: 클립 사이 페이드
+        if (hasTransition) {
             if (i === 0) {
-                position = 'first'; // 첫 번째 클립: fade out만
+                // 첫 번째 클립: 끝에 fade out
+                vf += `,fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
             } else if (i === state.clips.length - 1) {
-                position = 'last'; // 마지막 클립: fade in만
+                // 마지막 클립: 시작에 fade in
+                vf += `,fade=t=in:st=0:d=${fadeDur}`;
             } else {
-                position = 'middle'; // 중간 클립: fade in + fade out
+                // 중간 클립: fade in + fade out
+                vf += `,fade=t=in:st=0:d=${fadeDur},fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
             }
-            const transFilter = getTransitionFilter(state.transitionEffect, position, clipDur);
-            vf = `${vf_base},${transFilter}`;
         }
 
+        // 볼륨 평준화
+        const af = state.normalizeVolume ? 'loudnorm=I=-16:TP=-1.5:LRA=11' : 'anull';
+
         await state.ffmpeg.run(
-            '-i', input,
+            '-i', `input_${i}.mp4`,
             '-vf', vf,
-            '-r', String(CONFIG.fps),
+            '-af', af,
             '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23',
             '-c:a', 'aac', '-b:a', CONFIG.audioBitrate, '-ar', '44100',
-            output
+            '-y', `clip_${i}.mp4`
         );
 
-        state.ffmpeg.FS('unlink', input);
+        // 원본 삭제
+        try { state.ffmpeg.FS('unlink', `input_${i}.mp4`); } catch(e) {}
+
         log(`클립 처리 ${i + 1}/${state.clips.length}`);
-        setProgress(30 + Math.floor((i / state.clips.length) * 30));
+        setProgress(20 + Math.floor((i / state.clips.length) * 30));
     }
 }
 
-async function concatClips() {
-    // concat 리스트 생성
-    let concatList = '';
-    for (let i = 0; i < state.clips.length; i++) {
-        concatList += `file 'ready_${i}.mp4'\n`;
-    }
-    state.ffmpeg.FS('writeFile', 'concat.txt', concatList);
+/* ========== filter_complex로 병합 ========== */
+async function mergeClipsWithFilterComplex() {
+    const n = state.clips.length;
 
-    // 병합
+    // 입력 파일들
+    const inputs = [];
+    for (let i = 0; i < n; i++) {
+        inputs.push('-i', `clip_${i}.mp4`);
+    }
+
+    // filter_complex 문자열 생성
+    // [0:v][0:a][1:v][1:a][2:v][2:a]...concat=n=N:v=1:a=1[v][a]
+    let filterParts = [];
+    for (let i = 0; i < n; i++) {
+        filterParts.push(`[${i}:v][${i}:a]`);
+    }
+    const filterComplex = `${filterParts.join('')}concat=n=${n}:v=1:a=1[v][a]`;
+
+    log(`병합 필터: ${filterComplex}`);
+
     await state.ffmpeg.run(
-        '-f', 'concat', '-safe', '0',
-        '-i', 'concat.txt',
-        '-c', 'copy',
-        'merged.mp4'
+        ...inputs,
+        '-filter_complex', filterComplex,
+        '-map', '[v]',
+        '-map', '[a]',
+        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+        '-c:a', 'aac', '-b:a', CONFIG.audioBitrate,
+        '-y', 'merged.mp4'
     );
 
-    // 정리
-    for (let i = 0; i < state.clips.length; i++) {
-        try { state.ffmpeg.FS('unlink', `ready_${i}.mp4`); } catch(e) {}
+    // 처리된 클립 삭제
+    for (let i = 0; i < n; i++) {
+        try { state.ffmpeg.FS('unlink', `clip_${i}.mp4`); } catch(e) {}
     }
-    try { state.ffmpeg.FS('unlink', 'concat.txt'); } catch(e) {}
 
     log('클립 병합 완료');
 }
 
+/* ========== 시작/엔딩 효과 ========== */
 async function applyIntroEndingEffects() {
-    // 전체 클립 길이 계산
     let totalDuration = state.clips.reduce((sum, clip) => sum + clip.meta.dur, 0);
     totalDuration = Math.min(totalDuration, CONFIG.targetDuration);
 
     const dur = CONFIG.transitionDuration;
     let filters = [];
 
-    // 시작 효과
     if (state.introEffect !== 'none') {
-        switch (state.introEffect) {
-            case 'tv':
-                filters.push(`fade=t=in:st=0:d=${dur}`);
-                break;
-            case 'vhs':
-                filters.push(`fade=t=in:st=0:d=${dur},eq=saturation=1.3:enable='lte(t,${dur})'`);
-                break;
-            case 'focus':
-            case 'tremble':
-            case 'zoom':
-            default:
-                filters.push(`fade=t=in:st=0:d=${dur}`);
-                break;
-        }
+        filters.push(`fade=t=in:st=0:d=${dur}`);
         log(`시작 효과 적용: ${state.introEffect}`);
     }
 
-    // 엔딩 효과
     if (state.endingEffect !== 'none') {
-        const fadeOutStart = Math.max(0, totalDuration - dur - 0.5);
-
-        switch (state.endingEffect) {
-            case 'tv':
-                filters.push(`fade=t=out:st=${fadeOutStart}:d=${dur}`);
-                break;
-            case 'vhs':
-                filters.push(`fade=t=out:st=${fadeOutStart}:d=${dur},eq=saturation=1.3:enable='gte(t,${fadeOutStart})'`);
-                break;
-            case 'focus':
-            case 'tremble':
-            case 'zoom':
-            default:
-                filters.push(`fade=t=out:st=${fadeOutStart}:d=${dur}`);
-                break;
-        }
+        const fadeOutStart = Math.max(0, totalDuration - dur - 1);
+        filters.push(`fade=t=out:st=${fadeOutStart}:d=${dur}`);
         log(`엔딩 효과 적용: ${state.endingEffect}`);
     }
 
     if (filters.length > 0) {
-        const filterStr = filters.join(',');
-
         try {
             await state.ffmpeg.run(
                 '-i', 'merged.mp4',
-                '-vf', filterStr,
+                '-vf', filters.join(','),
                 '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
                 '-c:a', 'copy',
-                'effected.mp4'
+                '-y', 'effected.mp4'
             );
 
-            // 파일 존재 확인 후 교체
-            try {
-                state.ffmpeg.FS('readFile', 'effected.mp4');
-                state.ffmpeg.FS('unlink', 'merged.mp4');
-                state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
-                log('시작/엔딩 효과 적용 완료');
-            } catch (e) {
-                log('효과 적용 건너뜀 (원본 유지)');
-            }
+            state.ffmpeg.FS('unlink', 'merged.mp4');
+            state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
+            log('시작/엔딩 효과 적용 완료');
         } catch (e) {
-            log(`효과 적용 실패: ${e.message}, 원본으로 진행`);
+            log(`효과 적용 실패: ${e.message}`);
         }
     }
 }
 
+/* ========== BGM 믹싱 ========== */
 async function mixBGM() {
     const bgmVol = state.bgm.volume;
     const clipVol = state.bgm.clipVolume;
@@ -764,17 +634,12 @@ async function mixBGM() {
             '-c:v', 'copy',
             '-c:a', 'aac', '-b:a', CONFIG.audioBitrate,
             '-shortest',
-            'bgm_mixed.mp4'
+            '-y', 'bgm_mixed.mp4'
         );
 
-        try {
-            state.ffmpeg.FS('readFile', 'bgm_mixed.mp4');
-            state.ffmpeg.FS('unlink', 'merged.mp4');
-            state.ffmpeg.FS('rename', 'bgm_mixed.mp4', 'merged.mp4');
-            log(`BGM 믹싱 완료 (BGM: ${Math.round(bgmVol*100)}%, 원본: ${Math.round(clipVol*100)}%)`);
-        } catch (e) {
-            log('BGM 믹싱 건너뜀');
-        }
+        state.ffmpeg.FS('unlink', 'merged.mp4');
+        state.ffmpeg.FS('rename', 'bgm_mixed.mp4', 'merged.mp4');
+        log(`BGM 믹싱 완료 (BGM: ${Math.round(bgmVol*100)}%, 원본: ${Math.round(clipVol*100)}%)`);
     } catch (e) {
         log(`BGM 믹싱 실패: ${e.message}`);
     }
@@ -782,11 +647,12 @@ async function mixBGM() {
     try { state.ffmpeg.FS('unlink', 'bgm.mp3'); } catch(e) {}
 }
 
+/* ========== 최종 인코딩 ========== */
 async function finalEncode() {
     try {
         state.ffmpeg.FS('readFile', 'merged.mp4');
     } catch (e) {
-        throw new Error('병합된 파일이 없습니다. 다시 시도해주세요.');
+        throw new Error('병합된 파일이 없습니다.');
     }
 
     await state.ffmpeg.run(
@@ -795,17 +661,18 @@ async function finalEncode() {
         '-c:v', 'libx264', '-preset', 'medium', '-crf', '20',
         '-c:a', 'aac', '-b:a', CONFIG.audioBitrate,
         '-movflags', '+faststart',
-        'output.mp4'
+        '-y', 'output.mp4'
     );
 
     try {
         state.ffmpeg.FS('readFile', 'output.mp4');
         log('최종 인코딩 완료');
     } catch (e) {
-        throw new Error('인코딩 실패. 클립 형식을 확인해주세요.');
+        throw new Error('인코딩 실패');
     }
 }
 
+/* ========== 결과 표시 ========== */
 async function showResult() {
     const data = state.ffmpeg.FS('readFile', 'output.mp4');
     const blob = new Blob([data.buffer], { type: 'video/mp4' });
@@ -843,50 +710,31 @@ function reset() {
     hide('progressSection');
     hide('resultSection');
 
-    document.querySelectorAll('#introEffects .effect-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.effect === 'none');
-    });
-    document.querySelectorAll('#transitionEffects .effect-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.effect === 'none');
-    });
-    document.querySelectorAll('#endingEffects .effect-btn').forEach(btn => {
+    document.querySelectorAll('.effect-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.effect === 'none');
     });
 
     $('normalizeToggle').checked = true;
     state.normalizeVolume = true;
 
-    // BGM 상태만 리셋 (removeBGM 호출하지 않음 - 로그 방지)
+    // BGM 리셋
     const preview = $('bgmPreview');
-    if (preview) {
-        preview.pause();
-        preview.src = '';
-    }
-
-    if (state.bgm.url) {
-        URL.revokeObjectURL(state.bgm.url);
-    }
-
+    if (preview) { preview.pause(); preview.src = ''; }
+    if (state.bgm.url) URL.revokeObjectURL(state.bgm.url);
     state.bgm.file = null;
     state.bgm.url = null;
 
     const infoEl = $('bgmInfo');
     if (infoEl) infoEl.style.display = 'none';
-
     const dropEl = $('bgmDropZone');
     if (dropEl) dropEl.style.display = 'block';
-
     const playBtn = $('bgmPlayBtn');
     if (playBtn) playBtn.textContent = '▶️';
-
     const bgmInputEl = $('bgmInput');
     if (bgmInputEl) bgmInputEl.value = '';
 
     const bgmToggle = $('bgmToggle');
-    if (bgmToggle) {
-        bgmToggle.checked = false;
-        state.bgm.enabled = false;
-    }
+    if (bgmToggle) { bgmToggle.checked = false; state.bgm.enabled = false; }
     const bgmControls = $('bgmControls');
     if (bgmControls) bgmControls.style.display = 'none';
 
