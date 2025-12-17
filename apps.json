@@ -41,9 +41,9 @@
     {
       "id": "clip-shorts",
       "name": "Clip Shorts",
-      "desc": "클립 조합 쇼츠",
+      "desc": "클립 조합 쇼츠 + BGM",
       "icon": "🎬",
-      "version": "2.1",
+      "version": "3.0",
       "badge": "new"
     }
   ]

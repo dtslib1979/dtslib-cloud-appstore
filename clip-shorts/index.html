@@ -15,7 +15,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎬 Clip Shorts</h1>
+            <h1>Clip Shorts</h1>
             <p class="subtitle">클립 선택 → 3분 쇼츠 자동 생성</p>
             <p class="version" id="appVersion">v--</p>
         </header>
@@ -50,6 +50,7 @@
                 <div class="file-drop-zone" id="clipDropZone"
                      onclick="document.getElementById('clipInput').click()"
                      ondragover="handleDragOver(event)"
+                     ondragleave="handleDragLeave(event)"
                      ondrop="handleDrop(event)">
                     <input type="file" id="clipInput" accept="video/*" multiple hidden>
                     <div class="drop-content">
@@ -184,10 +185,74 @@
                 </div>
             </section>
 
-            <!-- Step 5: Generate -->
-            <section class="step-card generate-card">
+            <!-- Step 5: Background Music -->
+            <section class="step-card">
                 <div class="step-header">
                     <span class="step-num">5</span>
+                    <span class="step-title">배경 음악</span>
+                </div>
+                <p class="step-desc">배경 음악을 추가하고 볼륨을 조절하세요</p>
+
+                <div class="toggle-container">
+                    <label class="toggle">
+                        <input type="checkbox" id="bgmToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="toggle-label">배경 음악 사용</span>
+                </div>
+
+                <div id="bgmControls" class="bgm-controls" style="display: none;">
+                    <!-- BGM Upload -->
+                    <div class="bgm-upload-section">
+                        <div class="file-drop-zone bgm-drop" id="bgmDropZone"
+                             onclick="document.getElementById('bgmInput').click()"
+                             ondragover="handleBGMDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             ondrop="handleBGMDrop(event)">
+                            <input type="file" id="bgmInput" accept="audio/*" hidden>
+                            <div class="drop-content">
+                                <span class="drop-icon">🎵</span>
+                                <span class="drop-text">음악 파일 선택</span>
+                                <span class="drop-hint">MP3, WAV, M4A 등</span>
+                            </div>
+                        </div>
+
+                        <!-- BGM Info -->
+                        <div id="bgmInfo" class="bgm-info" style="display: none;">
+                            <div class="bgm-file-info">
+                                <span class="bgm-icon">🎵</span>
+                                <span id="bgmFileName" class="bgm-name">파일명.mp3</span>
+                            </div>
+                            <div class="bgm-actions">
+                                <button id="bgmPlayBtn" class="bgm-play-btn">▶️</button>
+                                <button id="bgmRemoveBtn" class="bgm-remove-btn">✕</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden audio for preview -->
+                    <audio id="bgmPreview" preload="metadata"></audio>
+
+                    <!-- Volume Controls -->
+                    <div class="volume-controls">
+                        <div class="volume-row">
+                            <span class="volume-label">🎵 BGM 볼륨</span>
+                            <input type="range" id="bgmVolume" min="0" max="1" step="0.05" value="0.5" class="volume-slider">
+                            <span id="bgmVolumeValue" class="volume-value">50%</span>
+                        </div>
+                        <div class="volume-row">
+                            <span class="volume-label">🎬 원본 볼륨</span>
+                            <input type="range" id="clipVolume" min="0" max="1" step="0.05" value="1" class="volume-slider">
+                            <span id="clipVolumeValue" class="volume-value">100%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 6: Generate -->
+            <section class="step-card generate-card">
+                <div class="step-header">
+                    <span class="step-num">6</span>
                     <span class="step-title">쇼츠 생성</span>
                 </div>
 
