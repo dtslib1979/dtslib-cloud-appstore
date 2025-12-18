@@ -1,8 +1,8 @@
 {
     "name": "Lecture Long Factory",
     "short_name": "LectureLong",
-    "description": "긴 튜토리얼 영상 제작 - 40분~2시간 지원, BGM 자동 반복",
-    "version": "1.0.0",
+    "description": "16분 튜토리얼 영상을 12분으로 자동 변환 - 긴 강의용",
+    "version": "2.0.0",
     "id": "/lecture-long/",
     "start_url": "./index.html",
     "scope": "./",
