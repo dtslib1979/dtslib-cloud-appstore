@@ -15,6 +15,14 @@
       "featured": true
     },
     {
+      "id": "lecture-long",
+      "name": "Lecture Long",
+      "desc": "긴 튜토리얼 + BGM",
+      "icon": "📹",
+      "version": "1.0",
+      "badge": "new"
+    },
+    {
       "id": "auto-shorts",
       "name": "Auto Shorts",
       "desc": "6~30초→2분 변환",
