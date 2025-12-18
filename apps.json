@@ -17,9 +17,9 @@
     {
       "id": "lecture-long",
       "name": "Lecture Long",
-      "desc": "긴 튜토리얼 + BGM",
+      "desc": "16분→12분 튜토리얼 변환",
       "icon": "📹",
-      "version": "1.0",
+      "version": "2.0",
       "badge": "new"
     },
     {

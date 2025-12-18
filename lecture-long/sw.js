@@ -1,10 +1,10 @@
 /**
- * Lecture Long Factory - Service Worker v1.0
+ * Lecture Long Factory - Service Worker v2.0
  * Enhanced caching with update notifications
  */
 
-const CACHE_NAME = 'lecture-long-v1.0.0';
-const CACHE_VERSION = '1.0.0';
+const CACHE_NAME = 'lecture-long-v2.0.0';
+const CACHE_VERSION = '2.0.0';
 
 // App files to cache
 const APP_FILES = [
