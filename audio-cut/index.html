@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="Parksy AudioCut - 파형에서 1/2/3분 즉시 컷">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AudioCut">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+    <title>Parksy AudioCut</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Parksy AudioCut</h1>
+            <p class="subtitle">파형 클릭 → 1/2/3분 컷 → MP3 저장</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <label class="upload-btn" id="uploadBtn">
+                <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,.wav,.mp3" hidden>
+                <span>오디오 파일 선택</span>
+                <small>WAV / MP3 (30MB, 10분 이하)</small>
+            </label>
+            <div class="file-info" id="fileInfo"></div>
+        </section>
+
+        <!-- Waveform Section -->
+        <section class="waveform-section" id="waveformSection">
+            <div id="waveform"></div>
+            <div class="time-display">
+                <span id="currentTime">0:00</span>
+                <span id="duration">0:00</span>
+            </div>
+        </section>
+
+        <!-- Start Point Display -->
+        <section class="start-section" id="startSection">
+            <div class="start-display">
+                <span class="label">시작점</span>
+                <span class="time" id="startTime">0:00.0</span>
+            </div>
+            <div class="fine-tune">
+                <button class="tune-btn" data-delta="-0.5">-0.5s</button>
+                <button class="tune-btn" data-delta="-0.1">-0.1s</button>
+                <button class="tune-btn" data-delta="0.1">+0.1s</button>
+                <button class="tune-btn" data-delta="0.5">+0.5s</button>
+            </div>
+        </section>
+
+        <!-- Cut Buttons -->
+        <section class="cut-section" id="cutSection">
+            <button class="cut-btn" data-duration="60">1분</button>
+            <button class="cut-btn" data-duration="120">2분</button>
+            <button class="cut-btn" data-duration="180">3분</button>
+        </section>
+
+        <!-- Selection Info -->
+        <section class="selection-section" id="selectionSection">
+            <div class="selection-info">
+                <span id="selectionRange">선택 구간: --</span>
+            </div>
+            <div class="selection-actions">
+                <button class="action-btn play-btn" id="playBtn">
+                    <span>▶</span> 미리듣기
+                </button>
+                <button class="action-btn export-btn" id="exportBtn">
+                    <span>💾</span> MP3 저장
+                </button>
+            </div>
+        </section>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+
+        <!-- Encoding Overlay -->
+        <div class="overlay" id="overlay">
+            <div class="encoding-msg">
+                <div class="spinner"></div>
+                <p>MP3 인코딩 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WaveSurfer.js -->
+    <script src="https://unpkg.com/wavesurfer.js@7.8.6/dist/wavesurfer.min.js"></script>
+    <!-- lamejs for MP3 encoding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
