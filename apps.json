@@ -53,6 +53,15 @@
       "icon": "🎬",
       "version": "5.0",
       "badge": "new"
+    },
+    {
+      "id": "audio-cut",
+      "name": "AudioCut",
+      "desc": "1/2/3분 오디오 컷",
+      "icon": "✂️",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
