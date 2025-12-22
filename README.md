@@ -15,8 +15,9 @@
 | **Clip Shorts** | https://dtslib1979.github.io/dtslib-cloud-appstore/clip-shorts/ | ✅ v5.0 |
 | **Parksy AudioCut** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-cut/ | ✅ v1.0 |
 | **Parksy AudioLoop** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-loop/ | ✅ v1.0 |
+| **Parksy Meta Kit** | https://dtslib1979.github.io/dtslib-cloud-appstore/meta-kit/ | ✅ v1.0 |
 
-## 🎬 앱 목록 (총 8개)
+## 🎬 앱 목록 (총 9개)
 
 ### Lecture Shorts v6.5 Pro
 4분 영상 → 3분 쇼츠 변환 (WebCodecs 기반)
@@ -41,6 +42,9 @@
 
 ### Parksy AudioLoop v1.0
 5/10/15분 자동 반복 + 크로스페이드 → MP3 저장
+
+### Parksy Meta Kit v1.0
+템플릿 기반 메타데이터 규격 생성기 (Python 자동화 연동)
 
 ## 📲 PWA 설치
 
@@ -71,6 +75,7 @@ dtslib-cloud-appstore/
 ├── clip-shorts/            # Clip Shorts v5.0
 ├── audio-cut/              # Parksy AudioCut v1.0
 ├── audio-loop/             # Parksy AudioLoop v1.0
+├── meta-kit/               # Parksy Meta Kit v1.0
 └── README.md
 ```
 
