@@ -71,6 +71,15 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "meta-kit",
+      "name": "Parksy Meta Kit",
+      "desc": "메타데이터 규격 생성",
+      "icon": "📋",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
