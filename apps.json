@@ -62,6 +62,15 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "audio-loop",
+      "name": "Parksy AudioLoop",
+      "desc": "5/10/15분 자동 반복",
+      "icon": "🔁",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
