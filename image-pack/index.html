@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0f23">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Parksy Image Pack</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../" class="back-btn">← Store</a>
+            <h1>📦 Image Pack</h1>
+            <p class="version">v1.0</p>
+        </header>
+
+        <main>
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" id="imageInput" accept="image/*" hidden>
+                    <div class="upload-content">
+                        <span class="upload-icon">🖼️</span>
+                        <p>이미지 선택</p>
+                        <p class="upload-hint">JPG, PNG, WebP (최대 20MB)</p>
+                    </div>
+                </div>
+                <div class="preview-container" id="previewContainer">
+                    <img id="previewImage" alt="Preview">
+                    <button class="clear-btn" id="clearBtn">✕</button>
+                    <div class="image-info" id="imageInfo"></div>
+                </div>
+            </section>
+
+            <!-- Platform Selection -->
+            <section class="platform-section" id="platformSection">
+                <h2>플랫폼 선택</h2>
+                <div class="platform-grid">
+                    <button class="platform-btn" data-platform="youtube-thumb">
+                        <span class="platform-icon">▶️</span>
+                        <span class="platform-name">YouTube 썸네일</span>
+                        <span class="platform-spec">1280×720</span>
+                    </button>
+                    <button class="platform-btn" data-platform="youtube-shorts">
+                        <span class="platform-icon">📱</span>
+                        <span class="platform-name">YouTube Shorts</span>
+                        <span class="platform-spec">1080×1920</span>
+                    </button>
+                    <button class="platform-btn" data-platform="instagram-square">
+                        <span class="platform-icon">📷</span>
+                        <span class="platform-name">Instagram 정사각</span>
+                        <span class="platform-spec">1080×1080</span>
+                    </button>
+                    <button class="platform-btn" data-platform="instagram-story">
+                        <span class="platform-icon">📖</span>
+                        <span class="platform-name">Instagram 스토리</span>
+                        <span class="platform-spec">1080×1920</span>
+                    </button>
+                    <button class="platform-btn" data-platform="tiktok">
+                        <span class="platform-icon">🎵</span>
+                        <span class="platform-name">TikTok</span>
+                        <span class="platform-spec">1080×1920</span>
+                    </button>
+                    <button class="platform-btn" data-platform="twitter">
+                        <span class="platform-icon">🐦</span>
+                        <span class="platform-name">Twitter/X</span>
+                        <span class="platform-spec">1200×675</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Options Section -->
+            <section class="options-section" id="optionsSection">
+                <h2>옵션</h2>
+
+                <div class="option-group">
+                    <label>배경색 (레터박스)</label>
+                    <div class="color-options">
+                        <button class="color-btn selected" data-color="#000000" style="background:#000000"></button>
+                        <button class="color-btn" data-color="#ffffff" style="background:#ffffff"></button>
+                        <button class="color-btn" data-color="#1a1a2e" style="background:#1a1a2e"></button>
+                        <button class="color-btn" data-color="#2d3436" style="background:#2d3436"></button>
+                        <input type="color" id="customColor" value="#000000" class="custom-color">
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>품질</label>
+                    <div class="quality-options">
+                        <button class="quality-btn" data-quality="0.7">70%</button>
+                        <button class="quality-btn selected" data-quality="0.85">85%</button>
+                        <button class="quality-btn" data-quality="0.95">95%</button>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <label>출력 형식</label>
+                    <div class="format-options">
+                        <button class="format-btn selected" data-format="jpeg">JPEG</button>
+                        <button class="format-btn" data-format="png">PNG</button>
+                        <button class="format-btn" data-format="webp">WebP</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Generate Button -->
+            <section class="action-section">
+                <button class="generate-btn" id="generateBtn" disabled>
+                    <span class="btn-text">이미지 생성</span>
+                    <span class="btn-loading">처리 중...</span>
+                </button>
+            </section>
+
+            <!-- Output Section -->
+            <section class="output-section" id="outputSection">
+                <h2>생성 결과</h2>
+                <div class="output-grid" id="outputGrid"></div>
+                <button class="download-all-btn" id="downloadAllBtn">
+                    📥 전체 다운로드 (ZIP)
+                </button>
+            </section>
+        </main>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

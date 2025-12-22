@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Export / Packager</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="../assets/icon-192.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="../" class="back-btn">← Store</a>
+            <h1>📦 Export / Packager</h1>
+            <p class="version">v1.0</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Project -->
+            <section class="step step-1 active" id="step1">
+                <div class="step-header">
+                    <span class="step-num">1</span>
+                    <h2>프로젝트</h2>
+                </div>
+                <div class="step-content">
+                    <div class="project-actions">
+                        <button class="btn-primary" id="newProjectBtn">+ 새 프로젝트</button>
+                    </div>
+                    <div class="recent-projects" id="recentProjects">
+                        <h3>최근 프로젝트</h3>
+                        <div class="project-list" id="projectList"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: File Upload -->
+            <section class="step step-2" id="step2">
+                <div class="step-header">
+                    <span class="step-num">2</span>
+                    <h2>파일 추가</h2>
+                    <span class="project-name" id="currentProjectName"></span>
+                </div>
+                <div class="step-content">
+                    <div class="upload-zone" id="uploadZone">
+                        <input type="file" id="fileInput" multiple hidden>
+                        <div class="upload-content">
+                            <span class="upload-icon">📁</span>
+                            <p>파일을 드래그하거나 클릭</p>
+                            <p class="upload-hint">영상, 음원, 이미지, 텍스트 파일</p>
+                        </div>
+                    </div>
+                    <div class="file-list" id="fileList"></div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" id="backToStep1">← 뒤로</button>
+                        <button class="btn-primary" id="toStep3" disabled>다음 →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: File Mapping -->
+            <section class="step step-3" id="step3">
+                <div class="step-header">
+                    <span class="step-num">3</span>
+                    <h2>파일 분류</h2>
+                </div>
+                <div class="step-content">
+                    <div class="mapping-list" id="mappingList"></div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" id="backToStep2">← 뒤로</button>
+                        <button class="btn-primary" id="toStep4">다음 →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: Field Selection -->
+            <section class="step step-4" id="step4">
+                <div class="step-header">
+                    <span class="step-num">4</span>
+                    <h2>Field 선택</h2>
+                </div>
+                <div class="step-content">
+                    <div class="field-grid">
+                        <button class="field-btn" data-field="youtube">
+                            <span class="field-icon">▶️</span>
+                            <span class="field-name">YouTube</span>
+                            <span class="field-desc">shorts.mp4 + thumb.jpg + title.txt</span>
+                        </button>
+                        <button class="field-btn" data-field="blog">
+                            <span class="field-icon">📝</span>
+                            <span class="field-name">Blog</span>
+                            <span class="field-desc">post.md + cover.jpg</span>
+                        </button>
+                        <button class="field-btn" data-field="instagram">
+                            <span class="field-icon">📷</span>
+                            <span class="field-name">Instagram</span>
+                            <span class="field-desc">insta_square.jpg or reel.mp4</span>
+                        </button>
+                    </div>
+                    <div class="field-validation" id="fieldValidation"></div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" id="backToStep3">← 뒤로</button>
+                        <button class="btn-primary" id="toStep5" disabled>다음 →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 5: Export Mode -->
+            <section class="step step-5" id="step5">
+                <div class="step-header">
+                    <span class="step-num">5</span>
+                    <h2>Export 모드</h2>
+                </div>
+                <div class="step-content">
+                    <div class="mode-grid">
+                        <button class="mode-btn selected" data-mode="zip">
+                            <span class="mode-icon">📦</span>
+                            <span class="mode-name">ZIP Export</span>
+                            <span class="mode-desc">전체 파일 압축</span>
+                        </button>
+                        <button class="mode-btn" data-mode="field">
+                            <span class="mode-icon">🎯</span>
+                            <span class="mode-name">Field Export</span>
+                            <span class="mode-desc">필수 파일만 압축</span>
+                        </button>
+                    </div>
+                    <div class="step-actions">
+                        <button class="btn-secondary" id="backToStep4">← 뒤로</button>
+                        <button class="btn-primary" id="toStep6">다음 →</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 6: Export -->
+            <section class="step step-6" id="step6">
+                <div class="step-header">
+                    <span class="step-num">6</span>
+                    <h2>Export</h2>
+                </div>
+                <div class="step-content">
+                    <div class="export-summary" id="exportSummary"></div>
+                    <button class="export-btn" id="exportBtn">
+                        <span class="btn-text">📥 Export</span>
+                        <span class="btn-loading">처리 중...</span>
+                    </button>
+                    <div class="step-actions">
+                        <button class="btn-secondary" id="backToStep5">← 뒤로</button>
+                        <button class="btn-secondary" id="resetBtn">새 프로젝트</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
