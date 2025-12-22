@@ -18,8 +18,9 @@
 | **Parksy Meta Kit** | https://dtslib1979.github.io/dtslib-cloud-appstore/meta-kit/ | ✅ v1.0 |
 | **Parksy Image Pack** | https://dtslib1979.github.io/dtslib-cloud-appstore/image-pack/ | ✅ v1.0 |
 | **Export / Packager** | https://dtslib1979.github.io/dtslib-cloud-appstore/export-packager/ | ✅ v1.0 |
+| **Control Engine** | https://dtslib1979.github.io/dtslib-cloud-appstore/control-engine/ | ✅ v1.0 |
 
-## 🎬 앱 목록 (총 11개)
+## 🎬 앱 목록 (총 12개)
 
 ### Lecture Shorts v6.5 Pro
 4분 영상 → 3분 쇼츠 변환 (WebCodecs 기반)
@@ -54,6 +55,9 @@
 ### Export / Packager v1.0
 프로젝트 출하 엔진 - PWA 결과물을 표준 구조로 패키징 (ZIP Export)
 
+### Control Engine v1.0
+PC Batch Runner용 실행 계획(run_plan.json) 생성기
+
 ## 📲 PWA 설치
 
 1. Chrome/Safari에서 앱 접속
@@ -86,6 +90,7 @@ dtslib-cloud-appstore/
 ├── meta-kit/               # Parksy Meta Kit v1.0
 ├── image-pack/             # Parksy Image Pack v1.0
 ├── export-packager/        # Export / Packager v1.0
+├── control-engine/         # Control Engine v1.0
 └── README.md
 ```
 
