@@ -6,9 +6,9 @@
 
 | 앱 | URL | 상태 |
 |---|---|---|
-| **AppStore 메인** | https://dtslib-cloud-appstore.vercel.app/ | ✅ |
-| **Auto Shorts** | https://dtslib-cloud-appstore.vercel.app/auto-shorts/ | ✅ v1.0 |
-| **Bilingual Aligner** | https://dtslib-cloud-appstore.vercel.app/bilingual-aligner/ | ✅ |
+| **AppStore 메인** | https://dtslib1979.github.io/dtslib-cloud-appstore/ | ✅ |
+| **Auto Shorts** | https://dtslib1979.github.io/dtslib-cloud-appstore/auto-shorts/ | ✅ v1.0 |
+| **Bilingual Aligner** | https://dtslib1979.github.io/dtslib-cloud-appstore/bilingual-aligner/ | ✅ |
 
 ## 🎬 Auto Shorts Maker v1.0
 
