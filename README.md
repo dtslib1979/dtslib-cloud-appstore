@@ -13,8 +13,9 @@
 | **Bilingual Aligner** | https://dtslib1979.github.io/dtslib-cloud-appstore/bilingual-aligner/ | ✅ vLIVE |
 | **Slim Lens** | https://dtslib1979.github.io/dtslib-cloud-appstore/slim-lens/ | ✅ v2.0 |
 | **Clip Shorts** | https://dtslib1979.github.io/dtslib-cloud-appstore/clip-shorts/ | ✅ v5.0 |
+| **Parksy AudioCut** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-cut/ | ✅ v1.0 |
 
-## 🎬 앱 목록 (총 6개)
+## 🎬 앱 목록 (총 7개)
 
 ### Lecture Shorts v6.5 Pro
 4분 영상 → 3분 쇼츠 변환 (WebCodecs 기반)
@@ -34,6 +35,9 @@
 ### Clip Shorts v5.0
 클립 조합 쇼츠 + BGM 합성
 
+### Parksy AudioCut v1.0
+파형 클릭 → 1/2/3분 컷 → MP3 저장
+
 ## 📲 PWA 설치
 
 1. Chrome/Safari에서 앱 접속
@@ -45,8 +49,9 @@
 - Pure HTML/CSS/JS
 - WebCodecs API (Lecture Shorts)
 - FFmpeg.wasm (Auto Shorts, Clip Shorts)
+- WaveSurfer.js + lamejs (AudioCut)
 - Service Worker / PWA Manifest
-- GitHub Pages Hosting
+- GitHub Pages / Vercel Hosting
 
 ## 📁 구조
 
@@ -60,6 +65,7 @@ dtslib-cloud-appstore/
 ├── bilingual-aligner/      # Bilingual Aligner vLIVE
 ├── slim-lens/              # Slim Lens v2.0
 ├── clip-shorts/            # Clip Shorts v5.0
+├── audio-cut/              # Parksy AudioCut v1.0
 └── README.md
 ```
 
