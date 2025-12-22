@@ -14,8 +14,9 @@
 | **Slim Lens** | https://dtslib1979.github.io/dtslib-cloud-appstore/slim-lens/ | ✅ v2.0 |
 | **Clip Shorts** | https://dtslib1979.github.io/dtslib-cloud-appstore/clip-shorts/ | ✅ v5.0 |
 | **Parksy AudioCut** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-cut/ | ✅ v1.0 |
+| **Parksy AudioLoop** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-loop/ | ✅ v1.0 |
 
-## 🎬 앱 목록 (총 7개)
+## 🎬 앱 목록 (총 8개)
 
 ### Lecture Shorts v6.5 Pro
 4분 영상 → 3분 쇼츠 변환 (WebCodecs 기반)
@@ -38,6 +39,9 @@
 ### Parksy AudioCut v1.0
 파형 클릭 → 1/2/3분 컷 → MP3 저장
 
+### Parksy AudioLoop v1.0
+5/10/15분 자동 반복 + 크로스페이드 → MP3 저장
+
 ## 📲 PWA 설치
 
 1. Chrome/Safari에서 앱 접속
@@ -49,7 +53,7 @@
 - Pure HTML/CSS/JS
 - WebCodecs API (Lecture Shorts)
 - FFmpeg.wasm (Auto Shorts, Clip Shorts)
-- WaveSurfer.js + lamejs (AudioCut)
+- WaveSurfer.js + lamejs (AudioCut, AudioLoop)
 - Service Worker / PWA Manifest
 - GitHub Pages / Vercel Hosting
 
@@ -66,6 +70,7 @@ dtslib-cloud-appstore/
 ├── slim-lens/              # Slim Lens v2.0
 ├── clip-shorts/            # Clip Shorts v5.0
 ├── audio-cut/              # Parksy AudioCut v1.0
+├── audio-loop/             # Parksy AudioLoop v1.0
 └── README.md
 ```
 
