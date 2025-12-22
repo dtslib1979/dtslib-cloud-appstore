@@ -17,8 +17,9 @@
 | **Parksy AudioLoop** | https://dtslib1979.github.io/dtslib-cloud-appstore/audio-loop/ | ✅ v1.0 |
 | **Parksy Meta Kit** | https://dtslib1979.github.io/dtslib-cloud-appstore/meta-kit/ | ✅ v1.0 |
 | **Parksy Image Pack** | https://dtslib1979.github.io/dtslib-cloud-appstore/image-pack/ | ✅ v1.0 |
+| **Export / Packager** | https://dtslib1979.github.io/dtslib-cloud-appstore/export-packager/ | ✅ v1.0 |
 
-## 🎬 앱 목록 (총 10개)
+## 🎬 앱 목록 (총 11개)
 
 ### Lecture Shorts v6.5 Pro
 4분 영상 → 3분 쇼츠 변환 (WebCodecs 기반)
@@ -49,6 +50,9 @@
 
 ### Parksy Image Pack v1.0
 플랫폼별 이미지 규격 생성기 (YouTube, Instagram, TikTok, Twitter)
+
+### Export / Packager v1.0
+프로젝트 출하 엔진 - PWA 결과물을 표준 구조로 패키징 (ZIP Export)
 
 ## 📲 PWA 설치
 
@@ -81,6 +85,7 @@ dtslib-cloud-appstore/
 ├── audio-loop/             # Parksy AudioLoop v1.0
 ├── meta-kit/               # Parksy Meta Kit v1.0
 ├── image-pack/             # Parksy Image Pack v1.0
+├── export-packager/        # Export / Packager v1.0
 └── README.md
 ```
 

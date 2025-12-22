@@ -89,6 +89,15 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "export-packager",
+      "name": "Export / Packager",
+      "desc": "프로젝트 출하 엔진",
+      "icon": "🚀",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
