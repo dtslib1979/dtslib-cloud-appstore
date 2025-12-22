@@ -80,6 +80,15 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "image-pack",
+      "name": "Parksy Image Pack",
+      "desc": "플랫폼별 이미지 규격",
+      "icon": "📦",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
