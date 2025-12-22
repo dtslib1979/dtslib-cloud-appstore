@@ -80,6 +80,24 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "image-pack",
+      "name": "Parksy Image Pack",
+      "desc": "플랫폼별 이미지 규격",
+      "icon": "📦",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
+    },
+    {
+      "id": "export-packager",
+      "name": "Export / Packager",
+      "desc": "프로젝트 출하 엔진",
+      "icon": "🚀",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
