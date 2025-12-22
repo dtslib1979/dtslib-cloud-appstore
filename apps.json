@@ -98,6 +98,15 @@
       "version": "1.0",
       "badge": "new",
       "featured": true
+    },
+    {
+      "id": "control-engine",
+      "name": "Control Engine",
+      "desc": "PC Batch용 실행 계획 생성",
+      "icon": "🎛️",
+      "version": "1.0",
+      "badge": "new",
+      "featured": true
     }
   ]
 }
