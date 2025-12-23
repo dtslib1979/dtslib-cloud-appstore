@@ -37,8 +37,8 @@ const exportBtn = document.getElementById('exportBtn');
 const toast = document.getElementById('toast');
 const overlay = document.getElementById('overlay');
 
-// Initialize
-document.addEventListener('DOMContentLoaded', init);
+// Initialize (ES 모듈은 defer처럼 동작하므로 바로 실행)
+init();
 
 function init() {
     // File input handler

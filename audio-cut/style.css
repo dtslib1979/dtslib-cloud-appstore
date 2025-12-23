@@ -10,15 +10,16 @@ body {
     color: #fff;
     min-height: 100vh;
     min-height: 100dvh;
-    overflow: hidden;
+    overflow-y: auto;
 }
 
 .container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
     padding: 20px;
+    padding-bottom: 40px;
     max-width: 500px;
     margin: 0 auto;
     gap: 16px;
