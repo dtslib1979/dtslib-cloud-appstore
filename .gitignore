@@ -5,3 +5,5 @@ apps/*/__pycache__
 node_modules
 .env
 *.pyc
+.vercel
+.env*.local
