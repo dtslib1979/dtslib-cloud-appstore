@@ -3,6 +3,9 @@
  * 파형에서 시작점 클릭 → 1/2/3분 컷 → MP3 저장
  */
 
+// WaveSurfer.js v7 ESM import
+import WaveSurfer from 'https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js';
+
 // Constants
 const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
 const MAX_DURATION = 10 * 60; // 10분
