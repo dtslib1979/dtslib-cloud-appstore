@@ -1,5 +1,5 @@
 /**
- * Parksy AudioCut v1.0
+ * Parksy AudioCut v1.1
  * 파형에서 시작점 클릭 → 1/2/3분 컷 → MP3 저장
  */
 
