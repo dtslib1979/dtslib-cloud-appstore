@@ -1,6 +1,11 @@
 /**
- * Clip Shorts v4.0
+ * Clip Shorts v5.0
  * 클립 선택 → 3분 쇼츠 자동 생성
+ *
+ * v5.0 변경사항:
+ * - 청크 방식 병합으로 메모리 문제 해결 (18개 클립도 안정적 처리)
+ * - concat demuxer 방식으로 효율적 병합
+ * - 메모리 관리 개선
  *
  * v4.0 변경사항:
  * - filter_complex concat 방식으로 안정적 병합
@@ -16,7 +21,8 @@ const CONFIG = {
     resolution: { width: 720, height: 1280 },
     fps: 30,
     transitionDuration: 0.5,
-    audioBitrate: '192k'
+    audioBitrate: '192k',
+    chunkSize: 6  // 한 번에 병합할 클립 수 (메모리 최적화)
 };
 
 /* ========== STATE ========== */
@@ -499,8 +505,9 @@ async function preprocessClips() {
 
     const hasTransition = state.transitionEffect !== 'none';
     const fadeDur = CONFIG.transitionDuration;
+    const totalClips = state.clips.length;
 
-    for (let i = 0; i < state.clips.length; i++) {
+    for (let i = 0; i < totalClips; i++) {
         if (state.processingAborted) throw new Error('중단됨');
 
         const clipDur = state.clips[i].meta.dur;
@@ -513,7 +520,7 @@ async function preprocessClips() {
             if (i === 0) {
                 // 첫 번째 클립: 끝에 fade out
                 vf += `,fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
-            } else if (i === state.clips.length - 1) {
+            } else if (i === totalClips - 1) {
                 // 마지막 클립: 시작에 fade in
                 vf += `,fade=t=in:st=0:d=${fadeDur}`;
             } else {
@@ -522,7 +529,7 @@ async function preprocessClips() {
             }
         }
 
-        // 볼륨 평준화
+        // 볼륨 평준화 (loudnorm이 느리면 volume 필터 사용)
         const af = state.normalizeVolume ? 'loudnorm=I=-16:TP=-1.5:LRA=11' : 'anull';
 
         await state.ffmpeg.run(
@@ -534,50 +541,115 @@ async function preprocessClips() {
             '-y', `clip_${i}.mp4`
         );
 
-        // 원본 삭제
+        // 원본 즉시 삭제 (메모리 확보)
         try { state.ffmpeg.FS('unlink', `input_${i}.mp4`); } catch(e) {}
 
-        log(`클립 처리 ${i + 1}/${state.clips.length}`);
-        setProgress(20 + Math.floor((i / state.clips.length) * 30));
+        // 주기적 가비지 컬렉션 유도 (브라우저에 힌트)
+        if (i > 0 && i % 4 === 0) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+
+        log(`클립 처리 ${i + 1}/${totalClips}`);
+        setProgress(20 + Math.floor(((i + 1) / totalClips) * 30));
     }
 }
 
-/* ========== filter_complex로 병합 ========== */
+/* ========== 청크 기반 병합 (메모리 최적화) ========== */
 async function mergeClipsWithFilterComplex() {
     const n = state.clips.length;
+    const chunkSize = CONFIG.chunkSize;
 
-    // 입력 파일들
-    const inputs = [];
-    for (let i = 0; i < n; i++) {
-        inputs.push('-i', `clip_${i}.mp4`);
+    // 클립이 적으면 기존 방식 사용
+    if (n <= chunkSize) {
+        await mergeClipsDirectly(0, n - 1, 'merged.mp4');
+        // 처리된 클립 삭제
+        for (let i = 0; i < n; i++) {
+            try { state.ffmpeg.FS('unlink', `clip_${i}.mp4`); } catch(e) {}
+        }
+        log('클립 병합 완료');
+        return;
     }
 
-    // filter_complex 문자열 생성
-    // [0:v][0:a][1:v][1:a][2:v][2:a]...concat=n=N:v=1:a=1[v][a]
-    let filterParts = [];
-    for (let i = 0; i < n; i++) {
-        filterParts.push(`[${i}:v][${i}:a]`);
+    // 청크로 나눠서 병합
+    log(`청크 병합 시작 (${chunkSize}개씩 처리)`);
+    const chunks = [];
+
+    for (let i = 0; i < n; i += chunkSize) {
+        const end = Math.min(i + chunkSize - 1, n - 1);
+        const chunkName = `chunk_${chunks.length}.mp4`;
+
+        log(`청크 ${chunks.length + 1} 병합 중 (클립 ${i + 1}~${end + 1})`);
+        await mergeClipsDirectly(i, end, chunkName);
+
+        // 병합된 클립들 즉시 삭제 (메모리 확보)
+        for (let j = i; j <= end; j++) {
+            try { state.ffmpeg.FS('unlink', `clip_${j}.mp4`); } catch(e) {}
+        }
+
+        chunks.push(chunkName);
+        setProgress(50 + Math.floor((chunks.length / Math.ceil(n / chunkSize)) * 15));
     }
-    const filterComplex = `${filterParts.join('')}concat=n=${n}:v=1:a=1[v][a]`;
 
-    log(`병합 필터: ${filterComplex}`);
-
-    await state.ffmpeg.run(
-        ...inputs,
-        '-filter_complex', filterComplex,
-        '-map', '[v]',
-        '-map', '[a]',
-        '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-        '-c:a', 'aac', '-b:a', CONFIG.audioBitrate,
-        '-y', 'merged.mp4'
-    );
-
-    // 처리된 클립 삭제
-    for (let i = 0; i < n; i++) {
-        try { state.ffmpeg.FS('unlink', `clip_${i}.mp4`); } catch(e) {}
+    // 청크들 최종 병합
+    if (chunks.length > 1) {
+        log(`최종 병합 중 (${chunks.length}개 청크)`);
+        await mergeChunks(chunks, 'merged.mp4');
+    } else {
+        state.ffmpeg.FS('rename', chunks[0], 'merged.mp4');
     }
 
     log('클립 병합 완료');
+}
+
+/* ========== 클립 범위 직접 병합 ========== */
+async function mergeClipsDirectly(startIdx, endIdx, outputName) {
+    const count = endIdx - startIdx + 1;
+
+    // concat demuxer 방식 사용 (더 효율적)
+    let listContent = '';
+    for (let i = startIdx; i <= endIdx; i++) {
+        listContent += `file 'clip_${i}.mp4'\n`;
+    }
+
+    // 텍스트 파일 생성
+    const encoder = new TextEncoder();
+    state.ffmpeg.FS('writeFile', 'list.txt', encoder.encode(listContent));
+
+    await state.ffmpeg.run(
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', 'list.txt',
+        '-c', 'copy',
+        '-y', outputName
+    );
+
+    try { state.ffmpeg.FS('unlink', 'list.txt'); } catch(e) {}
+}
+
+/* ========== 청크 병합 ========== */
+async function mergeChunks(chunkNames, outputName) {
+    // concat demuxer로 청크들 병합
+    let listContent = '';
+    for (const name of chunkNames) {
+        listContent += `file '${name}'\n`;
+    }
+
+    const encoder = new TextEncoder();
+    state.ffmpeg.FS('writeFile', 'chunk_list.txt', encoder.encode(listContent));
+
+    await state.ffmpeg.run(
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', 'chunk_list.txt',
+        '-c', 'copy',
+        '-y', outputName
+    );
+
+    // 청크 파일들 삭제
+    try { state.ffmpeg.FS('unlink', 'chunk_list.txt'); } catch(e) {}
+    for (const name of chunkNames) {
+        try { state.ffmpeg.FS('unlink', name); } catch(e) {}
+    }
 }
 
 /* ========== 시작/엔딩 효과 ========== */
