@@ -10,6 +10,10 @@ export const config = {
 };
 
 export default function middleware(request: Request) {
+  // AUTH DISABLED TEMPORARILY
+  return;
+
+  /*
   const basicAuthUser = process.env.BASIC_AUTH_USER;
   const basicAuthPass = process.env.BASIC_AUTH_PASS;
 
@@ -40,4 +44,5 @@ export default function middleware(request: Request) {
       'WWW-Authenticate': 'Basic realm="Secure Area"',
     },
   });
+  */
 }
