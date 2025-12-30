@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="박씨 PWA 스토어 - 직업별 맞춤 PWA 컬렉션">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PWA Store">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+    <title>박씨 PWA 스토어</title>
+
+    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <style>
+        /* Page Specific Styles */
+        .store-header {
+            text-align: center;
+            padding: var(--space-12) var(--space-5) var(--space-8);
+        }
+
+        .store-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--space-5);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInScale 0.6s ease;
+        }
+
+        .store-title {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-2);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .store-tagline {
+            font-size: var(--font-size-base);
+            color: var(--text-secondary);
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .store-stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-8);
+            margin-top: var(--space-6);
+            animation: fadeInUp 0.6s ease 0.3s both;
+        }
+
+        .store-stat {
+            text-align: center;
+        }
+
+        .store-stat-value {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--apple-blue);
+        }
+
+        .store-stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-1);
+        }
+
+        /* Categories Section */
+        .categories-section {
+            padding: 0 var(--space-5) var(--space-10);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+        }
+
+        @media (min-width: 640px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--space-5);
+            }
+        }
+
+        /* Category Card Variations */
+        .category-card.youtuber {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%);
+        }
+
+        .category-card.educator {
+            background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+        }
+
+        .category-card.designer {
+            background: linear-gradient(135deg, #AF52DE 0%, #DA8FFF 100%);
+        }
+
+        .category-card.marketer {
+            background: linear-gradient(135deg, #34C759 0%, #30D158 100%);
+        }
+
+        .category-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .category-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Featured Banner */
+        .featured-banner {
+            margin: var(--space-8) var(--space-5);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--separator);
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .featured-label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            background: var(--apple-red);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            color: white;
+            margin-bottom: var(--space-3);
+        }
+
+        .featured-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-2);
+        }
+
+        .featured-desc {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .featured-cta {
+            display: inline-flex;
+            margin-top: var(--space-4);
+        }
+
+        /* Footer */
+        .store-footer {
+            padding: var(--space-8) var(--space-5);
+            text-align: center;
+            border-top: 1px solid var(--separator);
+        }
+
+        .store-footer p {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+
+        .store-footer a {
+            color: var(--text-secondary);
+        }
+
+        /* Version Badge */
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-2);
+            background: var(--fill-secondary);
+            border-radius: var(--radius-xs);
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-4);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="store-header">
+        <div class="store-logo">🚀</div>
+        <h1 class="store-title">박씨 PWA 스토어</h1>
+        <p class="store-tagline">직업별 맞춤 PWA 컬렉션</p>
+
+        <div class="store-stats">
+            <div class="store-stat">
+                <div class="store-stat-value" id="categoryCount">4</div>
+                <div class="store-stat-label">카테고리</div>
+            </div>
+            <div class="store-stat">
+                <div class="store-stat-value" id="appCount">9</div>
+                <div class="store-stat-label">앱</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Featured Banner -->
+    <div class="featured-banner">
+        <span class="featured-label">✨ Featured</span>
+        <h2 class="featured-title">유튜버 키트 출시</h2>
+        <p class="featured-desc">쇼츠 제작, 오디오 편집, 썸네일 생성까지 브라우저에서 바로!</p>
+        <a href="/youtuber/" class="btn btn-primary featured-cta">지금 사용하기</a>
+    </div>
+
+    <!-- Categories -->
+    <section class="categories-section">
+        <div class="section-header">
+            <h2 class="section-title">카테고리</h2>
+        </div>
+
+        <div class="categories-grid stagger" id="categoriesGrid">
+            <!-- Dynamic content loaded here -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="store-footer">
+        <p>Built with ❤️ by PARKSY</p>
+        <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub</a></p>
+        <div class="version-badge">
+            <span>v2.0.0</span>
+        </div>
+    </footer>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Store Data
+        let storeData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
+
+        async function init() {
+            await loadStoreData();
+            renderCategories();
+            updateStats();
+        }
+
+        // Load store.json
+        async function loadStoreData() {
+            try {
+                const res = await fetch('/store.json');
+                storeData = await res.json();
+            } catch (e) {
+                console.error('Failed to load store data:', e);
+                // Fallback data
+                storeData = {
+                    categories: [
+                        { id: 'youtuber', name: '유튜버 키트', icon: '🎬', color: '#FF3B30', description: '쇼츠 제작부터 썸네일까지', appCount: 9, status: 'active' },
+                        { id: 'educator', name: '교육자 키트', icon: '📚', color: '#007AFF', description: '강의 자료 제작 도구', appCount: 0, status: 'coming_soon' },
+                        { id: 'designer', name: '디자이너 키트', icon: '🎨', color: '#AF52DE', description: '이미지 편집 & 변환', appCount: 0, status: 'coming_soon' },
+                        { id: 'marketer', name: '마케터 키트', icon: '📊', color: '#34C759', description: '콘텐츠 최적화 도구', appCount: 0, status: 'coming_soon' }
+                    ]
+                };
+            }
+        }
+
+        // Render categories
+        function renderCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            grid.innerHTML = '';
+
+            storeData.categories.forEach(cat => {
+                const isActive = cat.status === 'active';
+                const card = document.createElement('a');
+                card.href = isActive ? `/${cat.id}/` : '#';
+                card.className = `category-card ${cat.id} ${!isActive ? 'disabled' : ''}`;
+
+                if (!isActive) {
+                    card.onclick = (e) => {
+                        e.preventDefault();
+                        showToast('Coming Soon! 🚧');
+                    };
+                }
+
+                card.innerHTML = `
+                    <span class="category-card-count">${cat.appCount > 0 ? cat.appCount + '개 앱' : 'Coming Soon'}</span>
+                    <span class="category-card-icon">${cat.icon}</span>
+                    <h3 class="category-card-name">${cat.name}</h3>
+                    <p class="category-card-desc">${cat.description}</p>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Update stats
+        function updateStats() {
+            const categoryCount = storeData.categories.length;
+            const appCount = storeData.categories.reduce((sum, cat) => sum + (cat.appCount || 0), 0);
+
+            document.getElementById('categoryCount').textContent = categoryCount;
+            document.getElementById('appCount').textContent = appCount;
+        }
+
+        // Toast
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('SW registration failed:', err);
+            });
+        }
+    </script>
+</body>
+</html>
