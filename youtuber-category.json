@@ -1,0 +1,156 @@
+{
+  "category": {
+    "id": "youtuber",
+    "name": "유튜버 키트",
+    "nameEn": "YouTuber Kit",
+    "icon": "🎬",
+    "color": "#FF3B30",
+    "gradient": ["#FF3B30", "#FF6B4A"],
+    "description": "쇼츠 제작부터 썸네일까지 모든 것",
+    "version": "2.0.0"
+  },
+  "sections": [
+    {
+      "id": "video-processing",
+      "title": "영상 처리",
+      "titleEn": "Video Processing",
+      "apps": ["lecture-shorts", "lecture-long", "auto-shorts", "clip-shorts"]
+    },
+    {
+      "id": "audio-tools",
+      "title": "오디오 도구",
+      "titleEn": "Audio Tools",
+      "apps": ["audio-studio"]
+    },
+    {
+      "id": "image-tools",
+      "title": "이미지 도구",
+      "titleEn": "Image Tools",
+      "apps": ["slim-lens", "image-pack"]
+    },
+    {
+      "id": "utilities",
+      "title": "유틸리티",
+      "titleEn": "Utilities",
+      "apps": ["bilingual-aligner", "project-manager"]
+    }
+  ],
+  "apps": [
+    {
+      "id": "lecture-shorts",
+      "name": "Lecture Shorts",
+      "desc": "4분→3분 쇼츠 변환",
+      "descEn": "4min→3min Shorts Converter",
+      "icon": "🎓",
+      "iconImage": "/assets/icons/lecture-shorts.png",
+      "version": "6.5 Pro",
+      "badge": "flagship",
+      "badgeColor": "#FF3B30",
+      "featured": true,
+      "tags": ["webcodecs", "ffmpeg", "shorts"],
+      "path": "/youtuber/lecture-shorts"
+    },
+    {
+      "id": "lecture-long",
+      "name": "Lecture Long",
+      "desc": "16분→12분 튜토리얼 변환",
+      "descEn": "16min→12min Tutorial Converter",
+      "icon": "📹",
+      "version": "2.0",
+      "badge": "new",
+      "badgeColor": "#34C759",
+      "featured": false,
+      "tags": ["ffmpeg", "tutorial"],
+      "path": "/youtuber/lecture-long"
+    },
+    {
+      "id": "auto-shorts",
+      "name": "Auto Shorts",
+      "desc": "6~30초→2분 변환",
+      "descEn": "6-30sec→2min Converter",
+      "icon": "🎬",
+      "version": "1.1",
+      "badge": null,
+      "featured": false,
+      "tags": ["ffmpeg", "shorts"],
+      "path": "/youtuber/auto-shorts"
+    },
+    {
+      "id": "clip-shorts",
+      "name": "Clip Shorts",
+      "desc": "클립 조합 쇼츠 + BGM",
+      "descEn": "Clip Merge + BGM",
+      "icon": "🎞️",
+      "version": "5.0",
+      "badge": "popular",
+      "badgeColor": "#AF52DE",
+      "featured": true,
+      "tags": ["ffmpeg", "bgm", "merge"],
+      "path": "/youtuber/clip-shorts"
+    },
+    {
+      "id": "audio-studio",
+      "name": "Audio Studio",
+      "desc": "오디오 컷 & 루프",
+      "descEn": "Audio Cut & Loop",
+      "icon": "🎵",
+      "version": "2.0",
+      "badge": "unified",
+      "badgeColor": "#007AFF",
+      "featured": true,
+      "tags": ["wavesurfer", "mp3", "audio"],
+      "path": "/youtuber/audio-studio",
+      "mergedFrom": ["audio-cut", "audio-loop"]
+    },
+    {
+      "id": "slim-lens",
+      "name": "Slim Lens",
+      "desc": "사진 가로 슬림",
+      "descEn": "Horizontal Photo Slimmer",
+      "icon": "📷",
+      "version": "2.0",
+      "badge": null,
+      "featured": false,
+      "tags": ["image", "warp"],
+      "path": "/youtuber/slim-lens"
+    },
+    {
+      "id": "image-pack",
+      "name": "Image Pack",
+      "desc": "플랫폼별 이미지 규격",
+      "descEn": "Platform Image Specs",
+      "icon": "📦",
+      "version": "1.0",
+      "badge": null,
+      "featured": false,
+      "tags": ["image", "resize", "thumbnail"],
+      "path": "/youtuber/image-pack"
+    },
+    {
+      "id": "bilingual-aligner",
+      "name": "Bilingual Aligner",
+      "desc": "한영 문장 정렬 & 텔레프롬프터",
+      "descEn": "KR-EN Alignment & Teleprompter",
+      "icon": "📘",
+      "version": "LIVE",
+      "badge": null,
+      "featured": false,
+      "tags": ["text", "teleprompter"],
+      "path": "/youtuber/bilingual-aligner"
+    },
+    {
+      "id": "project-manager",
+      "name": "Project Manager",
+      "desc": "메타데이터 & 출하 관리",
+      "descEn": "Metadata & Export Manager",
+      "icon": "📋",
+      "version": "1.0",
+      "badge": "unified",
+      "badgeColor": "#007AFF",
+      "featured": false,
+      "tags": ["metadata", "export", "batch"],
+      "path": "/youtuber/project-manager",
+      "mergedFrom": ["meta-kit", "export-packager", "control-engine"]
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "store": {
+    "name": "박씨 PWA 스토어",
+    "tagline": "직업별 맞춤 PWA 컬렉션",
+    "version": "2.0.0",
+    "author": "PARKSY",
+    "description": "브라우저에서 바로 사용하는 프로페셔널 도구 모음",
+    "repository": "https://github.com/dtslib1979/dtslib-cloud-appstore",
+    "license": "MIT"
+  },
+  "categories": [
+    {
+      "id": "youtuber",
+      "name": "유튜버 키트",
+      "nameEn": "YouTuber Kit",
+      "icon": "🎬",
+      "color": "#FF3B30",
+      "gradient": ["#FF3B30", "#FF6B4A"],
+      "description": "쇼츠 제작부터 썸네일까지",
+      "descriptionEn": "From Shorts to Thumbnails",
+      "appCount": 8,
+      "featured": true,
+      "status": "active",
+      "path": "/categories/youtuber"
+    },
+    {
+      "id": "educator",
+      "name": "교육자 키트",
+      "nameEn": "Educator Kit",
+      "icon": "📚",
+      "color": "#007AFF",
+      "gradient": ["#007AFF", "#5AC8FA"],
+      "description": "강의 자료 제작 도구",
+      "descriptionEn": "Teaching Material Tools",
+      "appCount": 0,
+      "featured": false,
+      "status": "coming_soon",
+      "path": "/categories/educator"
+    },
+    {
+      "id": "designer",
+      "name": "디자이너 키트",
+      "nameEn": "Designer Kit",
+      "icon": "🎨",
+      "color": "#AF52DE",
+      "gradient": ["#AF52DE", "#DA8FFF"],
+      "description": "이미지 편집 & 변환 도구",
+      "descriptionEn": "Image Editing & Conversion",
+      "appCount": 0,
+      "featured": false,
+      "status": "coming_soon",
+      "path": "/categories/designer"
+    },
+    {
+      "id": "marketer",
+      "name": "마케터 키트",
+      "nameEn": "Marketer Kit",
+      "icon": "📊",
+      "color": "#34C759",
+      "gradient": ["#34C759", "#30D158"],
+      "description": "콘텐츠 최적화 도구",
+      "descriptionEn": "Content Optimization Tools",
+      "appCount": 0,
+      "featured": false,
+      "status": "coming_soon",
+      "path": "/categories/marketer"
+    }
+  ],
+  "featured": {
+    "category": "youtuber",
+    "apps": ["lecture-shorts", "clip-shorts", "audio-studio"]
+  },
+  "settings": {
+    "theme": "dark",
+    "language": "ko",
+    "analytics": false
+  }
+}

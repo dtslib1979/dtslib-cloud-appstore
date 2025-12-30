@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>Coming Soon - 박씨 PWA 스토어</title>
+
+    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <style>
+        .coming-soon-page {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-6);
+            text-align: center;
+        }
+
+        .coming-soon-icon {
+            font-size: 80px;
+            margin-bottom: var(--space-6);
+            animation: bounce 2s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .coming-soon-title {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-3);
+        }
+
+        .coming-soon-desc {
+            font-size: var(--font-size-base);
+            color: var(--text-secondary);
+            max-width: 300px;
+            margin-bottom: var(--space-8);
+        }
+
+        .coming-soon-features {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+            margin-bottom: var(--space-8);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-sm);
+        }
+
+        .feature-icon {
+            font-size: 20px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            color: var(--apple-blue);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .notify-section {
+            margin-top: var(--space-8);
+            padding: var(--space-5);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            max-width: 320px;
+        }
+
+        .notify-title {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-3);
+        }
+
+        .notify-input {
+            width: 100%;
+            padding: var(--space-3);
+            border: 1px solid var(--separator);
+            border-radius: var(--radius-sm);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--space-3);
+        }
+
+        .notify-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .notify-btn {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="coming-soon-page">
+        <div class="coming-soon-icon">🚧</div>
+
+        <h1 class="coming-soon-title">Coming Soon</h1>
+        <p class="coming-soon-desc">새로운 카테고리가 준비 중입니다. 조금만 기다려주세요!</p>
+
+        <div class="coming-soon-features">
+            <div class="feature-item">
+                <span class="feature-icon">📚</span>
+                <span>교육자 키트 - 강의 자료 제작 도구</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">🎨</span>
+                <span>디자이너 키트 - 이미지 편집 & 변환</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📊</span>
+                <span>마케터 키트 - 콘텐츠 최적화 도구</span>
+            </div>
+        </div>
+
+        <a href="/" class="back-link">
+            <span>←</span>
+            <span>스토어로 돌아가기</span>
+        </a>
+
+        <!--
+        <div class="notify-section">
+            <h3 class="notify-title">출시 알림 받기</h3>
+            <input type="email" class="notify-input" placeholder="이메일 주소 입력">
+            <button class="btn btn-primary notify-btn">알림 신청</button>
+        </div>
+        -->
+    </div>
+</body>
+</html>
