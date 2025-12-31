@@ -1,0 +1,52 @@
+{
+    "name": "Lecture Shorts Factory",
+    "short_name": "LectureShorts",
+    "description": "강의 영상을 유튜브 쇼츠로 자동 변환 - Pro Edition",
+    "version": "6.5.0",
+    "id": "/lecture-shorts/",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0f0f1a",
+    "theme_color": "#e94560",
+    "categories": ["utilities", "video", "education"],
+    "icons": [
+        {
+            "src": "./icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "./icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "새 쇼츠 만들기",
+            "short_name": "새로 만들기",
+            "description": "새 강의 영상 변환 시작",
+            "url": "./index.html?action=new",
+            "icons": [{ "src": "./icons/icon-192x192.png", "sizes": "192x192" }]
+        }
+    ],
+    "screenshots": [],
+    "related_applications": [],
+    "prefer_related_applications": false
+}

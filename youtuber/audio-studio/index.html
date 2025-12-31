@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Audio Studio - 오디오 컷 & 루프">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Audio Studio">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
+    <title>Audio Studio</title>
+    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Back Link -->
+        <a href="/youtuber/" class="back-link">← 유튜버 키트</a>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>Audio Studio</h1>
+            <p class="subtitle">오디오 컷 & 루프 통합 도구</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-mode="cut">
+                <span class="tab-icon">✂️</span>
+                <span>Cut</span>
+            </button>
+            <button class="tab-btn" data-mode="loop">
+                <span class="tab-icon">🔁</span>
+                <span>Loop</span>
+            </button>
+        </nav>
+
+        <!-- Upload Section (Shared) -->
+        <section class="upload-section">
+            <label class="upload-btn" id="uploadBtn">
+                <input type="file" id="fileInput" accept="audio/wav,audio/mp3,audio/mpeg,.wav,.mp3" hidden>
+                <span>오디오 파일 선택</span>
+                <small id="uploadHint">WAV / MP3 (30MB, 10분 이하)</small>
+            </label>
+            <div class="file-info" id="fileInfo"></div>
+        </section>
+
+        <!-- CUT MODE -->
+        <div id="cutMode" class="mode-content active">
+            <!-- Waveform Section -->
+            <section class="waveform-section" id="waveformSection">
+                <div id="waveform"></div>
+                <div class="time-display">
+                    <span id="currentTime">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </section>
+
+            <!-- Start Point Display -->
+            <section class="start-section" id="startSection">
+                <div class="start-display">
+                    <span class="label">시작점</span>
+                    <span class="time" id="startTime">0:00.0</span>
+                </div>
+                <div class="fine-tune">
+                    <button class="tune-btn" data-delta="-0.5">-0.5s</button>
+                    <button class="tune-btn" data-delta="-0.1">-0.1s</button>
+                    <button class="tune-btn" data-delta="0.1">+0.1s</button>
+                    <button class="tune-btn" data-delta="0.5">+0.5s</button>
+                </div>
+            </section>
+
+            <!-- Cut Buttons -->
+            <section class="cut-section" id="cutSection">
+                <button class="cut-btn" data-duration="60">1분</button>
+                <button class="cut-btn" data-duration="120">2분</button>
+                <button class="cut-btn" data-duration="180">3분</button>
+            </section>
+
+            <!-- Selection Info -->
+            <section class="selection-section" id="selectionSection">
+                <div class="selection-info">
+                    <span id="selectionRange">선택 구간: --</span>
+                </div>
+                <div class="selection-actions">
+                    <button class="btn btn-secondary" id="playBtn">
+                        <span>▶</span> 미리듣기
+                    </button>
+                    <button class="btn btn-primary" id="exportCutBtn">
+                        <span>💾</span> MP3 저장
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- LOOP MODE -->
+        <div id="loopMode" class="mode-content">
+            <!-- Audio Info -->
+            <section class="info-section" id="infoSection">
+                <div class="audio-info">
+                    <div class="info-item">
+                        <span class="label">원본 길이</span>
+                        <span class="value" id="originalDuration">--:--</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">반복 횟수</span>
+                        <span class="value" id="loopCount">-</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loop Buttons -->
+            <section class="loop-section" id="loopSection">
+                <p class="section-title">목표 길이 선택</p>
+                <div class="loop-buttons">
+                    <button class="loop-btn" data-duration="300">5분</button>
+                    <button class="loop-btn" data-duration="600">10분</button>
+                    <button class="loop-btn" data-duration="900">15분</button>
+                </div>
+            </section>
+
+            <!-- Preview & Export -->
+            <section class="action-section" id="actionSection">
+                <div class="target-info" id="targetInfo">
+                    목표: <span id="targetDuration">--</span>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="previewBtn">
+                        <span>▶</span> 미리듣기
+                    </button>
+                    <button class="btn btn-primary" id="exportLoopBtn">
+                        <span>💾</span> MP3 저장
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+
+        <!-- Encoding Overlay -->
+        <div class="overlay" id="overlay">
+            <div class="encoding-msg">
+                <div class="spinner"></div>
+                <p id="overlayMsg">MP3 인코딩 중...</p>
+                <p class="progress" id="progressText"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- lamejs for MP3 encoding -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <!-- App -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

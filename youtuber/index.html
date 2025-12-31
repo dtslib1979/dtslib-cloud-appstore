@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="유튜버 키트 - 쇼츠 제작부터 썸네일까지">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="유튜버 키트">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+    <title>유튜버 키트 - 박씨 PWA 스토어</title>
+
+    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <style>
+        /* Category Page Styles */
+        .category-header {
+            text-align: center;
+            padding: var(--space-8) var(--space-5);
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%);
+            margin: calc(-1 * var(--space-5));
+            margin-bottom: var(--space-6);
+            padding-top: calc(var(--space-8) + var(--safe-area-top));
+        }
+
+        .category-header .back-link {
+            position: absolute;
+            top: calc(var(--space-4) + var(--safe-area-top));
+            left: var(--space-5);
+            color: white;
+            font-size: var(--font-size-base);
+            text-decoration: none;
+            opacity: 0.9;
+        }
+
+        .category-header .back-link:hover {
+            opacity: 1;
+        }
+
+        .category-icon {
+            font-size: 64px;
+            margin-bottom: var(--space-4);
+            animation: fadeInScale 0.6s ease;
+        }
+
+        .category-title {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            color: white;
+            margin-bottom: var(--space-2);
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .category-desc {
+            font-size: var(--font-size-base);
+            color: rgba(255, 255, 255, 0.8);
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .category-stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-8);
+            margin-top: var(--space-5);
+            animation: fadeInUp 0.6s ease 0.3s both;
+        }
+
+        .category-stat {
+            text-align: center;
+        }
+
+        .category-stat-value {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: white;
+        }
+
+        .category-stat-label {
+            font-size: var(--font-size-xs);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Sections */
+        .apps-section {
+            padding: 0 var(--space-5) var(--space-6);
+        }
+
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-4);
+        }
+
+        /* App Grid */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
+        }
+
+        @media (min-width: 640px) {
+            .apps-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Featured App */
+        .featured-app {
+            grid-column: span 2;
+            display: flex;
+            gap: var(--space-4);
+            padding: var(--space-5);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            text-decoration: none;
+            color: inherit;
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        @media (min-width: 640px) {
+            .featured-app {
+                grid-column: span 3;
+            }
+        }
+
+        .featured-app:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .featured-app-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%);
+            flex-shrink: 0;
+        }
+
+        .featured-app-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .featured-app-badge {
+            display: inline-block;
+            padding: var(--space-1) var(--space-2);
+            background: var(--apple-red);
+            color: white;
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            border-radius: var(--radius-xs);
+            margin-bottom: var(--space-2);
+        }
+
+        .featured-app-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-1);
+        }
+
+        .featured-app-desc {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+        }
+
+        .featured-app-version {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        /* App Card */
+        .app-card {
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-4);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            text-decoration: none;
+            color: inherit;
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .app-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: var(--space-3);
+            background: linear-gradient(135deg, var(--apple-blue) 0%, var(--apple-purple) 100%);
+        }
+
+        .app-card-title {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-1);
+        }
+
+        .app-card-desc {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2);
+            line-height: 1.4;
+        }
+
+        .app-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .app-card-version {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+        }
+
+        .app-card-badge {
+            font-size: 10px;
+            font-weight: var(--font-weight-semibold);
+            padding: 2px 6px;
+            border-radius: var(--radius-xs);
+            background: var(--apple-blue);
+            color: white;
+        }
+
+        .app-card-badge.new { background: var(--apple-green); }
+        .app-card-badge.popular { background: var(--apple-purple); }
+        .app-card-badge.unified { background: var(--apple-blue); }
+    </style>
+</head>
+<body>
+    <div class="container" style="position: relative;">
+        <!-- Header -->
+        <header class="category-header">
+            <a href="/" class="back-link">← 스토어</a>
+            <div class="category-icon">🎬</div>
+            <h1 class="category-title">유튜버 키트</h1>
+            <p class="category-desc">쇼츠 제작부터 썸네일까지 모든 것</p>
+            <div class="category-stats">
+                <div class="category-stat">
+                    <div class="category-stat-value" id="appCount">9</div>
+                    <div class="category-stat-label">앱</div>
+                </div>
+                <div class="category-stat">
+                    <div class="category-stat-value">v2.0</div>
+                    <div class="category-stat-label">버전</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Apps by Section -->
+        <div id="appsContainer"></div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script>
+        // Load category data
+        let categoryData = null;
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        async function init() {
+            await loadCategoryData();
+            renderApps();
+        }
+
+        async function loadCategoryData() {
+            try {
+                const res = await fetch('/youtuber-category.json');
+                categoryData = await res.json();
+            } catch (e) {
+                console.error('Failed to load category data:', e);
+                categoryData = getFallbackData();
+            }
+        }
+
+        function getFallbackData() {
+            return {
+                sections: [
+                    { id: 'video-processing', title: '영상 처리', apps: ['lecture-shorts', 'lecture-long', 'auto-shorts', 'clip-shorts'] },
+                    { id: 'audio-tools', title: '오디오 도구', apps: ['audio-studio'] },
+                    { id: 'image-tools', title: '이미지 도구', apps: ['slim-lens', 'image-pack'] },
+                    { id: 'utilities', title: '유틸리티', apps: ['bilingual-aligner', 'project-manager'] }
+                ],
+                apps: [
+                    { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', version: '6.5 Pro', badge: 'flagship', featured: true, path: '/youtuber/lecture-shorts' },
+                    { id: 'lecture-long', name: 'Lecture Long', desc: '16분→12분 튜토리얼', icon: '📹', version: '2.0', badge: 'new', path: '/youtuber/lecture-long' },
+                    { id: 'auto-shorts', name: 'Auto Shorts', desc: '6~30초→2분 변환', icon: '🎬', version: '1.1', path: '/youtuber/auto-shorts' },
+                    { id: 'clip-shorts', name: 'Clip Shorts', desc: '클립 조합 + BGM', icon: '🎞️', version: '5.0', badge: 'popular', path: '/youtuber/clip-shorts' },
+                    { id: 'audio-studio', name: 'Audio Studio', desc: '오디오 컷 & 루프', icon: '🎵', version: '2.0', badge: 'unified', path: '/youtuber/audio-studio' },
+                    { id: 'slim-lens', name: 'Slim Lens', desc: '사진 가로 슬림', icon: '📷', version: '2.0', path: '/youtuber/slim-lens' },
+                    { id: 'image-pack', name: 'Image Pack', desc: '플랫폼별 이미지 규격', icon: '📦', version: '1.0', path: '/youtuber/image-pack' },
+                    { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', version: 'LIVE', path: '/youtuber/bilingual-aligner' },
+                    { id: 'project-manager', name: 'Project Manager', desc: '메타데이터 & 출하 관리', icon: '📋', version: '1.0', badge: 'unified', path: '/youtuber/project-manager' }
+                ]
+            };
+        }
+
+        function renderApps() {
+            const container = document.getElementById('appsContainer');
+            container.innerHTML = '';
+
+            // Update app count
+            document.getElementById('appCount').textContent = categoryData.apps.length;
+
+            categoryData.sections.forEach(section => {
+                const sectionEl = document.createElement('section');
+                sectionEl.className = 'apps-section';
+
+                let html = `<h2 class="section-title">${section.title}</h2>`;
+                html += '<div class="apps-grid stagger">';
+
+                section.apps.forEach(appId => {
+                    const app = categoryData.apps.find(a => a.id === appId);
+                    if (!app) return;
+
+                    if (app.featured) {
+                        html += renderFeaturedApp(app);
+                    } else {
+                        html += renderAppCard(app);
+                    }
+                });
+
+                html += '</div>';
+                sectionEl.innerHTML = html;
+                container.appendChild(sectionEl);
+            });
+        }
+
+        function renderFeaturedApp(app) {
+            return `
+                <a href="${app.path}" class="featured-app">
+                    <div class="featured-app-icon">${app.icon}</div>
+                    <div class="featured-app-info">
+                        <span class="featured-app-badge">Flagship</span>
+                        <h3 class="featured-app-title">${app.name}</h3>
+                        <p class="featured-app-desc">${app.desc}</p>
+                        <span class="featured-app-version">${app.version}</span>
+                    </div>
+                </a>
+            `;
+        }
+
+        function renderAppCard(app) {
+            const badgeHtml = app.badge
+                ? `<span class="app-card-badge ${app.badge}">${app.badge}</span>`
+                : '';
+
+            const iconBg = getIconGradient(app.id);
+
+            return `
+                <a href="${app.path}" class="app-card">
+                    <div class="app-card-icon" style="background: ${iconBg}">${app.icon}</div>
+                    <h3 class="app-card-title">${app.name}</h3>
+                    <p class="app-card-desc">${app.desc}</p>
+                    <div class="app-card-footer">
+                        <span class="app-card-version">${app.version}</span>
+                        ${badgeHtml}
+                    </div>
+                </a>
+            `;
+        }
+
+        function getIconGradient(appId) {
+            const gradients = {
+                'lecture-shorts': 'linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%)',
+                'lecture-long': 'linear-gradient(135deg, #FF9500 0%, #FFCC00 100%)',
+                'auto-shorts': 'linear-gradient(135deg, #5856D6 0%, #AF52DE 100%)',
+                'clip-shorts': 'linear-gradient(135deg, #AF52DE 0%, #FF2D55 100%)',
+                'audio-studio': 'linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%)',
+                'slim-lens': 'linear-gradient(135deg, #34C759 0%, #30D158 100%)',
+                'image-pack': 'linear-gradient(135deg, #FF9500 0%, #FF3B30 100%)',
+                'bilingual-aligner': 'linear-gradient(135deg, #007AFF 0%, #5856D6 100%)',
+                'project-manager': 'linear-gradient(135deg, #5856D6 0%, #007AFF 100%)'
+            };
+            return gradients[appId] || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+
+        // Toast utility
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+</html>

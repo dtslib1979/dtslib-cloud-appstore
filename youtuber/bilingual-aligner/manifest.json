@@ -1,0 +1,20 @@
+{
+    "name": "Bilingual Teleprompter",
+    "short_name": "Teleprompter",
+    "description": "이중언어 텔레프롬프터 - 터치로 문장 넘기기",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "categories": ["education", "utilities"],
+    "icons": [
+        {
+            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}
