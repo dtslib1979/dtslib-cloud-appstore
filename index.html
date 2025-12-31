@@ -2,212 +2,340 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#667eea">
-    <meta name="description" content="박씨 전용 PWA 공장 - 다양한 미디어 변환 앱 모음">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="박씨 PWA 스토어 - 직업별 맞춤 PWA 컬렉션">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="DTS Store">
+    <meta name="apple-mobile-web-app-title" content="PWA Store">
+
     <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-    <title>DTS Cloud AppStore</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+
+    <title>박씨 PWA 스토어</title>
+
+    <link rel="stylesheet" href="/shared/css/design-system.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            padding: 30px 20px;
-        }
-        .header {
+        /* Page Specific Styles */
+        .store-header {
             text-align: center;
-            margin-bottom: 40px;
+            padding: var(--space-12) var(--space-5) var(--space-8);
         }
-        h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
+
+        .store-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto var(--space-5);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: var(--radius-xl);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeInScale 0.6s ease;
+        }
+
+        .store-title {
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: -0.02em;
+            margin-bottom: var(--space-2);
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            animation: fadeInUp 0.6s ease 0.1s both;
         }
-        .subtitle {
-            color: rgba(255,255,255,0.5);
-            font-size: 14px;
+
+        .store-tagline {
+            font-size: var(--font-size-base);
+            color: var(--text-secondary);
+            animation: fadeInUp 0.6s ease 0.2s both;
         }
-        .app-count {
-            margin-top: 10px;
-            font-size: 12px;
-            color: rgba(255,255,255,0.3);
+
+        .store-stats {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-8);
+            margin-top: var(--space-6);
+            animation: fadeInUp 0.6s ease 0.3s both;
         }
-        .app-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
-            max-width: 600px;
+
+        .store-stat {
+            text-align: center;
+        }
+
+        .store-stat-value {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--apple-blue);
+        }
+
+        .store-stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-1);
+        }
+
+        /* Categories Section */
+        .categories-section {
+            padding: 0 var(--space-5) var(--space-10);
+            max-width: 800px;
             margin: 0 auto;
         }
-        .app-card {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            border-radius: 20px;
-            padding: 3px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-4);
         }
-        .app-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(76,175,80,0.3);
+
+        @media (min-width: 640px) {
+            .categories-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--space-5);
+            }
         }
-        .app-card.featured {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+
+        /* Category Card Variations */
+        .category-card.youtuber {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%);
         }
-        .app-card.featured:hover {
-            box-shadow: 0 15px 40px rgba(245,87,108,0.3);
+
+        .category-card.educator {
+            background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
         }
-        .app-inner {
-            background: #111;
-            border-radius: 17px;
-            padding: 25px 15px;
-            text-align: center;
-            height: 100%;
+
+        .category-card.designer {
+            background: linear-gradient(135deg, #AF52DE 0%, #DA8FFF 100%);
         }
-        .app-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 12px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            border-radius: 15px;
-            display: flex;
+
+        .category-card.marketer {
+            background: linear-gradient(135deg, #34C759 0%, #30D158 100%);
+        }
+
+        .category-card.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .category-card.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Featured Banner */
+        .featured-banner {
+            margin: var(--space-8) var(--space-5);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--separator);
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .featured-label {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            font-size: 30px;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            background: var(--apple-red);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-semibold);
+            color: white;
+            margin-bottom: var(--space-3);
         }
-        .app-card.featured .app-icon {
-            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+
+        .featured-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-2);
         }
-        .app-name {
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 5px;
+
+        .featured-desc {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
         }
-        .app-desc {
-            color: rgba(255,255,255,0.5);
-            font-size: 11px;
+
+        .featured-cta {
+            display: inline-flex;
+            margin-top: var(--space-4);
         }
-        .app-badge {
-            display: inline-block;
-            background: #4CAF50;
-            color: #fff;
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-top: 8px;
-            font-weight: 600;
-        }
-        .app-badge.new {
-            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
-        }
-        .app-badge.webcodecs {
-            background: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
-        }
-        .coming-soon {
-            background: linear-gradient(135deg, #333 0%, #222 100%);
-            pointer-events: none;
-        }
-        .coming-soon .app-badge {
-            background: #666;
-        }
-        footer {
+
+        /* Footer */
+        .store-footer {
+            padding: var(--space-8) var(--space-5);
             text-align: center;
-            margin-top: 50px;
-            color: rgba(255,255,255,0.3);
-            font-size: 12px;
+            border-top: 1px solid var(--separator);
         }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: rgba(255,255,255,0.5);
+
+        .store-footer p {
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+
+        .store-footer a {
+            color: var(--text-secondary);
+        }
+
+        /* Version Badge */
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-1);
+            padding: var(--space-1) var(--space-2);
+            background: var(--fill-secondary);
+            border-radius: var(--radius-xs);
+            font-size: var(--font-size-xs);
+            color: var(--text-tertiary);
+            margin-top: var(--space-4);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🚀 <span id="storeName">DTS Cloud AppStore</span></h1>
-        <p class="subtitle" id="storeSubtitle">로딩 중...</p>
-        <p class="app-count" id="appCount"></p>
+    <!-- Header -->
+    <header class="store-header">
+        <div class="store-logo">🚀</div>
+        <h1 class="store-title">박씨 PWA 스토어</h1>
+        <p class="store-tagline">직업별 맞춤 PWA 컬렉션</p>
+
+        <div class="store-stats">
+            <div class="store-stat">
+                <div class="store-stat-value" id="categoryCount">4</div>
+                <div class="store-stat-label">카테고리</div>
+            </div>
+            <div class="store-stat">
+                <div class="store-stat-value" id="appCount">9</div>
+                <div class="store-stat-label">앱</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Featured Banner -->
+    <div class="featured-banner">
+        <span class="featured-label">✨ Featured</span>
+        <h2 class="featured-title">유튜버 키트 출시</h2>
+        <p class="featured-desc">쇼츠 제작, 오디오 편집, 썸네일 생성까지 브라우저에서 바로!</p>
+        <a href="/youtuber/" class="btn btn-primary featured-cta">지금 사용하기</a>
     </div>
 
-    <div class="app-grid" id="appGrid">
-        <div class="loading">앱 목록 로딩 중...</div>
-    </div>
+    <!-- Categories -->
+    <section class="categories-section">
+        <div class="section-header">
+            <h2 class="section-title">카테고리</h2>
+        </div>
 
-    <footer>
-        <p id="storeFooter">DTS Cloud AppStore</p>
+        <div class="categories-grid stagger" id="categoriesGrid">
+            <!-- Dynamic content loaded here -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="store-footer">
+        <p>Built with ❤️ by PARKSY</p>
+        <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub</a></p>
+        <div class="version-badge">
+            <span>v2.0.0</span>
+        </div>
     </footer>
 
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
     <script>
-        // 앱 목록을 apps.json에서 동적으로 로드
-        async function loadApps() {
+        // Store Data
+        let storeData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', init);
+
+        async function init() {
+            await loadStoreData();
+            renderCategories();
+            updateStats();
+        }
+
+        // Load store.json
+        async function loadStoreData() {
             try {
-                const res = await fetch('./apps.json');
-                const data = await res.json();
-
-                // 스토어 정보 업데이트
-                document.getElementById('storeName').textContent = data.store.name;
-                document.getElementById('storeSubtitle').textContent = data.store.subtitle;
-                document.getElementById('storeFooter').textContent = `${data.store.name} by ${data.store.author}`;
-                document.getElementById('appCount').textContent = `총 ${data.apps.length}개 앱`;
-
-                // 앱 그리드 렌더링
-                renderApps(data.apps);
+                const res = await fetch('/store.json');
+                storeData = await res.json();
             } catch (e) {
-                console.error('앱 목록 로드 실패:', e);
-                document.getElementById('appGrid').innerHTML = '<div class="loading">앱 목록을 불러올 수 없습니다.</div>';
+                console.error('Failed to load store data:', e);
+                // Fallback data
+                storeData = {
+                    categories: [
+                        { id: 'youtuber', name: '유튜버 키트', icon: '🎬', color: '#FF3B30', description: '쇼츠 제작부터 썸네일까지', appCount: 9, status: 'active' },
+                        { id: 'educator', name: '교육자 키트', icon: '📚', color: '#007AFF', description: '강의 자료 제작 도구', appCount: 0, status: 'coming_soon' },
+                        { id: 'designer', name: '디자이너 키트', icon: '🎨', color: '#AF52DE', description: '이미지 편집 & 변환', appCount: 0, status: 'coming_soon' },
+                        { id: 'marketer', name: '마케터 키트', icon: '📊', color: '#34C759', description: '콘텐츠 최적화 도구', appCount: 0, status: 'coming_soon' }
+                    ]
+                };
             }
         }
 
-        function renderApps(apps) {
-            const grid = document.getElementById('appGrid');
-            let html = '';
+        // Render categories
+        function renderCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            grid.innerHTML = '';
 
-            apps.forEach(app => {
-                const featuredClass = app.featured ? 'featured' : '';
-                const badgeClass = app.badge || 'default';
+            storeData.categories.forEach(cat => {
+                const isActive = cat.status === 'active';
+                const card = document.createElement('a');
+                card.href = isActive ? `/${cat.id}/` : '#';
+                card.className = `category-card ${cat.id} ${!isActive ? 'disabled' : ''}`;
 
-                html += `
-                    <a href="./${app.id}/" class="app-card ${featuredClass}">
-                        <div class="app-inner">
-                            <div class="app-icon">${app.icon}</div>
-                            <div class="app-name">${app.name}</div>
-                            <div class="app-desc">${app.desc}</div>
-                            <span class="app-badge ${badgeClass}">v${app.version}</span>
-                        </div>
-                    </a>
+                if (!isActive) {
+                    card.onclick = (e) => {
+                        e.preventDefault();
+                        showToast('Coming Soon! 🚧');
+                    };
+                }
+
+                card.innerHTML = `
+                    <span class="category-card-count">${cat.appCount > 0 ? cat.appCount + '개 앱' : 'Coming Soon'}</span>
+                    <span class="category-card-icon">${cat.icon}</span>
+                    <h3 class="category-card-name">${cat.name}</h3>
+                    <p class="category-card-desc">${cat.description}</p>
                 `;
+
+                grid.appendChild(card);
             });
-
-            // Coming Soon 카드 추가
-            html += `
-                <div class="app-card coming-soon">
-                    <div class="app-inner">
-                        <div class="app-icon">🎯</div>
-                        <div class="app-name">Coming Soon</div>
-                        <div class="app-desc">새 앱 준비중</div>
-                        <span class="app-badge">SOON</span>
-                    </div>
-                </div>
-            `;
-
-            grid.innerHTML = html;
         }
 
-        // 페이지 로드 시 실행
-        loadApps();
+        // Update stats
+        function updateStats() {
+            const categoryCount = storeData.categories.length;
+            const appCount = storeData.categories.reduce((sum, cat) => sum + (cat.appCount || 0), 0);
+
+            document.getElementById('categoryCount').textContent = categoryCount;
+            document.getElementById('appCount').textContent = appCount;
+        }
+
+        // Toast
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show ' + type;
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.log('SW registration failed:', err);
+            });
+        }
     </script>
 </body>
 </html>

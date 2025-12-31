@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Project Manager - 메타데이터 & 출하 관리">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Project Manager">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
+    <title>Project Manager</title>
+    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Back Link -->
+        <a href="/youtuber/" class="back-link">← 유튜버 키트</a>
+
+        <!-- Header -->
+        <header class="header">
+            <h1>Project Manager</h1>
+            <p class="subtitle">메타데이터 & 출하 관리 도구</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="meta">
+                <span class="tab-icon">📋</span>
+                <span>Meta</span>
+            </button>
+            <button class="tab-btn" data-tab="export">
+                <span class="tab-icon">📦</span>
+                <span>Export</span>
+            </button>
+            <button class="tab-btn" data-tab="batch">
+                <span class="tab-icon">⚙️</span>
+                <span>Batch</span>
+            </button>
+        </nav>
+
+        <!-- META TAB -->
+        <div id="metaTab" class="tab-content active">
+            <!-- Tool Selection -->
+            <section class="form-section">
+                <label class="form-label">도구 선택</label>
+                <div class="button-group" id="toolGroup">
+                    <button class="select-btn" data-value="audiocut">AudioCut</button>
+                    <button class="select-btn" data-value="audioloop">AudioLoop</button>
+                    <button class="select-btn" data-value="clipshorts">ClipShorts</button>
+                    <button class="select-btn" data-value="lectureshorts">LectureShorts</button>
+                    <button class="select-btn" data-value="lecturelong">LectureLong</button>
+                    <button class="select-btn" data-value="autoshorts">AutoShorts</button>
+                </div>
+            </section>
+
+            <!-- Duration Selection -->
+            <section class="form-section">
+                <label class="form-label">길이 (분)</label>
+                <div class="button-group" id="durationGroup">
+                    <button class="select-btn" data-value="1">1분</button>
+                    <button class="select-btn" data-value="2">2분</button>
+                    <button class="select-btn" data-value="3">3분</button>
+                    <button class="select-btn" data-value="5">5분</button>
+                    <button class="select-btn" data-value="10">10분</button>
+                    <button class="select-btn" data-value="15">15분</button>
+                </div>
+            </section>
+
+            <!-- Type Selection -->
+            <section class="form-section">
+                <label class="form-label">유형</label>
+                <div class="button-group" id="typeGroup">
+                    <button class="select-btn" data-value="cut">Cut</button>
+                    <button class="select-btn" data-value="loop">Loop</button>
+                    <button class="select-btn" data-value="shorts">Shorts</button>
+                    <button class="select-btn" data-value="tutorial">Tutorial</button>
+                </div>
+            </section>
+
+            <!-- Project ID -->
+            <section class="form-section">
+                <label class="form-label">프로젝트 ID</label>
+                <div class="project-id-row">
+                    <input type="text" class="text-input" id="projectId" readonly>
+                    <div class="seq-controls">
+                        <button class="seq-btn" id="seqDown">-</button>
+                        <span id="seqNum">01</span>
+                        <button class="seq-btn" id="seqUp">+</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Generate Button -->
+            <button class="btn btn-primary btn-block" id="generateBtn" disabled>메타데이터 생성</button>
+
+            <!-- Output -->
+            <section class="output-section" id="outputSection">
+                <pre id="outputJson"></pre>
+                <button class="btn btn-secondary btn-block" id="copyBtn">클립보드 복사</button>
+            </section>
+        </div>
+
+        <!-- EXPORT TAB -->
+        <div id="exportTab" class="tab-content">
+            <!-- Project List -->
+            <section class="form-section">
+                <label class="form-label">최근 프로젝트</label>
+                <div id="projectList" class="project-list"></div>
+                <button class="btn btn-primary btn-block" id="newProjectBtn">새 프로젝트</button>
+            </section>
+
+            <!-- File Upload -->
+            <section class="form-section" id="exportUploadSection" style="display:none;">
+                <label class="form-label">파일 업로드</label>
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" id="exportFileInput" multiple hidden>
+                    <span>파일을 드래그하거나 클릭하여 선택</span>
+                </div>
+                <div id="exportFileList" class="file-list"></div>
+            </section>
+
+            <!-- Field Selection -->
+            <section class="form-section" id="fieldSection" style="display:none;">
+                <label class="form-label">출하 필드</label>
+                <div class="button-group" id="fieldGroup">
+                    <button class="field-btn" data-field="youtube">YouTube</button>
+                    <button class="field-btn" data-field="blog">Blog</button>
+                    <button class="field-btn" data-field="instagram">Instagram</button>
+                </div>
+            </section>
+
+            <!-- Export Button -->
+            <button class="btn btn-primary btn-block" id="exportZipBtn" style="display:none;">ZIP 내보내기</button>
+        </div>
+
+        <!-- BATCH TAB -->
+        <div id="batchTab" class="tab-content">
+            <!-- Field Selection -->
+            <section class="form-section">
+                <label class="form-label">배포 필드</label>
+                <div class="button-group" id="batchFieldGroup">
+                    <button class="select-btn active" data-field="youtube">YouTube</button>
+                    <button class="select-btn" data-field="blog">Blog</button>
+                    <button class="select-btn" data-field="instagram">Instagram</button>
+                </div>
+            </section>
+
+            <!-- Preset Selection -->
+            <section class="form-section">
+                <label class="form-label">프리셋</label>
+                <div class="button-group" id="presetGroup">
+                    <button class="select-btn active" data-preset="youtube_v1">YouTube v1</button>
+                    <button class="select-btn" data-preset="blog_v1">Blog v1</button>
+                    <button class="select-btn" data-preset="insta_v1">Instagram v1</button>
+                </div>
+            </section>
+
+            <!-- Project Name -->
+            <section class="form-section">
+                <label class="form-label">프로젝트 이름</label>
+                <input type="text" class="text-input" id="batchProjectName" placeholder="프로젝트 이름 입력">
+            </section>
+
+            <!-- Pipeline Preview -->
+            <section class="form-section">
+                <label class="form-label">파이프라인 미리보기</label>
+                <div id="pipelinePreview" class="pipeline-preview"></div>
+            </section>
+
+            <!-- Export Run Plan -->
+            <button class="btn btn-primary btn-block" id="exportRunPlanBtn" disabled>run_plan.json 내보내기</button>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- JSZip for export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

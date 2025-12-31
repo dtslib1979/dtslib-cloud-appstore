@@ -1,0 +1,52 @@
+{
+    "name": "Lecture Long Factory",
+    "short_name": "LectureLong",
+    "description": "16분 튜토리얼 영상을 12분으로 자동 변환 - 긴 강의용",
+    "version": "2.0.0",
+    "id": "/lecture-long/",
+    "start_url": "./index.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0f0f1a",
+    "theme_color": "#00b894",
+    "categories": ["utilities", "video", "education"],
+    "icons": [
+        {
+            "src": "./icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "./icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "./icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "새 튜토리얼 만들기",
+            "short_name": "새로 만들기",
+            "description": "새 튜토리얼 영상 제작 시작",
+            "url": "./index.html?action=new",
+            "icons": [{ "src": "./icons/icon-192x192.png", "sizes": "192x192" }]
+        }
+    ],
+    "screenshots": [],
+    "related_applications": [],
+    "prefer_related_applications": false
+}
