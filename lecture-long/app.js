@@ -158,7 +158,7 @@ function log(msg) {
 /* ========== VERSION LOADER ========== */
 async function loadAppVersion() {
     try {
-        const res = await fetch('../apps.json');
+        const res = await fetch('/apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'lecture-long');
         if (app) {
@@ -195,8 +195,7 @@ async function init() {
     // Setup event listeners
     setupEventListeners();
 
-    // Register service worker
-    registerServiceWorker();
+    // Service worker removed in v6.5
 
     log('초기화 완료');
 }

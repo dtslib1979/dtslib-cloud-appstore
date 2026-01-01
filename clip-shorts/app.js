@@ -189,7 +189,7 @@ function removeBGM() {
 /* ========== VERSION LOADER ========== */
 async function loadAppVersion() {
     try {
-        const res = await fetch('../apps.json');
+        const res = await fetch('/apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'clip-shorts');
         if (app) {
