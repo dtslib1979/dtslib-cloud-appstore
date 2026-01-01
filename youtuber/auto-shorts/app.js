@@ -37,7 +37,7 @@ checkMem();
 // Version loader
 async function loadAppVersion() {
     try {
-        const res = await fetch('../apps.json');
+        const res = await fetch('/apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'auto-shorts');
         if (app) {
