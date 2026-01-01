@@ -226,6 +226,3 @@ procBtn.onclick = process;
 retryBtn.onclick = () => { hideErr(); process(); };
 newBtn.onclick = reset;
 
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-}

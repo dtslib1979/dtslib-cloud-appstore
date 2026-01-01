@@ -246,12 +246,6 @@ function setupEventListeners() {
     // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboard);
 
-    // Service worker updates
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            show('updateBanner');
-        });
-    }
 }
 
 /* ========== KEYBOARD SHORTCUTS ========== */
@@ -1669,32 +1663,6 @@ function reset() {
     stopSilentAudio();
 
     log('리셋 완료');
-}
-
-/* ========== SERVICE WORKER ========== */
-async function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        try {
-            const reg = await navigator.serviceWorker.register('./sw.js');
-            log('Service Worker 등록됨');
-
-            // Check for updates
-            reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
-                newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        show('updateBanner');
-                    }
-                });
-            });
-        } catch (e) {
-            console.warn('SW 등록 실패:', e);
-        }
-    }
-}
-
-function dismissUpdate() {
-    hide('updateBanner');
 }
 
 /* ========== MODALS ========== */

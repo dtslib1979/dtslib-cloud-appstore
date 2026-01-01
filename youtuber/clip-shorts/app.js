@@ -833,7 +833,3 @@ function reset() {
     log('리셋 완료');
 }
 
-/* ========== SERVICE WORKER ========== */
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
-}
