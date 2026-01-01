@@ -19,63 +19,63 @@
             ]
         },
         {
-            "source": "/youtuber/auto-shorts/(.*)",
+            "source": "/youtuber/auto-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/youtuber/lecture-shorts/(.*)",
+            "source": "/youtuber/lecture-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/youtuber/lecture-long/(.*)",
+            "source": "/youtuber/lecture-long/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/youtuber/clip-shorts/(.*)",
+            "source": "/youtuber/clip-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/youtuber/audio-studio/(.*)",
+            "source": "/youtuber/audio-studio/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/clip-shorts/(.*)",
+            "source": "/clip-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/lecture-shorts/(.*)",
+            "source": "/lecture-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/lecture-long/(.*)",
+            "source": "/lecture-long/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
         },
         {
-            "source": "/auto-shorts/(.*)",
+            "source": "/auto-shorts/:path*",
             "headers": [
                 { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
