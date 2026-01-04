@@ -48,7 +48,7 @@
       "badgeColor": "#FF3B30",
       "featured": true,
       "tags": ["webcodecs", "ffmpeg", "shorts"],
-      "path": "./lecture-shorts"
+      "path": "./lecture-shorts/"
     },
     {
       "id": "lecture-long",
@@ -61,7 +61,7 @@
       "badgeColor": "#34C759",
       "featured": false,
       "tags": ["ffmpeg", "tutorial"],
-      "path": "./lecture-long"
+      "path": "./lecture-long/"
     },
     {
       "id": "auto-shorts",
@@ -73,7 +73,7 @@
       "badge": null,
       "featured": false,
       "tags": ["ffmpeg", "shorts"],
-      "path": "./auto-shorts"
+      "path": "./auto-shorts/"
     },
     {
       "id": "clip-shorts",
@@ -86,7 +86,7 @@
       "badgeColor": "#AF52DE",
       "featured": true,
       "tags": ["ffmpeg", "bgm", "merge"],
-      "path": "./clip-shorts"
+      "path": "./clip-shorts/"
     },
     {
       "id": "audio-studio",
@@ -99,7 +99,7 @@
       "badgeColor": "#007AFF",
       "featured": true,
       "tags": ["wavesurfer", "mp3", "audio"],
-      "path": "./audio-studio",
+      "path": "./audio-studio/",
       "mergedFrom": ["audio-cut", "audio-loop"]
     },
     {
@@ -112,7 +112,7 @@
       "badge": null,
       "featured": false,
       "tags": ["image", "warp"],
-      "path": "./slim-lens"
+      "path": "./slim-lens/"
     },
     {
       "id": "image-pack",
@@ -124,7 +124,7 @@
       "badge": null,
       "featured": false,
       "tags": ["image", "resize", "thumbnail"],
-      "path": "./image-pack"
+      "path": "./image-pack/"
     },
     {
       "id": "bilingual-aligner",
@@ -136,7 +136,7 @@
       "badge": null,
       "featured": false,
       "tags": ["text", "teleprompter"],
-      "path": "./bilingual-aligner"
+      "path": "./bilingual-aligner/"
     },
     {
       "id": "project-manager",
@@ -149,7 +149,7 @@
       "badgeColor": "#007AFF",
       "featured": false,
       "tags": ["metadata", "export", "batch"],
-      "path": "./project-manager",
+      "path": "./project-manager/",
       "mergedFrom": ["meta-kit", "export-packager", "control-engine"]
     }
   ]
