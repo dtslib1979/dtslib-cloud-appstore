@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="description" content="박씨 PWA 스토어 - 직업별 맞춤 PWA 컬렉션">
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
 
     <title>박씨 PWA 스토어</title>
 
-    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <link rel="stylesheet" href="./shared/css/design-system.css">
     <style>
         /* Page Specific Styles */
         .store-header {
@@ -265,7 +265,7 @@
         <span class="featured-label">✨ Featured</span>
         <h2 class="featured-title">유튜버 키트 출시</h2>
         <p class="featured-desc">쇼츠 제작, 오디오 편집, 썸네일 생성까지 브라우저에서 바로!</p>
-        <a href="/youtuber/" class="btn btn-primary featured-cta">지금 사용하기</a>
+        <a href="./youtuber/" class="btn btn-primary featured-cta">지금 사용하기</a>
     </div>
 
     <!-- Categories -->
@@ -349,7 +349,7 @@
         // Load store.json
         async function loadStoreData() {
             try {
-                const res = await fetch('/store.json');
+                const res = await fetch('./store.json');
                 storeData = await res.json();
             } catch (e) {
                 console.error('Failed to load store data:', e);
@@ -373,7 +373,7 @@
             storeData.categories.forEach(cat => {
                 const isActive = cat.status === 'active';
                 const card = document.createElement('a');
-                card.href = isActive ? `/${cat.id}/` : '#';
+                card.href = isActive ? `./${cat.id}/` : '#';
                 card.className = `category-card ${cat.id} ${!isActive ? 'disabled' : ''}`;
 
                 if (!isActive) {

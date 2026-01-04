@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#000000">
     <meta name="description" content="유튜버 키트 - 쇼츠 제작부터 썸네일까지">
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png">
 
     <title>유튜버 키트 - 박씨 PWA 스토어</title>
 
-    <link rel="stylesheet" href="/shared/css/design-system.css">
+    <link rel="stylesheet" href="../shared/css/design-system.css">
     <style>
         /* Category Page Styles */
         .category-header {
@@ -244,7 +244,7 @@
     <div class="container" style="position: relative;">
         <!-- Header -->
         <header class="category-header">
-            <a href="/" class="back-link">← 스토어</a>
+            <a href="../" class="back-link">← 스토어</a>
             <div class="category-icon">🎬</div>
             <h1 class="category-title">유튜버 키트</h1>
             <p class="category-desc">쇼츠 제작부터 썸네일까지 모든 것</p>
@@ -280,7 +280,7 @@
 
         async function loadCategoryData() {
             try {
-                const res = await fetch('/youtuber-category.json');
+                const res = await fetch('../youtuber-category.json');
                 categoryData = await res.json();
             } catch (e) {
                 console.error('Failed to load category data:', e);
@@ -297,15 +297,15 @@
                     { id: 'utilities', title: '유틸리티', apps: ['bilingual-aligner', 'project-manager'] }
                 ],
                 apps: [
-                    { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', version: '6.5 Pro', badge: 'flagship', featured: true, path: '/youtuber/lecture-shorts' },
-                    { id: 'lecture-long', name: 'Lecture Long', desc: '16분→12분 튜토리얼', icon: '📹', version: '2.0', badge: 'new', path: '/youtuber/lecture-long' },
-                    { id: 'auto-shorts', name: 'Auto Shorts', desc: '6~30초→2분 변환', icon: '🎬', version: '1.1', path: '/youtuber/auto-shorts' },
-                    { id: 'clip-shorts', name: 'Clip Shorts', desc: '클립 조합 + BGM', icon: '🎞️', version: '5.0', badge: 'popular', path: '/youtuber/clip-shorts' },
-                    { id: 'audio-studio', name: 'Audio Studio', desc: '오디오 컷 & 루프', icon: '🎵', version: '2.0', badge: 'unified', path: '/youtuber/audio-studio' },
-                    { id: 'slim-lens', name: 'Slim Lens', desc: '사진 가로 슬림', icon: '📷', version: '2.0', path: '/youtuber/slim-lens' },
-                    { id: 'image-pack', name: 'Image Pack', desc: '플랫폼별 이미지 규격', icon: '📦', version: '1.0', path: '/youtuber/image-pack' },
-                    { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', version: 'LIVE', path: '/youtuber/bilingual-aligner' },
-                    { id: 'project-manager', name: 'Project Manager', desc: '메타데이터 & 출하 관리', icon: '📋', version: '1.0', badge: 'unified', path: '/youtuber/project-manager' }
+                    { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', version: '6.5 Pro', badge: 'flagship', featured: true, path: './lecture-shorts' },
+                    { id: 'lecture-long', name: 'Lecture Long', desc: '16분→12분 튜토리얼', icon: '📹', version: '2.0', badge: 'new', path: './lecture-long' },
+                    { id: 'auto-shorts', name: 'Auto Shorts', desc: '6~30초→2분 변환', icon: '🎬', version: '1.1', path: './auto-shorts' },
+                    { id: 'clip-shorts', name: 'Clip Shorts', desc: '클립 조합 + BGM', icon: '🎞️', version: '5.0', badge: 'popular', path: './clip-shorts' },
+                    { id: 'audio-studio', name: 'Audio Studio', desc: '오디오 컷 & 루프', icon: '🎵', version: '2.0', badge: 'unified', path: './audio-studio' },
+                    { id: 'slim-lens', name: 'Slim Lens', desc: '사진 가로 슬림', icon: '📷', version: '2.0', path: './slim-lens' },
+                    { id: 'image-pack', name: 'Image Pack', desc: '플랫폼별 이미지 규격', icon: '📦', version: '1.0', path: './image-pack' },
+                    { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', version: 'LIVE', path: './bilingual-aligner' },
+                    { id: 'project-manager', name: 'Project Manager', desc: '메타데이터 & 출하 관리', icon: '📋', version: '1.0', badge: 'unified', path: './project-manager' }
                 ]
             };
         }
