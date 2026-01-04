@@ -7,7 +7,7 @@
     "color": "#FF3B30",
     "gradient": ["#FF3B30", "#FF6B4A"],
     "description": "쇼츠 제작부터 썸네일까지 모든 것",
-    "version": "2.0.0"
+    "version": "2.0.1"
   },
   "sections": [
     {

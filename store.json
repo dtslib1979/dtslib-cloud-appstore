@@ -2,7 +2,7 @@
   "store": {
     "name": "박씨 PWA 스토어",
     "tagline": "직업별 맞춤 PWA 컬렉션",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "author": "PARKSY",
     "description": "브라우저에서 바로 사용하는 프로페셔널 도구 모음",
     "repository": "https://github.com/dtslib1979/dtslib-cloud-appstore",
@@ -18,10 +18,10 @@
       "gradient": ["#FF3B30", "#FF6B4A"],
       "description": "쇼츠 제작부터 썸네일까지",
       "descriptionEn": "From Shorts to Thumbnails",
-      "appCount": 8,
+      "appCount": 9,
       "featured": true,
       "status": "active",
-      "path": "/categories/youtuber"
+      "path": "/youtuber"
     },
     {
       "id": "educator",
@@ -35,7 +35,7 @@
       "appCount": 0,
       "featured": false,
       "status": "coming_soon",
-      "path": "/categories/educator"
+      "path": "/educator"
     },
     {
       "id": "designer",
@@ -49,7 +49,7 @@
       "appCount": 0,
       "featured": false,
       "status": "coming_soon",
-      "path": "/categories/designer"
+      "path": "/designer"
     },
     {
       "id": "marketer",
@@ -63,7 +63,7 @@
       "appCount": 0,
       "featured": false,
       "status": "coming_soon",
-      "path": "/categories/marketer"
+      "path": "/marketer"
     }
   ],
   "featured": {
