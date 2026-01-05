@@ -29,7 +29,7 @@ const CONFIG = {
 const state = {
     clips: [],
     clipDuration: 10,
-    maxClips: 18,
+    maxClips: 30,
     introEffect: 'none',
     transitionEffect: 'none',
     endingEffect: 'none',
@@ -204,7 +204,7 @@ async function loadAppVersion() {
 /* ========== CLIP DURATION ========== */
 function setClipDuration(dur) {
     state.clipDuration = dur;
-    state.maxClips = dur === 10 ? 18 : 12;
+    state.maxClips = dur === 10 ? 30 : 20;
     $('btn10s').classList.toggle('active', dur === 10);
     $('btn15s').classList.toggle('active', dur === 15);
     updateClipList();
