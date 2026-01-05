@@ -652,6 +652,18 @@ async function mergeChunks(chunkNames, outputName) {
     }
 }
 
+/* ========== 효과별 필터 정의 ========== */
+const EFFECT_FILTERS = {
+    none: '',
+    tv: 'fade',
+    vhs: 'fade',
+    focus: 'fade',
+    tremble: 'fade',
+    zoom: 'fade',
+    // 필름 효과: 세피아톤 + 비네팅 + 노이즈
+    film: 'colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131,vignette=PI/4,noise=alls=12:allf=t'
+};
+
 /* ========== 시작/엔딩 효과 ========== */
 async function applyIntroEndingEffects() {
     let totalDuration = state.clips.reduce((sum, clip) => sum + clip.meta.dur, 0);
@@ -659,6 +671,13 @@ async function applyIntroEndingEffects() {
 
     const dur = CONFIG.transitionDuration;
     let filters = [];
+
+    // 필름 효과가 선택된 경우 전체 영상에 필름 필터 적용
+    const useFilmEffect = state.introEffect === 'film' || state.endingEffect === 'film';
+    if (useFilmEffect) {
+        filters.push(EFFECT_FILTERS.film);
+        log('필름 효과 적용: 세피아톤 + 비네팅 + 그레인');
+    }
 
     if (state.introEffect !== 'none') {
         filters.push(`fade=t=in:st=0:d=${dur}`);
