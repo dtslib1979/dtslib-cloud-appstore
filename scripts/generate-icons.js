@@ -1,145 +1,130 @@
-const Jimp = require('jimp');
+const sharp = require('sharp');
+const path = require('path');
 
-async function generateIcon(size, filename) {
-    const image = new Jimp(size, size);
+// 현대적인 앱 스토어 스타일 아이콘 SVG
+// 그라데이션 배경 + 4개 앱 그리드 패턴
+const createIconSVG = (size) => `
+<svg width="${size}" height="${size}" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 메인 그라데이션: 보라-파랑-핑크 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="50%" style="stop-color:#764ba2"/>
+      <stop offset="100%" style="stop-color:#f093fb"/>
+    </linearGradient>
 
-    // 그라데이션 배경 (보라 → 핑크)
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            // 대각선 그라데이션
-            const ratio = (x + y) / (size * 2);
+    <!-- 앱 타일 그라데이션들 -->
+    <linearGradient id="tile1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B"/>
+      <stop offset="100%" style="stop-color:#FF8E53"/>
+    </linearGradient>
+    <linearGradient id="tile2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4"/>
+      <stop offset="100%" style="stop-color:#44A08D"/>
+    </linearGradient>
+    <linearGradient id="tile3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A8E6CF"/>
+      <stop offset="100%" style="stop-color:#88D8B0"/>
+    </linearGradient>
+    <linearGradient id="tile4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD93D"/>
+      <stop offset="100%" style="stop-color:#FF6B6B"/>
+    </linearGradient>
+  </defs>
 
-            // 시작 색상: #667eea (보라)
-            // 끝 색상: #f093fb (핑크)
-            const r = Math.floor(102 + (240 - 102) * ratio);
-            const g = Math.floor(126 + (147 - 126) * ratio);
-            const b = Math.floor(234 + (251 - 234) * ratio);
+  <!-- 배경 (둥근 사각형) -->
+  <rect x="0" y="0" width="512" height="512" rx="100" ry="100" fill="url(#bgGrad)"/>
 
-            const color = Jimp.rgbaToInt(r, g, b, 255);
-            image.setPixelColor(color, x, y);
-        }
-    }
+  <!-- 4개 앱 타일 그리드 -->
+  <g transform="translate(96, 96)">
+    <!-- 좌상단 -->
+    <rect x="0" y="0" width="140" height="140" rx="28" ry="28" fill="url(#tile1)"/>
+    <!-- 우상단 -->
+    <rect x="180" y="0" width="140" height="140" rx="28" ry="28" fill="url(#tile2)"/>
+    <!-- 좌하단 -->
+    <rect x="0" y="180" width="140" height="140" rx="28" ry="28" fill="url(#tile3)"/>
+    <!-- 우하단 -->
+    <rect x="180" y="180" width="140" height="140" rx="28" ry="28" fill="url(#tile4)"/>
+  </g>
 
-    // 중앙에 흰색 로켓 모양 그리기
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const rocketSize = size * 0.5;
+  <!-- 미묘한 광택 효과 -->
+  <rect x="0" y="0" width="512" height="256" rx="100" ry="100" fill="white" opacity="0.08"/>
+</svg>
+`;
 
-    // 로켓 몸체 (타원형)
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const dx = (x - centerX) / (rocketSize * 0.25);
-            const dy = (y - centerY) / (rocketSize * 0.5);
+// Apple Touch Icon용 (iOS는 자동으로 둥글게 처리)
+const createAppleTouchIconSVG = () => `
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="50%" style="stop-color:#764ba2"/>
+      <stop offset="100%" style="stop-color:#f093fb"/>
+    </linearGradient>
+    <linearGradient id="t1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B6B"/>
+      <stop offset="100%" style="stop-color:#FF8E53"/>
+    </linearGradient>
+    <linearGradient id="t2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4ECDC4"/>
+      <stop offset="100%" style="stop-color:#44A08D"/>
+    </linearGradient>
+    <linearGradient id="t3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#A8E6CF"/>
+      <stop offset="100%" style="stop-color:#88D8B0"/>
+    </linearGradient>
+    <linearGradient id="t4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD93D"/>
+      <stop offset="100%" style="stop-color:#FF6B6B"/>
+    </linearGradient>
+  </defs>
 
-            // 타원 방정식
-            if (dx * dx + dy * dy < 1) {
-                const white = Jimp.rgbaToInt(255, 255, 255, 255);
-                image.setPixelColor(white, x, y);
-            }
-        }
-    }
+  <!-- 배경 -->
+  <rect width="180" height="180" fill="url(#bgGrad2)"/>
 
-    // 로켓 머리 (삼각형)
-    const tipY = centerY - rocketSize * 0.5;
-    const baseY = centerY - rocketSize * 0.25;
-    const triangleWidth = rocketSize * 0.25;
+  <!-- 4개 앱 타일 -->
+  <g transform="translate(30, 30)">
+    <rect x="0" y="0" width="52" height="52" rx="10" fill="url(#t1)"/>
+    <rect x="68" y="0" width="52" height="52" rx="10" fill="url(#t2)"/>
+    <rect x="0" y="68" width="52" height="52" rx="10" fill="url(#t3)"/>
+    <rect x="68" y="68" width="52" height="52" rx="10" fill="url(#t4)"/>
+  </g>
 
-    for (let y = Math.floor(tipY); y < Math.floor(baseY); y++) {
-        const progress = (y - tipY) / (baseY - tipY);
-        const width = triangleWidth * progress;
+  <rect width="180" height="90" fill="white" opacity="0.08"/>
+</svg>
+`;
 
-        for (let x = Math.floor(centerX - width); x < Math.floor(centerX + width); x++) {
-            if (x >= 0 && x < size && y >= 0 && y < size) {
-                const white = Jimp.rgbaToInt(255, 255, 255, 255);
-                image.setPixelColor(white, x, y);
-            }
-        }
-    }
+async function generateIcons() {
+  const assetsDir = path.join(__dirname, '..', 'assets');
 
-    // 로켓 날개 (왼쪽)
-    for (let i = 0; i < rocketSize * 0.3; i++) {
-        const wingX = centerX - rocketSize * 0.25 - i * 0.5;
-        const wingY = centerY + rocketSize * 0.2 + i;
-        const wingWidth = rocketSize * 0.15 - i * 0.3;
+  // 생성할 아이콘 사이즈
+  const sizes = [
+    { name: 'favicon-16.png', size: 16 },
+    { name: 'favicon-32.png', size: 32 },
+    { name: 'icon-192.png', size: 192 },
+    { name: 'icon-512.png', size: 512 },
+  ];
 
-        for (let wx = 0; wx < wingWidth; wx++) {
-            const px = Math.floor(wingX - wx);
-            const py = Math.floor(wingY);
-            if (px >= 0 && px < size && py >= 0 && py < size) {
-                const white = Jimp.rgbaToInt(255, 255, 255, 255);
-                image.setPixelColor(white, px, py);
-            }
-        }
-    }
+  console.log('🎨 Generating modern app store icons...\n');
 
-    // 로켓 날개 (오른쪽)
-    for (let i = 0; i < rocketSize * 0.3; i++) {
-        const wingX = centerX + rocketSize * 0.25 + i * 0.5;
-        const wingY = centerY + rocketSize * 0.2 + i;
-        const wingWidth = rocketSize * 0.15 - i * 0.3;
+  for (const { name, size } of sizes) {
+    const svg = Buffer.from(createIconSVG(size));
+    await sharp(svg)
+      .resize(size, size)
+      .png()
+      .toFile(path.join(assetsDir, name));
+    console.log(`✓ ${name} (${size}x${size})`);
+  }
 
-        for (let wx = 0; wx < wingWidth; wx++) {
-            const px = Math.floor(wingX + wx);
-            const py = Math.floor(wingY);
-            if (px >= 0 && px < size && py >= 0 && py < size) {
-                const white = Jimp.rgbaToInt(255, 255, 255, 255);
-                image.setPixelColor(white, px, py);
-            }
-        }
-    }
+  // Apple Touch Icon (180x180)
+  const appleSvg = Buffer.from(createAppleTouchIconSVG());
+  await sharp(appleSvg)
+    .resize(180, 180)
+    .png()
+    .toFile(path.join(assetsDir, 'apple-touch-icon.png'));
+  console.log('✓ apple-touch-icon.png (180x180)');
 
-    // 불꽃 (주황색-노란색)
-    const flameBaseY = centerY + rocketSize * 0.4;
-    for (let i = 0; i < rocketSize * 0.35; i++) {
-        const progress = i / (rocketSize * 0.35);
-        const flameWidth = rocketSize * 0.15 * (1 - progress * 0.7);
-
-        // 주황색에서 노란색으로
-        const r = 255;
-        const g = Math.floor(165 + (255 - 165) * progress);
-        const b = Math.floor(0 + (100) * progress);
-
-        for (let fx = -flameWidth; fx < flameWidth; fx++) {
-            const px = Math.floor(centerX + fx);
-            const py = Math.floor(flameBaseY + i);
-            if (px >= 0 && px < size && py >= 0 && py < size) {
-                const color = Jimp.rgbaToInt(r, g, b, 255);
-                image.setPixelColor(color, px, py);
-            }
-        }
-    }
-
-    // 창문 (파란색 원)
-    const windowRadius = rocketSize * 0.08;
-    const windowY = centerY - rocketSize * 0.1;
-
-    for (let y = 0; y < size; y++) {
-        for (let x = 0; x < size; x++) {
-            const dx = x - centerX;
-            const dy = y - windowY;
-
-            if (dx * dx + dy * dy < windowRadius * windowRadius) {
-                const blue = Jimp.rgbaToInt(100, 149, 237, 255); // cornflowerblue
-                image.setPixelColor(blue, x, y);
-            }
-        }
-    }
-
-    await image.writeAsync(filename);
-    console.log(`✅ Generated: ${filename} (${size}x${size})`);
+  console.log('\n✅ All icons generated successfully!');
 }
 
-async function main() {
-    console.log('🚀 Generating PWA icons for DTS Cloud AppStore...\n');
-
-    // PWA에 필요한 다양한 사이즈 생성
-    await generateIcon(512, './icon-512.png');
-    await generateIcon(192, './icon-192.png');
-    await generateIcon(180, './apple-touch-icon.png');
-    await generateIcon(32, './favicon-32.png');
-    await generateIcon(16, './favicon-16.png');
-
-    console.log('\n🎉 All icons generated successfully!');
-}
-
-main().catch(console.error);
+generateIcons().catch(console.error);

@@ -1,0 +1,22 @@
+{
+  "name": "dtslib-cloud-appstore",
+  "version": "1.0.0",
+  "description": "박씨 전용 PWA 공장 - 모바일 도구 앱스토어",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:25436/git/dtslib1979/dtslib-cloud-appstore"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}

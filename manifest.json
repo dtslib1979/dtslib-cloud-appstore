@@ -1,0 +1,22 @@
+{
+  "name": "박씨 PWA 스토어",
+  "short_name": "PWA 스토어",
+  "description": "직업별 맞춤 PWA 컬렉션",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#000000",
+  "theme_color": "#667eea",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
