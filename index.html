@@ -113,6 +113,31 @@
             height: 16px;
         }
 
+        /* Header Actions */
+        .header-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-3);
+            flex-wrap: wrap;
+        }
+
+        /* Install Button */
+        .install-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .install-btn:hover {
+            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
+            color: white;
+        }
+
+        .install-btn.installed {
+            background: var(--apple-green);
+            border-color: var(--apple-green);
+        }
+
         /* Categories Section */
         .categories-section {
             padding: 0 var(--space-5) var(--space-10);
@@ -251,13 +276,24 @@
             </div>
         </div>
 
-        <!-- Share Button -->
-        <button class="share-btn" id="shareBtn" onclick="copyStoreUrl()">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            <span id="shareBtnText">스토어 링크 복사</span>
-        </button>
+        <!-- Action Buttons -->
+        <div class="header-actions">
+            <!-- Share Button -->
+            <button class="share-btn" id="shareBtn" onclick="copyStoreUrl()">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span id="shareBtnText">스토어 링크 복사</span>
+            </button>
+
+            <!-- Add to Home Screen Button -->
+            <button class="share-btn install-btn" id="installBtn" onclick="addToHomeScreen()" style="display: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m0-16l-4 4m4-4l4 4M4 20h16" />
+                </svg>
+                <span id="installBtnText">바로가기 추가</span>
+            </button>
+        </div>
     </header>
 
     <!-- Featured Banner -->
@@ -298,13 +334,54 @@
         // Store Data
         let storeData = null;
 
+        // PWA Install Prompt
+        let deferredPrompt = null;
+
         // Initialize
         document.addEventListener('DOMContentLoaded', init);
+
+        // Capture beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Show install button
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) {
+                installBtn.style.display = 'inline-flex';
+            }
+        });
+
+        // Handle app installed event
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            const installBtn = document.getElementById('installBtn');
+            const installBtnText = document.getElementById('installBtnText');
+            if (installBtn) {
+                installBtn.classList.add('installed');
+                installBtnText.textContent = '설치 완료!';
+                setTimeout(() => {
+                    installBtn.style.display = 'none';
+                }, 2000);
+            }
+            showToast('앱이 설치되었습니다! 🎉', 'success');
+        });
 
         async function init() {
             await loadStoreData();
             renderCategories();
             updateStats();
+            checkInstallState();
+        }
+
+        // Check if already installed (standalone mode)
+        function checkInstallState() {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                 window.navigator.standalone === true;
+
+            const installBtn = document.getElementById('installBtn');
+            if (isStandalone && installBtn) {
+                installBtn.style.display = 'none';
+            }
         }
 
         // Copy Store URL
@@ -344,6 +421,43 @@
                     btnText.textContent = '스토어 링크 복사';
                 }, 2000);
             }
+        }
+
+        // Add to Home Screen
+        async function addToHomeScreen() {
+            const installBtn = document.getElementById('installBtn');
+            const installBtnText = document.getElementById('installBtnText');
+
+            if (deferredPrompt) {
+                // Show native install prompt
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+
+                if (outcome === 'accepted') {
+                    showToast('바로가기가 추가됩니다! 🚀', 'success');
+                } else {
+                    showToast('설치가 취소되었습니다', '');
+                }
+                deferredPrompt = null;
+            } else {
+                // Fallback: Show manual installation guide
+                showInstallGuide();
+            }
+        }
+
+        // Show manual install guide for browsers without beforeinstallprompt
+        function showInstallGuide() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+
+            let message = '';
+            if (isIOS || isSafari) {
+                message = '공유 버튼 → "홈 화면에 추가"를 선택하세요';
+            } else {
+                message = '메뉴(⋮) → "홈 화면에 추가" 또는 "앱 설치"를 선택하세요';
+            }
+
+            showToast(message, '');
         }
 
         // Load store.json
