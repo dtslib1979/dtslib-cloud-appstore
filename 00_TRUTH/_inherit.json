@@ -1,0 +1,12 @@
+{
+  "repo": "dtslib-cloud-appstore",
+  "level": 2,
+  "parent": "dtslib-papyrus",
+  "type": "DTSLIB Tool",
+  "inherit": {
+    "immutable": "strict",
+    "defaults": "override-allowed"
+  },
+  "created": "2026-01-26",
+  "overrides": []
+}
