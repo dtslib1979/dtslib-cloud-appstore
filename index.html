@@ -3,481 +3,650 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#000000">
-    <meta name="description" content="박씨 PWA 스토어 - 직업별 맞춤 PWA 컬렉션">
+    <meta name="theme-color" content="#0D0D0D">
+    <meta name="description" content="DTSLIB PWA Store — 브라우저에서 바로 사용하는 도구 컬렉션">
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
     <link rel="manifest" href="./manifest.json">
 
-    <title>박씨 PWA 스토어</title>
+    <title>DTSLIB PWA Store</title>
 
-    <link rel="stylesheet" href="./shared/css/design-system.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
-        /* Page Specific Styles */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0D0D0D;
+            --bg-card: #1A1A1A;
+            --bg-card-hover: #222;
+            --surface: rgba(212,175,55,0.03);
+            --border: rgba(212,175,55,0.15);
+            --border-hover: rgba(212,175,55,0.35);
+            --text: #F5F5DC;
+            --text-secondary: rgba(245,245,220,0.6);
+            --text-muted: rgba(245,245,220,0.3);
+            --accent: #D4AF37;
+            --accent-glow: rgba(212,175,55,0.4);
+            --green: #253A2F;
+            --green-light: #2f4a3a;
+            --signal: #E2B340;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(212,175,55,0.1) transparent;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        a { color: var(--accent); text-decoration: none; }
+
+        /* ═══════════════════════════════════
+           HEADER
+        ═══════════════════════════════════ */
         .store-header {
             text-align: center;
-            padding: var(--space-12) var(--space-5) var(--space-8);
+            padding: 48px 20px 32px;
         }
 
         .store-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto var(--space-5);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: var(--radius-xl);
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--green) 0%, #1a2e23 100%);
+            border: 1px solid var(--border);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
-            box-shadow: var(--shadow-lg);
-            animation: fadeInScale 0.6s ease;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.1em;
+            position: relative;
+        }
+
+        .store-logo::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 24px;
+            border: 1px solid rgba(212,175,55,0.08);
         }
 
         .store-title {
-            font-size: var(--font-size-3xl);
-            font-weight: var(--font-weight-bold);
-            letter-spacing: -0.02em;
-            margin-bottom: var(--space-2);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeInUp 0.6s ease 0.1s both;
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .store-title span {
+            color: var(--accent);
         }
 
         .store-tagline {
-            font-size: var(--font-size-base);
-            color: var(--text-secondary);
-            animation: fadeInUp 0.6s ease 0.2s both;
+            font-size: 13px;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
         }
 
         .store-stats {
             display: flex;
             justify-content: center;
-            gap: var(--space-8);
-            margin-top: var(--space-6);
-            animation: fadeInUp 0.6s ease 0.3s both;
+            gap: 32px;
+            margin-top: 24px;
         }
 
-        .store-stat {
-            text-align: center;
-        }
+        .store-stat { text-align: center; }
 
         .store-stat-value {
-            font-size: var(--font-size-2xl);
-            font-weight: var(--font-weight-bold);
-            color: var(--apple-blue);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--accent);
         }
 
         .store-stat-label {
-            font-size: var(--font-size-xs);
-            color: var(--text-tertiary);
-            margin-top: var(--space-1);
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-top: 2px;
         }
 
-        /* Share Button */
-        .share-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
-            margin-top: var(--space-5);
-            padding: var(--space-3) var(--space-5);
-            background: var(--fill-secondary);
-            border: 1px solid var(--separator);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-sm);
-            font-weight: var(--font-weight-medium);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            animation: fadeInUp 0.6s ease 0.35s both;
-        }
-
-        .share-btn:hover {
-            background: var(--fill-tertiary);
-            color: var(--text-primary);
-            transform: translateY(-1px);
-        }
-
-        .share-btn:active {
-            transform: scale(0.98);
-        }
-
-        .share-btn.copied {
-            background: var(--apple-green);
-            color: white;
-            border-color: var(--apple-green);
-        }
-
-        .share-btn svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* Header Actions */
+        /* ── Action Buttons ── */
         .header-actions {
             display: flex;
             justify-content: center;
-            gap: var(--space-3);
+            gap: 10px;
             flex-wrap: wrap;
+            margin-top: 20px;
         }
 
-        /* Install Button */
-        .install-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: transparent;
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: rgba(212,175,55,0.06);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.02em;
         }
 
-        .install-btn:hover {
-            background: linear-gradient(135deg, #5a6fd6 0%, #6a4190 100%);
-            color: white;
+        .action-btn:hover {
+            background: rgba(212,175,55,0.12);
+            color: var(--text);
+            border-color: var(--border-hover);
         }
 
-        .install-btn.installed {
-            background: var(--apple-green);
-            border-color: var(--apple-green);
+        .action-btn:active { transform: scale(0.97); }
+
+        .action-btn.copied {
+            background: var(--green);
+            color: var(--accent);
+            border-color: rgba(212,175,55,0.3);
         }
 
-        /* Categories Section */
-        .categories-section {
-            padding: 0 var(--space-5) var(--space-10);
-            max-width: 800px;
-            margin: 0 auto;
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--green) 0%, #1a2e23 100%);
+            color: var(--accent);
+            border-color: rgba(212,175,55,0.25);
         }
 
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-4);
+        .action-btn svg {
+            width: 14px;
+            height: 14px;
         }
 
-        @media (min-width: 640px) {
-            .categories-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: var(--space-5);
-            }
-        }
-
-        /* Category Card Variations */
-        .category-card.youtuber {
-            background: linear-gradient(135deg, #FF3B30 0%, #FF6B4A 100%);
-        }
-
-        .category-card.educator {
-            background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-        }
-
-        .category-card.designer {
-            background: linear-gradient(135deg, #AF52DE 0%, #DA8FFF 100%);
-        }
-
-        .category-card.marketer {
-            background: linear-gradient(135deg, #34C759 0%, #30D158 100%);
-        }
-
-        .category-card.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .category-card.disabled:hover {
-            transform: none;
-            box-shadow: none;
-        }
-
-        /* Featured Banner */
+        /* ═══════════════════════════════════
+           FEATURED BANNER
+        ═══════════════════════════════════ */
         .featured-banner {
-            margin: var(--space-8) var(--space-5);
+            margin: 0 20px 32px;
             max-width: 800px;
             margin-left: auto;
             margin-right: auto;
-            padding: var(--space-6);
-            background: var(--bg-secondary);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--separator);
-            animation: fadeInUp 0.6s ease 0.4s both;
+            padding: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(16px);
+            transition: all 0.5s ease;
+        }
+
+        .featured-banner.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .featured-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
         }
 
         .featured-label {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-1) var(--space-3);
-            background: var(--apple-red);
-            border-radius: var(--radius-full);
-            font-size: var(--font-size-xs);
-            font-weight: var(--font-weight-semibold);
-            color: white;
-            margin-bottom: var(--space-3);
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(212,175,55,0.12);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
         }
 
         .featured-title {
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-bold);
-            margin-bottom: var(--space-2);
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
         }
 
         .featured-desc {
-            font-size: var(--font-size-sm);
+            font-size: 13px;
             color: var(--text-secondary);
         }
 
         .featured-cta {
             display: inline-flex;
-            margin-top: var(--space-4);
+            align-items: center;
+            gap: 6px;
+            margin-top: 16px;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, var(--green), #1a2e23);
+            border: 1px solid rgba(212,175,55,0.25);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+            transition: all 0.25s ease;
         }
 
-        /* Footer */
+        .featured-cta:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        /* ═══════════════════════════════════
+           CATEGORIES
+        ═══════════════════════════════════ */
+        .categories-section {
+            padding: 0 20px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .category-card {
+            display: block;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 16px;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        .category-card.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .category-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(212,175,55,0.03) 50%,
+                transparent 100%);
+            background-size: 200% 100%;
+            animation: cardShimmer 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes cardShimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .category-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .category-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .category-card.disabled:hover {
+            transform: none;
+            border-color: var(--border);
+        }
+
+        .category-card.disabled.revealed {
+            opacity: 0.4;
+        }
+
+        .category-card-accent {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--green), #1a2e23);
+            border: 1px solid var(--border);
+        }
+
+        .category-card-count {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(212,175,55,0.08);
+            border-radius: 100px;
+            font-size: 10px;
+            color: var(--accent);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .category-card-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .category-card-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* ═══════════════════════════════════
+           FOOTER
+        ═══════════════════════════════════ */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 8px 20px 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .store-footer {
-            padding: var(--space-8) var(--space-5);
+            padding: 24px 20px 48px;
             text-align: center;
-            border-top: 1px solid var(--separator);
         }
 
         .store-footer p {
-            font-size: var(--font-size-xs);
-            color: var(--text-tertiary);
-            margin-bottom: var(--space-2);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            letter-spacing: 0.03em;
         }
 
-        .store-footer a {
-            color: var(--text-secondary);
+        .store-footer a { color: var(--accent); }
+
+        .footer-brand {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: var(--text-muted);
+            margin-top: 12px;
         }
 
-        /* Version Badge */
         .version-badge {
             display: inline-flex;
             align-items: center;
-            gap: var(--space-1);
-            padding: var(--space-1) var(--space-2);
-            background: var(--fill-secondary);
-            border-radius: var(--radius-xs);
-            font-size: var(--font-size-xs);
-            color: var(--text-tertiary);
-            margin-top: var(--space-4);
+            padding: 3px 8px;
+            background: rgba(212,175,55,0.06);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* ═══════════════════════════════════
+           TOAST
+        ═══════════════════════════════════ */
+        .toast {
+            position: fixed;
+            bottom: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 13px;
+            color: var(--text);
+            z-index: 1000;
+            transition: bottom 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .toast.show { bottom: 40px; }
+
+        @media (min-width: 640px) {
+            .categories-grid { gap: 16px; }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="store-header">
-        <div class="store-logo">🚀</div>
-        <h1 class="store-title">박씨 PWA 스토어</h1>
-        <p class="store-tagline">직업별 맞춤 PWA 컬렉션</p>
+        <div class="store-logo">PWA</div>
+        <h1 class="store-title">DTSLIB <span>PWA Store</span></h1>
+        <p class="store-tagline">Browser-Native Tool Collection</p>
 
         <div class="store-stats">
             <div class="store-stat">
                 <div class="store-stat-value" id="categoryCount">4</div>
-                <div class="store-stat-label">카테고리</div>
+                <div class="store-stat-label">Categories</div>
             </div>
             <div class="store-stat">
-                <div class="store-stat-value" id="appCount">9</div>
-                <div class="store-stat-label">앱</div>
+                <div class="store-stat-value" id="appCount">8</div>
+                <div class="store-stat-label">Apps</div>
             </div>
         </div>
 
-        <!-- Action Buttons -->
         <div class="header-actions">
-            <!-- Share Button -->
-            <button class="share-btn" id="shareBtn" onclick="copyStoreUrl()">
+            <button class="action-btn" id="shareBtn" onclick="copyStoreUrl()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                <span id="shareBtnText">스토어 링크 복사</span>
+                <span id="shareBtnText">Copy Link</span>
             </button>
 
-            <!-- Add to Home Screen Button -->
-            <button class="share-btn install-btn" id="installBtn" onclick="addToHomeScreen()">
+            <button class="action-btn primary" id="installBtn" onclick="addToHomeScreen()">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m0-16l-4 4m4-4l4 4M4 20h16" />
                 </svg>
-                <span id="installBtnText">바로가기 추가</span>
+                <span id="installBtnText">Add to Home</span>
             </button>
         </div>
     </header>
 
-    <!-- Featured Banner -->
-    <div class="featured-banner">
-        <span class="featured-label">✨ Featured</span>
-        <h2 class="featured-title">유튜버 키트 출시</h2>
-        <p class="featured-desc">쇼츠 제작, 오디오 편집, 썸네일 생성까지 브라우저에서 바로!</p>
-        <a href="./youtuber/" class="btn btn-primary featured-cta">지금 사용하기</a>
+    <!-- Featured -->
+    <div class="featured-banner reveal">
+        <span class="featured-label">Featured</span>
+        <h2 class="featured-title">YouTuber Kit</h2>
+        <p class="featured-desc">Shorts, audio editing, thumbnails — all in the browser.</p>
+        <a href="./youtuber/" class="featured-cta">Open Kit &rarr;</a>
     </div>
 
     <!-- Categories -->
     <section class="categories-section">
-        <div class="section-header">
-            <h2 class="section-title">카테고리</h2>
-        </div>
-
-        <div class="categories-grid stagger" id="categoriesGrid">
-            <!-- Dynamic content loaded here -->
-        </div>
+        <h2 class="section-title">Categories</h2>
+        <div class="categories-grid" id="categoriesGrid"></div>
     </section>
+
+    <div class="divider"></div>
 
     <!-- Footer -->
     <footer class="store-footer">
-        <p>Built with ❤️ by PARKSY</p>
-        <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub</a></p>
-        <div class="version-badge">
-            <span>v2.0.1</span>
-        </div>
+        <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub Repository</a></p>
+        <div class="footer-brand">DTSLIB FRANCHISE OS</div>
+        <div class="version-badge">v2.1.0</div>
     </footer>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-        // Store URL
-        const STORE_URL = 'https://dtslib-cloud-appstore.vercel.app';
+        var STORE_URL = 'https://dtslib-cloud-appstore.vercel.app';
+        var storeData = null;
 
-        // Store Data
-        let storeData = null;
-
-        // Initialize
         document.addEventListener('DOMContentLoaded', init);
 
-        async function init() {
-            await loadStoreData();
-            renderCategories();
-            updateStats();
-            checkInstallState();
+        function init() {
+            loadStoreData().then(function() {
+                renderCategories();
+                updateStats();
+                checkInstallState();
+                setupReveal();
+            });
         }
 
-        // Check if already installed (standalone mode) - hide button if running as PWA
         function checkInstallState() {
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                                 window.navigator.standalone === true;
-
-            const installBtn = document.getElementById('installBtn');
-            if (isStandalone && installBtn) {
-                installBtn.style.display = 'none';
-            }
+            var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                               window.navigator.standalone === true;
+            var btn = document.getElementById('installBtn');
+            if (isStandalone && btn) btn.style.display = 'none';
         }
 
-        // Copy Store URL
-        async function copyStoreUrl() {
-            const btn = document.getElementById('shareBtn');
-            const btnText = document.getElementById('shareBtnText');
-            
-            try {
-                await navigator.clipboard.writeText(STORE_URL);
-                
-                btn.classList.add('copied');
-                btnText.textContent = '복사 완료! ✓';
-                
-                showToast('링크가 복사되었습니다 📋', 'success');
-                
-                setTimeout(() => {
-                    btn.classList.remove('copied');
-                    btnText.textContent = '스토어 링크 복사';
-                }, 2000);
-            } catch (e) {
-                // Fallback for older browsers
-                const ta = document.createElement('textarea');
+        function copyStoreUrl() {
+            var btn = document.getElementById('shareBtn');
+            var txt = document.getElementById('shareBtnText');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(STORE_URL).then(function() {
+                    btn.classList.add('copied');
+                    txt.textContent = 'Copied!';
+                    showToast('Link copied');
+                    setTimeout(function() {
+                        btn.classList.remove('copied');
+                        txt.textContent = 'Copy Link';
+                    }, 2000);
+                });
+            } else {
+                var ta = document.createElement('textarea');
                 ta.value = STORE_URL;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
+                ta.style.cssText = 'position:fixed;opacity:0';
                 document.body.appendChild(ta);
                 ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                
                 btn.classList.add('copied');
-                btnText.textContent = '복사 완료! ✓';
-                showToast('링크가 복사되었습니다 📋', 'success');
-                
-                setTimeout(() => {
+                txt.textContent = 'Copied!';
+                showToast('Link copied');
+                setTimeout(function() {
                     btn.classList.remove('copied');
-                    btnText.textContent = '스토어 링크 복사';
+                    txt.textContent = 'Copy Link';
                 }, 2000);
             }
         }
 
-        // Add to Home Screen - Show manual guide
         function addToHomeScreen() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-
-            let message = '';
-            if (isIOS || isSafari) {
-                message = '공유 버튼(↑) → "홈 화면에 추가"를 선택하세요';
-            } else {
-                message = '메뉴(⋮) → "홈 화면에 추가"를 선택하세요';
-            }
-
-            showToast(message, '');
+            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            var msg = isIOS
+                ? 'Tap Share (↑) → "Add to Home Screen"'
+                : 'Tap Menu (⋮) → "Add to Home Screen"';
+            showToast(msg);
         }
 
-        // Load store.json
-        async function loadStoreData() {
-            try {
-                const res = await fetch('./store.json');
-                storeData = await res.json();
-            } catch (e) {
-                console.error('Failed to load store data:', e);
-                // Fallback data
-                storeData = {
-                    categories: [
-                        { id: 'youtuber', name: '유튜버 키트', icon: '🎬', color: '#FF3B30', description: '쇼츠 제작부터 썸네일까지', appCount: 9, status: 'active' },
-                        { id: 'educator', name: '교육자 키트', icon: '📚', color: '#007AFF', description: '강의 자료 제작 도구', appCount: 0, status: 'coming_soon' },
-                        { id: 'designer', name: '디자이너 키트', icon: '🎨', color: '#AF52DE', description: '이미지 편집 & 변환', appCount: 0, status: 'coming_soon' },
-                        { id: 'marketer', name: '마케터 키트', icon: '📊', color: '#34C759', description: '콘텐츠 최적화 도구', appCount: 0, status: 'coming_soon' }
-                    ]
-                };
-            }
+        function loadStoreData() {
+            return fetch('./store.json')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { storeData = data; })
+                .catch(function() {
+                    storeData = {
+                        categories: [
+                            { id: 'youtuber', name: 'YouTuber Kit', icon: '🎬', appCount: 8, status: 'active', description: 'Shorts, audio, thumbnails' },
+                            { id: 'educator', name: 'Educator Kit', icon: '📚', appCount: 0, status: 'coming_soon', description: 'Teaching material tools' },
+                            { id: 'designer', name: 'Designer Kit', icon: '🎨', appCount: 0, status: 'coming_soon', description: 'Image editing & conversion' },
+                            { id: 'marketer', name: 'Marketer Kit', icon: '📊', appCount: 0, status: 'coming_soon', description: 'Content optimization' }
+                        ]
+                    };
+                });
         }
 
-        // Render categories
         function renderCategories() {
-            const grid = document.getElementById('categoriesGrid');
+            var grid = document.getElementById('categoriesGrid');
+            var cats = storeData.categories || storeData;
             grid.innerHTML = '';
 
-            storeData.categories.forEach(cat => {
-                const isActive = cat.status === 'active';
-                const card = document.createElement('a');
-                card.href = isActive ? `./${cat.id}/` : '#';
-                card.className = `category-card ${cat.id} ${!isActive ? 'disabled' : ''}`;
+            cats.forEach(function(cat) {
+                var isActive = cat.status === 'active';
+                var card = document.createElement('a');
+                card.href = isActive ? './' + cat.id + '/' : '#';
+                card.className = 'category-card reveal' + (!isActive ? ' disabled' : '');
 
                 if (!isActive) {
-                    card.onclick = (e) => {
+                    card.onclick = function(e) {
                         e.preventDefault();
-                        showToast('Coming Soon! 🚧');
+                        showToast('Coming soon');
                     };
                 }
 
-                card.innerHTML = `
-                    <span class="category-card-count">${cat.appCount > 0 ? cat.appCount + '개 앱' : 'Coming Soon'}</span>
-                    <span class="category-card-icon">${cat.icon}</span>
-                    <h3 class="category-card-name">${cat.name}</h3>
-                    <p class="category-card-desc">${cat.description}</p>
-                `;
+                card.innerHTML =
+                    '<div class="category-card-accent">' + cat.icon + '</div>' +
+                    '<span class="category-card-count">' + (cat.appCount > 0 ? cat.appCount + ' apps' : 'Soon') + '</span>' +
+                    '<h3 class="category-card-name">' + (cat.name || cat.nameEn) + '</h3>' +
+                    '<p class="category-card-desc">' + (cat.description || cat.descriptionEn || '') + '</p>';
 
                 grid.appendChild(card);
             });
         }
 
-        // Update stats
         function updateStats() {
-            const categoryCount = storeData.categories.length;
-            const appCount = storeData.categories.reduce((sum, cat) => sum + (cat.appCount || 0), 0);
-
-            document.getElementById('categoryCount').textContent = categoryCount;
-            document.getElementById('appCount').textContent = appCount;
+            var cats = storeData.categories || storeData;
+            var total = cats.reduce(function(s, c) { return s + (c.appCount || 0); }, 0);
+            document.getElementById('categoryCount').textContent = cats.length;
+            document.getElementById('appCount').textContent = total;
         }
 
-        // Toast
-        function showToast(message, type = '') {
-            const toast = document.getElementById('toast');
+        // IntersectionObserver Reveal (inventory #13)
+        function setupReveal() {
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(function(el, i) {
+                el.style.transitionDelay = (i * 0.1) + 's';
+                observer.observe(el);
+            });
+        }
+
+        function showToast(message) {
+            var toast = document.getElementById('toast');
             toast.textContent = message;
-            toast.className = 'toast show ' + type;
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 2500);
+            toast.className = 'toast show';
+            setTimeout(function() { toast.classList.remove('show'); }, 2500);
         }
-
     </script>
 </body>
 </html>
