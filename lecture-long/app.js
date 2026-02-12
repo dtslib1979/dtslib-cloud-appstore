@@ -1400,38 +1400,60 @@ async function initFFmpeg() {
         throw new Error('FFmpeg 로드 실패 - 네트워크 확인 후 새로고침하세요');
     }
 
-    const { createFFmpeg } = FFmpeg;
-    state.ffmpeg = createFFmpeg({
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-    });
+    // CDN 폴백: unpkg 실패 → jsdelivr 자동 전환
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
+    ];
 
-    state.ffmpeg.setProgress(({ ratio }) => {
-        if (ratio > 0) {
-            el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
+    for (let i = 0; i < cdns.length; i++) {
+        try {
+            const { createFFmpeg } = FFmpeg;
+            state.ffmpeg = createFFmpeg({
+                log: true,
+                corePath: cdns[i]
+            });
+
+            state.ffmpeg.setProgress(({ ratio }) => {
+                if (ratio > 0) {
+                    el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
+                }
+            });
+
+            log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
+            await state.ffmpeg.load();
+            log('FFmpeg 로드 완료');
+            return;
+        } catch (e) {
+            log(`CDN ${i + 1} 실패: ${e.message}`);
+            state.ffmpeg = null;
+            if (i === cdns.length - 1) throw new Error('FFmpeg WASM 로드 실패 - 네트워크 확인 후 재시도');
         }
-    });
-
-    await state.ffmpeg.load();
-    log('FFmpeg 로드 완료');
+    }
 }
 
 async function loadFFmpegScript() {
-    return new Promise((resolve, reject) => {
-        if (typeof FFmpeg !== 'undefined') {
-            resolve();
-            return;
-        }
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
+    ];
 
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
-        script.onload = () => {
-            log('FFmpeg 스크립트 로드 완료');
-            resolve();
-        };
-        script.onerror = () => reject(new Error('FFmpeg CDN 로드 실패'));
-        document.head.appendChild(script);
-    });
+    for (const src of cdns) {
+        try {
+            await new Promise((resolve, reject) => {
+                if (typeof FFmpeg !== 'undefined') { resolve(); return; }
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => { log('FFmpeg 스크립트 로드 완료'); resolve(); };
+                script.onerror = () => reject(new Error('CDN 실패'));
+                document.head.appendChild(script);
+            });
+            if (typeof FFmpeg !== 'undefined') return;
+        } catch (e) {
+            log(`스크립트 CDN 실패: ${src}`);
+        }
+    }
+    throw new Error('FFmpeg CDN 전부 실패');
 }
 
 async function writeFilesToFFmpeg() {
