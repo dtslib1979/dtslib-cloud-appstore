@@ -15,68 +15,7 @@
             "headers": [
                 { "key": "X-Content-Type-Options", "value": "nosniff" },
                 { "key": "X-Frame-Options", "value": "DENY" },
-                { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
-            ]
-        },
-        {
-            "source": "/youtuber/auto-shorts/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/youtuber/lecture-shorts/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/youtuber/lecture-long/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/youtuber/clip-shorts/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/youtuber/audio-studio/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/clip-shorts/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/lecture-shorts/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/lecture-long/:path*",
-            "headers": [
-                { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
-                { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
-            ]
-        },
-        {
-            "source": "/auto-shorts/:path*",
-            "headers": [
+                { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
                 { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
                 { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
             ]
