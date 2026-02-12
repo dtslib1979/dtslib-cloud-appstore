@@ -474,10 +474,14 @@ async function initFFmpeg() {
         throw new Error('FFmpeg 로드 실패');
     }
 
-    // CDN 폴백: unpkg 실패 → jsdelivr 자동 전환
+    // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
+    const useST = !self.crossOriginIsolated;
+    const corePkg = useST ? '@ffmpeg/core-st@0.11.1' : '@ffmpeg/core@0.11.0';
+    log(useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
+
     const cdns = [
-        'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+        `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
+        `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
     ];
 
     for (let i = 0; i < cdns.length; i++) {
