@@ -2,7 +2,7 @@
   "store": {
     "name": "박씨 PWA 스토어",
     "tagline": "직업별 맞춤 PWA 컬렉션",
-    "version": "2.0.0",
+    "version": "2.2.0",
     "author": "PARKSY",
     "description": "브라우저에서 바로 사용하는 프로페셔널 도구 모음",
     "repository": "https://github.com/dtslib1979/dtslib-cloud-appstore",

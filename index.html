@@ -505,14 +505,14 @@
     <footer class="store-footer">
         <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub Repository</a></p>
         <div class="footer-brand">DTSLIB FRANCHISE OS</div>
-        <div class="version-badge">v2.1.0</div>
+        <div class="version-badge" id="storeVersion">v--</div>
     </footer>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-        var STORE_URL = 'https://dtslib-cloud-appstore.vercel.app';
+        var STORE_URL = 'https://dtslib1979.github.io/dtslib-cloud-appstore';
         var storeData = null;
 
         document.addEventListener('DOMContentLoaded', init);
@@ -576,7 +576,11 @@
         function loadStoreData() {
             return fetch('./store.json')
                 .then(function(r) { return r.json(); })
-                .then(function(data) { storeData = data; })
+                .then(function(data) {
+                    storeData = data;
+                    var v = data.store && data.store.version;
+                    if (v) document.getElementById('storeVersion').textContent = 'v' + v;
+                })
                 .catch(function() {
                     storeData = {
                         categories: [
