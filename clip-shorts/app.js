@@ -280,6 +280,12 @@ function handleBGMDrop(e) {
 
 /* ========== FILE HANDLING ========== */
 async function handleFilesSelect(files) {
+    const dropZone = $('clipDropZone');
+    if (dropZone) {
+        dropZone.innerHTML = '<div class="drop-content"><span class="drop-icon">⏳</span><span class="drop-text">클립 로딩 중... 0/' + files.length + '</span></div>';
+    }
+
+    let loaded = 0;
     for (const file of files) {
         if (state.clips.length >= state.maxClips) {
             alert(`최대 ${state.maxClips}개까지만 추가할 수 있습니다.`);
@@ -291,8 +297,16 @@ async function handleFilesSelect(files) {
             const meta = await getVideoMeta(file);
             state.clips.push({ file, meta });
         } catch (e) {
-            console.error('비디오 메타 로드 실패:', e);
+            log(`스킵: ${file.name} (메타 로드 실패)`);
         }
+        loaded++;
+        if (dropZone) {
+            dropZone.querySelector('.drop-text').textContent = `클립 로딩 중... ${loaded}/${files.length}`;
+        }
+    }
+
+    if (dropZone) {
+        dropZone.innerHTML = '<div class="drop-content"><span class="drop-icon">📹</span><span class="drop-text">클릭 또는 드래그하여 클립 추가</span><span class="drop-hint">여러 파일 선택 가능 (MP4, MOV)</span></div>';
     }
     updateClipList();
     checkReady();
@@ -302,11 +316,20 @@ function getVideoMeta(file) {
     return new Promise((resolve, reject) => {
         const vid = document.createElement('video');
         vid.preload = 'metadata';
+        const timeout = setTimeout(() => {
+            URL.revokeObjectURL(vid.src);
+            vid.src = '';
+            resolve({ dur: 0, w: 720, h: 1280 });
+        }, 3000);
         vid.onloadedmetadata = () => {
+            clearTimeout(timeout);
             resolve({ dur: vid.duration, w: vid.videoWidth, h: vid.videoHeight });
             URL.revokeObjectURL(vid.src);
         };
-        vid.onerror = () => reject(new Error('비디오 로드 실패'));
+        vid.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error('비디오 로드 실패'));
+        };
         vid.src = URL.createObjectURL(file);
     });
 }
