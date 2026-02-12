@@ -194,7 +194,7 @@ function removeBGM() {
 /* ========== VERSION LOADER ========== */
 async function loadAppVersion() {
     try {
-        const res = await fetch('/apps.json');
+        const res = await fetch('../apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'clip-shorts');
         if (app) {
@@ -467,11 +467,38 @@ function abortProcessing() {
 }
 
 /* ========== FFmpeg ========== */
+async function loadFFmpegScript() {
+    if (typeof FFmpeg !== 'undefined') return;
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js'
+    ];
+    for (const src of cdns) {
+        try {
+            await new Promise((resolve, reject) => {
+                if (typeof FFmpeg !== 'undefined') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = src;
+                s.crossOrigin = 'anonymous';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('CDN 실패'));
+                document.head.appendChild(s);
+            });
+            log('FFmpeg 스크립트 로드 완료');
+            return;
+        } catch (e) {
+            log(`FFmpeg 스크립트 CDN 실패: ${src}`);
+        }
+    }
+    throw new Error('FFmpeg 스크립트 로드 실패');
+}
+
 async function initFFmpeg() {
     if (state.ffmpeg && state.ffmpeg.isLoaded()) return;
 
     if (typeof FFmpeg === 'undefined') {
-        throw new Error('FFmpeg 로드 실패');
+        log('FFmpeg 스크립트 로드...');
+        await loadFFmpegScript();
     }
 
     // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택

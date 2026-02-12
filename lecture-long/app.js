@@ -158,7 +158,7 @@ function log(msg) {
 /* ========== VERSION LOADER ========== */
 async function loadAppVersion() {
     try {
-        const res = await fetch('/apps.json');
+        const res = await fetch('../apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'lecture-long');
         if (app) {
