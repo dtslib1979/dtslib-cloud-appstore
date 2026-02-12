@@ -1222,6 +1222,7 @@ async function loadMp4Muxer() {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/build/mp4-muxer.min.js';
+        script.crossOrigin = 'anonymous';
         script.onload = resolve;
         script.onerror = () => reject(new Error('mp4-muxer 로드 실패'));
         document.head.appendChild(script);
@@ -1441,6 +1442,7 @@ async function loadFFmpegScript() {
                 if (typeof FFmpeg !== 'undefined') { resolve(); return; }
                 const script = document.createElement('script');
                 script.src = src;
+                script.crossOrigin = 'anonymous';
                 script.onload = () => { log('FFmpeg 스크립트 로드 완료'); resolve(); };
                 script.onerror = () => reject(new Error('CDN 실패'));
                 document.head.appendChild(script);
