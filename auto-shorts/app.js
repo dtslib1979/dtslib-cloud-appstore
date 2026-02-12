@@ -34,7 +34,7 @@ checkMem();
 // Version loader
 async function loadAppVersion() {
     try {
-        const res = await fetch('/apps.json');
+        const res = await fetch('../apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'auto-shorts');
         if (app) {
@@ -46,12 +46,36 @@ async function loadAppVersion() {
 }
 loadAppVersion();
 
-// FFmpeg lazy init (CDN 폴백: unpkg → jsdelivr)
+// FFmpeg 스크립트 동적 로딩
+async function loadFFmpegScript() {
+    if (typeof FFmpeg !== 'undefined') return;
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js'
+    ];
+    for (const src of cdns) {
+        try {
+            await new Promise((resolve, reject) => {
+                if (typeof FFmpeg !== 'undefined') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = src;
+                s.crossOrigin = 'anonymous';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('CDN fail'));
+                document.head.appendChild(s);
+            });
+            return;
+        } catch (e) { /* try next */ }
+    }
+    throw { code: 'ERR_FFMPEG_LOAD' };
+}
+
+// FFmpeg lazy init (싱글/멀티스레드 자동 선택 + CDN 폴백)
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
 
     if (typeof FFmpeg === 'undefined') {
-        throw { code: 'ERR_FFMPEG_LOAD' };
+        await loadFFmpegScript();
     }
 
     // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
