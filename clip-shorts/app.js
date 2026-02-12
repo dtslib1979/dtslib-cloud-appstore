@@ -476,8 +476,8 @@ async function initFFmpeg() {
 
     // CDN 폴백: unpkg 실패 → jsdelivr 자동 전환
     const cdns = [
-        'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
+        'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
     ];
 
     for (let i = 0; i < cdns.length; i++) {
