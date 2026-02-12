@@ -1,6 +1,11 @@
 /**
- * Clip Shorts v5.0
+ * Clip Shorts v5.1
  * 클립 선택 → 3분 쇼츠 자동 생성
+ *
+ * v5.1 변경사항:
+ * - 10개+ 클립 병합 시 OOM 크래시 수정
+ * - 클립을 한꺼번에 로드하지 않고 1개씩 로드→전처리→삭제 (스트리밍 방식)
+ * - chunkSize 6→4 축소 (메모리 안전 마진 확보)
  *
  * v5.0 변경사항:
  * - 청크 방식 병합으로 메모리 문제 해결 (18개 클립도 안정적 처리)
@@ -22,7 +27,7 @@ const CONFIG = {
     fps: 30,
     transitionDuration: 0.5,
     audioBitrate: '192k',
-    chunkSize: 6  // 한 번에 병합할 클립 수 (메모리 최적화)
+    chunkSize: 4  // 한 번에 병합할 클립 수 (메모리 최적화, 10개+ 안정)
 };
 
 /* ========== STATE ========== */
@@ -68,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     initBGMEvents();
-    log('Clip Shorts v4.0 초기화 완료');
+    log('Clip Shorts v5.1 초기화 완료');
 });
 
 /* ========== BGM EVENTS ========== */
@@ -402,41 +407,38 @@ async function generate() {
         setProgress(5);
         await initFFmpeg();
 
-        // 2. 파일 준비
-        setStatus('파일 준비 중...');
+        // 2. BGM 로드 (클립은 전처리 중 1개씩 로드)
+        setStatus('준비 중...');
         setProgress(10);
-        await writeClipsToFFmpeg();
-
-        // 3. BGM 로드
         if (state.bgm.enabled && state.bgm.file) {
             await writeBGMToFFmpeg();
         }
 
-        // 4. 각 클립 전처리 (리사이즈 + 트랜지션 효과)
+        // 3. 각 클립 전처리 (1개씩 로드→리사이즈→삭제, OOM 방지)
         setStatus('클립 처리 중...');
-        setProgress(20);
+        setProgress(15);
         await preprocessClips();
 
-        // 5. filter_complex로 병합
+        // 4. 청크 병합
         setStatus('클립 병합 중...');
-        setProgress(50);
+        setProgress(55);
         await mergeClipsWithFilterComplex();
 
-        // 6. 시작/엔딩 효과
+        // 5. 시작/엔딩 효과
         if (state.introEffect !== 'none' || state.endingEffect !== 'none') {
             setStatus('시작/엔딩 효과 적용 중...');
             setProgress(70);
             await applyIntroEndingEffects();
         }
 
-        // 7. BGM 믹싱
+        // 6. BGM 믹싱
         if (state.bgm.enabled && state.bgm.file) {
             setStatus('배경 음악 믹싱 중...');
             setProgress(80);
             await mixBGM();
         }
 
-        // 8. 최종 인코딩
+        // 7. 최종 인코딩
         setStatus('최종 인코딩 중...');
         setProgress(90);
         await finalEncode();
@@ -482,25 +484,15 @@ async function initFFmpeg() {
     log('FFmpeg 로드 완료');
 }
 
-async function writeClipsToFFmpeg() {
-    const { fetchFile } = FFmpeg;
-
-    for (let i = 0; i < state.clips.length; i++) {
-        if (state.processingAborted) throw new Error('중단됨');
-        const clip = state.clips[i];
-        state.ffmpeg.FS('writeFile', `input_${i}.mp4`, await fetchFile(clip.file));
-        log(`클립 ${i + 1}/${state.clips.length} 로드`);
-    }
-}
-
 async function writeBGMToFFmpeg() {
     const { fetchFile } = FFmpeg;
     state.ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(state.bgm.file));
     log('배경 음악 로드 완료');
 }
 
-/* ========== 클립 전처리 ========== */
+/* ========== 클립 전처리 (스트리밍 방식 — 1개씩 로드→처리→삭제) ========== */
 async function preprocessClips() {
+    const { fetchFile } = FFmpeg;
     const vfBase = `scale=${CONFIG.resolution.width}:${CONFIG.resolution.height}:force_original_aspect_ratio=decrease,pad=${CONFIG.resolution.width}:${CONFIG.resolution.height}:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=${CONFIG.fps}`;
 
     const hasTransition = state.transitionEffect !== 'none';
@@ -510,7 +502,12 @@ async function preprocessClips() {
     for (let i = 0; i < totalClips; i++) {
         if (state.processingAborted) throw new Error('중단됨');
 
-        const clipDur = state.clips[i].meta.dur;
+        // ★ 클립 1개만 로드 (전체 로드 X → OOM 방지)
+        const clip = state.clips[i];
+        state.ffmpeg.FS('writeFile', `input_${i}.mp4`, await fetchFile(clip.file));
+        log(`클립 ${i + 1}/${totalClips} 로드`);
+
+        const clipDur = clip.meta.dur;
         const fadeOutStart = Math.max(0, clipDur - fadeDur);
 
         let vf = vfBase;
@@ -518,18 +515,14 @@ async function preprocessClips() {
         // 트랜지션 효과: 클립 사이 페이드
         if (hasTransition) {
             if (i === 0) {
-                // 첫 번째 클립: 끝에 fade out
                 vf += `,fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
             } else if (i === totalClips - 1) {
-                // 마지막 클립: 시작에 fade in
                 vf += `,fade=t=in:st=0:d=${fadeDur}`;
             } else {
-                // 중간 클립: fade in + fade out
                 vf += `,fade=t=in:st=0:d=${fadeDur},fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
             }
         }
 
-        // 볼륨 평준화 (loudnorm이 느리면 volume 필터 사용)
         const af = state.normalizeVolume ? 'loudnorm=I=-16:TP=-1.5:LRA=11' : 'anull';
 
         await state.ffmpeg.run(
@@ -541,16 +534,16 @@ async function preprocessClips() {
             '-y', `clip_${i}.mp4`
         );
 
-        // 원본 즉시 삭제 (메모리 확보)
+        // ★ 원본 즉시 삭제 (다음 클립 로드 전에 메모리 확보)
         try { state.ffmpeg.FS('unlink', `input_${i}.mp4`); } catch(e) {}
 
-        // 주기적 가비지 컬렉션 유도 (브라우저에 힌트)
-        if (i > 0 && i % 4 === 0) {
-            await new Promise(r => setTimeout(r, 100));
+        // GC 힌트 — 3개마다 쉬어줌 (4→3으로 더 자주)
+        if (i > 0 && i % 3 === 0) {
+            await new Promise(r => setTimeout(r, 200));
         }
 
         log(`클립 처리 ${i + 1}/${totalClips}`);
-        setProgress(20 + Math.floor(((i + 1) / totalClips) * 30));
+        setProgress(15 + Math.floor(((i + 1) / totalClips) * 35));
     }
 }
 
