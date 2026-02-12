@@ -46,7 +46,7 @@ async function loadAppVersion() {
 }
 loadAppVersion();
 
-// FFmpeg lazy init (CDN 실패 시 안전하게 에러 처리)
+// FFmpeg lazy init (CDN 폴백: unpkg → jsdelivr)
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
 
@@ -54,20 +54,33 @@ async function initFFmpeg() {
         throw { code: 'ERR_FFMPEG_LOAD' };
     }
 
-    const { createFFmpeg } = FFmpeg;
-    ffmpeg = createFFmpeg({
-        log: false,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-    });
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
+    ];
 
-    ffmpeg.setProgress(({ ratio }) => {
-        if (ratio > 0 && ratio <= 1) {
-            const pct = 50 + Math.floor(ratio * 40);
-            setProgress(pct, `인코딩 중... ${Math.floor(ratio * 100)}%`);
+    for (let i = 0; i < cdns.length; i++) {
+        try {
+            const { createFFmpeg } = FFmpeg;
+            ffmpeg = createFFmpeg({
+                log: false,
+                corePath: cdns[i]
+            });
+
+            ffmpeg.setProgress(({ ratio }) => {
+                if (ratio > 0 && ratio <= 1) {
+                    const pct = 50 + Math.floor(ratio * 40);
+                    setProgress(pct, `인코딩 중... ${Math.floor(ratio * 100)}%`);
+                }
+            });
+
+            await ffmpeg.load();
+            return;
+        } catch (e) {
+            ffmpeg = null;
+            if (i === cdns.length - 1) throw { code: 'ERR_FFMPEG_LOAD' };
         }
-    });
-
-    await ffmpeg.load();
+    }
 }
 
 // Duration preview

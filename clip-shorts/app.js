@@ -474,14 +474,29 @@ async function initFFmpeg() {
         throw new Error('FFmpeg 로드 실패');
     }
 
-    const { createFFmpeg } = FFmpeg;
-    state.ffmpeg = createFFmpeg({
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-    });
+    // CDN 폴백: unpkg 실패 → jsdelivr 자동 전환
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
+    ];
 
-    await state.ffmpeg.load();
-    log('FFmpeg 로드 완료');
+    for (let i = 0; i < cdns.length; i++) {
+        try {
+            const { createFFmpeg } = FFmpeg;
+            state.ffmpeg = createFFmpeg({
+                log: true,
+                corePath: cdns[i]
+            });
+            log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
+            await state.ffmpeg.load();
+            log('FFmpeg 로드 완료');
+            return;
+        } catch (e) {
+            log(`CDN ${i + 1} 실패: ${e.message}`);
+            state.ffmpeg = null;
+            if (i === cdns.length - 1) throw new Error('FFmpeg WASM 로드 실패 - 네트워크 확인 후 재시도');
+        }
+    }
 }
 
 async function writeBGMToFFmpeg() {
