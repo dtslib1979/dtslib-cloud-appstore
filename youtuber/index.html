@@ -308,15 +308,15 @@
                     { id: 'utilities', title: '유틸리티', apps: ['bilingual-aligner', 'project-manager'] }
                 ],
                 apps: [
-                    { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', version: '6.5 Pro', badge: 'flagship', featured: true, path: './lecture-shorts' },
-                    { id: 'lecture-long', name: 'Lecture Long', desc: '16분→12분 튜토리얼', icon: '📹', version: '2.0', badge: 'new', path: './lecture-long' },
-                    { id: 'auto-shorts', name: 'Auto Shorts', desc: '6~30초→2분 변환', icon: '🎬', version: '1.1', path: './auto-shorts' },
-                    { id: 'clip-shorts', name: 'Clip Shorts', desc: '클립 조합 + BGM', icon: '🎞️', version: '5.0', badge: 'popular', path: './clip-shorts' },
-                    { id: 'audio-studio', name: 'Audio Studio', desc: '오디오 컷 & 루프', icon: '🎵', version: '2.0', badge: 'unified', path: './audio-studio' },
-                    { id: 'slim-lens', name: 'Slim Lens', desc: '사진 가로 슬림', icon: '📷', version: '2.0', path: './slim-lens' },
-                    { id: 'image-pack', name: 'Image Pack', desc: '플랫폼별 이미지 규격', icon: '📦', version: '1.0', path: './image-pack' },
-                    { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', version: 'LIVE', path: './bilingual-aligner' },
-                    { id: 'project-manager', name: 'Project Manager', desc: '메타데이터 & 출하 관리', icon: '📋', version: '1.0', badge: 'unified', path: './project-manager' }
+                    { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', badge: 'flagship', featured: true, path: './lecture-shorts' },
+                    { id: 'lecture-long', name: 'Lecture Long', desc: '16분→12분 튜토리얼', icon: '📹', badge: 'new', path: './lecture-long' },
+                    { id: 'auto-shorts', name: 'Auto Shorts', desc: '6~30초→2분 변환', icon: '🎬', path: './auto-shorts' },
+                    { id: 'clip-shorts', name: 'Clip Shorts', desc: '클립 조합 + BGM', icon: '🎞️', badge: 'popular', path: './clip-shorts' },
+                    { id: 'audio-studio', name: 'Audio Studio', desc: '오디오 컷 & 루프', icon: '🎵', badge: 'unified', path: './audio-studio' },
+                    { id: 'slim-lens', name: 'Slim Lens', desc: '사진 가로 슬림', icon: '📷', path: './slim-lens' },
+                    { id: 'image-pack', name: 'Image Pack', desc: '플랫폼별 이미지 규격', icon: '📦', path: './image-pack' },
+                    { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', path: './bilingual-aligner' },
+                    { id: 'project-manager', name: 'Project Manager', desc: '메타데이터 & 출하 관리', icon: '📋', badge: 'unified', path: './project-manager' }
                 ]
             };
         }
@@ -360,7 +360,7 @@
                         <span class="featured-app-badge">Flagship</span>
                         <h3 class="featured-app-title">${app.name}</h3>
                         <p class="featured-app-desc">${app.desc}</p>
-                        <span class="featured-app-version">${app.version}</span>
+                        <span class="featured-app-version">${app.version || ''}</span>
                     </div>
                 </a>
             `;
@@ -379,7 +379,7 @@
                     <h3 class="app-card-title">${app.name}</h3>
                     <p class="app-card-desc">${app.desc}</p>
                     <div class="app-card-footer">
-                        <span class="app-card-version">${app.version}</span>
+                        <span class="app-card-version">${app.version || ''}</span>
                         ${badgeHtml}
                     </div>
                 </a>
