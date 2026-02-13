@@ -1,5 +1,5 @@
 /**
- * Clip Shorts v6.1
+ * Clip Shorts v7.0
  * 클립 선택 → 3분 쇼츠 자동 생성
  *
  * v6.1: ST exit(0) 완전 대응 — 전 파이프라인 reload+restore
