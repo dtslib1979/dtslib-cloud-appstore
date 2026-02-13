@@ -492,7 +492,8 @@ async function initFFmpeg() {
             const { createFFmpeg } = FFmpeg;
             state.ffmpeg = createFFmpeg({
                 log: true,
-                corePath: cdns[i]
+                corePath: cdns[i],
+                mainName: useST ? 'main' : 'proxy_main'
             });
             log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
             await state.ffmpeg.load();
