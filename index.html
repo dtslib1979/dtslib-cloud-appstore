@@ -3,654 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0D0D0D">
-    <meta name="description" content="DTSLIB PWA Store — 브라우저에서 바로 사용하는 도구 컬렉션">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="DTSLIB Tools — 브라우저에서 바로 사용하는 도구함">
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
-    <link rel="manifest" href="./manifest.json">
 
-    <title>DTSLIB PWA Store</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>DTSLIB Tools</title>
 
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --bg: #0D0D0D;
-            --bg-card: #1A1A1A;
-            --bg-card-hover: #222;
-            --surface: rgba(212,175,55,0.03);
-            --border: rgba(212,175,55,0.15);
-            --border-hover: rgba(212,175,55,0.35);
-            --text: #F5F5DC;
-            --text-secondary: rgba(245,245,220,0.6);
-            --text-muted: rgba(245,245,220,0.3);
-            --accent: #D4AF37;
-            --accent-glow: rgba(212,175,55,0.4);
-            --green: #253A2F;
-            --green-light: #2f4a3a;
-            --signal: #E2B340;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(212,175,55,0.1) transparent;
+            --bg: #000;
+            --bg-card: #1C1C1E;
+            --text: #F5F5F7;
+            --text-sec: rgba(245,245,247,0.6);
+            --text-dim: rgba(245,245,247,0.35);
+            --blue: #0A84FF;
+            --sep: rgba(255,255,255,0.08);
         }
 
         body {
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: var(--bg);
             color: var(--text);
             line-height: 1.5;
             min-height: 100vh;
             -webkit-font-smoothing: antialiased;
-            overflow-x: hidden;
+            padding: calc(52px + env(safe-area-inset-top)) 0 0;
         }
 
-        a { color: var(--accent); text-decoration: none; }
+        .page { max-width: 600px; margin: 0 auto; padding: 24px 20px 60px; }
 
-        /* ═══════════════════════════════════
-           HEADER
-        ═══════════════════════════════════ */
-        .store-header {
-            text-align: center;
-            padding: 48px 20px 32px;
-        }
-
-        .store-logo {
-            width: 72px;
-            height: 72px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, var(--green) 0%, #1a2e23 100%);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Cinzel', serif;
-            font-size: 14px;
+        .page-title {
+            font-size: 28px;
             font-weight: 700;
-            color: var(--accent);
-            letter-spacing: 0.1em;
-            position: relative;
-        }
-
-        .store-logo::after {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: 24px;
-            border: 1px solid rgba(212,175,55,0.08);
-        }
-
-        .store-title {
-            font-family: 'Cinzel', serif;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            color: var(--text);
             margin-bottom: 4px;
         }
 
-        .store-title span {
-            color: var(--accent);
-        }
-
-        .store-tagline {
+        .page-sub {
             font-size: 13px;
-            color: var(--text-muted);
-            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            margin-bottom: 28px;
         }
 
-        .store-stats {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            margin-top: 24px;
-        }
+        .group { margin-bottom: 24px; }
 
-        .store-stat { text-align: center; }
-
-        .store-stat-value {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .store-stat-label {
-            font-size: 10px;
-            color: var(--text-muted);
-            letter-spacing: 0.1em;
+        .group-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
             text-transform: uppercase;
-            margin-top: 2px;
-        }
-
-        /* ── Action Buttons ── */
-        .header-actions {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 20px;
-        }
-
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            background: rgba(212,175,55,0.06);
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.25s ease;
-            letter-spacing: 0.02em;
-        }
-
-        .action-btn:hover {
-            background: rgba(212,175,55,0.12);
-            color: var(--text);
-            border-color: var(--border-hover);
-        }
-
-        .action-btn:active { transform: scale(0.97); }
-
-        .action-btn.copied {
-            background: var(--green);
-            color: var(--accent);
-            border-color: rgba(212,175,55,0.3);
-        }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, var(--green) 0%, #1a2e23 100%);
-            color: var(--accent);
-            border-color: rgba(212,175,55,0.25);
-        }
-
-        .action-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* ═══════════════════════════════════
-           FEATURED BANNER
-        ═══════════════════════════════════ */
-        .featured-banner {
-            margin: 0 20px 32px;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            transform: translateY(16px);
-            transition: all 0.5s ease;
-        }
-
-        .featured-banner.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .featured-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-        }
-
-        .featured-label {
-            display: inline-block;
-            padding: 3px 10px;
-            background: rgba(212,175,55,0.12);
-            border: 1px solid var(--border);
-            border-radius: 100px;
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--accent);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .featured-title {
-            font-size: 17px;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 6px;
-        }
-
-        .featured-desc {
-            font-size: 13px;
-            color: var(--text-secondary);
-        }
-
-        .featured-cta {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 16px;
-            padding: 8px 20px;
-            background: linear-gradient(135deg, var(--green), #1a2e23);
-            border: 1px solid rgba(212,175,55,0.25);
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--accent);
-            transition: all 0.25s ease;
-        }
-
-        .featured-cta:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-1px);
-        }
-
-        /* ═══════════════════════════════════
-           CATEGORIES
-        ═══════════════════════════════════ */
-        .categories-section {
-            padding: 0 20px 40px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .section-title {
-            font-family: 'Cinzel', serif;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            color: var(--text);
-            margin-bottom: 16px;
-        }
-
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .category-card {
-            display: block;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px 16px;
-            text-decoration: none;
-            color: inherit;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(16px);
-        }
-
-        .category-card.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .category-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 16px;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                rgba(212,175,55,0.03) 50%,
-                transparent 100%);
-            background-size: 200% 100%;
-            animation: cardShimmer 4s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes cardShimmer {
-            0% { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-
-        .category-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .category-card.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .category-card.disabled:hover {
-            transform: none;
-            border-color: var(--border);
-        }
-
-        .category-card.disabled.revealed {
-            opacity: 0.4;
-        }
-
-        .category-card-accent {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--green), #1a2e23);
-            border: 1px solid var(--border);
-        }
-
-        .category-card-count {
-            display: inline-block;
-            padding: 2px 8px;
-            background: rgba(212,175,55,0.08);
-            border-radius: 100px;
-            font-size: 10px;
-            color: var(--accent);
-            letter-spacing: 0.05em;
+            letter-spacing: 1px;
+            padding-left: 4px;
             margin-bottom: 8px;
         }
 
-        .category-card-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 4px;
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
 
-        .category-card-desc {
+        .tool-card {
+            display: flex;
+            flex-direction: column;
+            padding: 16px 14px;
+            background: var(--bg-card);
+            border-radius: 14px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .tool-card:hover { background: #2C2C2E; }
+        .tool-card:active { transform: scale(0.97); }
+
+        .tool-icon {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .tool-desc {
             font-size: 11px;
-            color: var(--text-secondary);
+            color: var(--text-sec);
             line-height: 1.4;
         }
 
-        /* ═══════════════════════════════════
-           FOOTER
-        ═══════════════════════════════════ */
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border), transparent);
-            margin: 8px 20px 0;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+        .tool-ver {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: auto;
+            padding-top: 8px;
         }
 
-        .store-footer {
-            padding: 24px 20px 48px;
+        .footer {
             text-align: center;
+            padding: 20px;
+            border-top: 1px solid var(--sep);
+            margin-top: 16px;
         }
 
-        .store-footer p {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            letter-spacing: 0.03em;
+        .footer a {
+            font-size: 12px;
+            color: var(--blue);
+            text-decoration: none;
         }
-
-        .store-footer a { color: var(--accent); }
 
         .footer-brand {
-            font-family: 'Cinzel', serif;
             font-size: 10px;
-            letter-spacing: 0.2em;
-            color: var(--text-muted);
-            margin-top: 12px;
-        }
-
-        .version-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 3px 8px;
-            background: rgba(212,175,55,0.06);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-top: 8px;
-        }
-
-        /* ═══════════════════════════════════
-           TOAST
-        ═══════════════════════════════════ */
-        .toast {
-            position: fixed;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 13px;
-            color: var(--text);
-            z-index: 1000;
-            transition: bottom 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .toast.show { bottom: 40px; }
-
-        @media (min-width: 640px) {
-            .categories-grid { gap: 16px; }
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            margin-top: 6px;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header class="store-header">
-        <div class="store-logo">PWA</div>
-        <h1 class="store-title">DTSLIB <span>PWA Store</span></h1>
-        <p class="store-tagline">Browser-Native Tool Collection</p>
+    <div class="page">
+        <h1 class="page-title">도구함</h1>
+        <p class="page-sub">9 tools — browser-native</p>
 
-        <div class="store-stats">
-            <div class="store-stat">
-                <div class="store-stat-value" id="categoryCount">4</div>
-                <div class="store-stat-label">Categories</div>
-            </div>
-            <div class="store-stat">
-                <div class="store-stat-value" id="appCount">8</div>
-                <div class="store-stat-label">Apps</div>
-            </div>
+        <div id="toolsContainer"></div>
+
+        <div class="footer">
+            <a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub</a>
+            <div class="footer-brand">DTSLIB TOOLS</div>
         </div>
-
-        <div class="header-actions">
-            <button class="action-btn" id="shareBtn" onclick="copyStoreUrl()">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                <span id="shareBtnText">Copy Link</span>
-            </button>
-
-            <button class="action-btn primary" id="installBtn" onclick="addToHomeScreen()">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m0-16l-4 4m4-4l4 4M4 20h16" />
-                </svg>
-                <span id="installBtnText">Add to Home</span>
-            </button>
-        </div>
-    </header>
-
-    <!-- Featured -->
-    <div class="featured-banner reveal">
-        <span class="featured-label">Featured</span>
-        <h2 class="featured-title">YouTuber Kit</h2>
-        <p class="featured-desc">Shorts, audio editing, thumbnails — all in the browser.</p>
-        <a href="./youtuber/" class="featured-cta">Open Kit &rarr;</a>
     </div>
 
-    <!-- Categories -->
-    <section class="categories-section">
-        <h2 class="section-title">Categories</h2>
-        <div class="categories-grid" id="categoriesGrid"></div>
-    </section>
-
-    <div class="divider"></div>
-
-    <!-- Footer -->
-    <footer class="store-footer">
-        <p><a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub Repository</a></p>
-        <div class="footer-brand">DTSLIB FRANCHISE OS</div>
-        <div class="version-badge" id="storeVersion">v--</div>
-    </footer>
-
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
-
     <script>
-        var STORE_URL = 'https://dtslib1979.github.io/dtslib-cloud-appstore';
-        var storeData = null;
+        var TOOLS = [
+            { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', group: '영상' },
+            { id: 'lecture-long',   name: 'Lecture Long',   desc: '16분→12분 튜토리얼', icon: '📹', group: '영상' },
+            { id: 'auto-shorts',   name: 'Auto Shorts',    desc: '6~30초→2분 변환', icon: '🎬', group: '영상' },
+            { id: 'clip-shorts',   name: 'Clip Shorts',    desc: '클립 조합 + BGM', icon: '🎞️', group: '영상' },
+            { id: 'audio-studio',  name: 'Audio Studio',   desc: '오디오 컷 & 루프', icon: '🎵', group: '오디오' },
+            { id: 'slim-lens',     name: 'Slim Lens',      desc: '사진 가로 슬림', icon: '📷', group: '이미지' },
+            { id: 'image-pack',    name: 'Image Pack',     desc: '플랫폼별 이미지 규격', icon: '📦', group: '이미지' },
+            { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', group: '유틸' },
+            { id: 'project-manager',   name: 'Project Manager',   desc: '메타데이터 & 출하 관리', icon: '📋', group: '유틸' }
+        ];
 
-        document.addEventListener('DOMContentLoaded', init);
+        var versions = {};
 
-        function init() {
-            loadStoreData().then(function() {
-                renderCategories();
-                updateStats();
-                checkInstallState();
-                setupReveal();
-            });
-        }
-
-        function checkInstallState() {
-            var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-                               window.navigator.standalone === true;
-            var btn = document.getElementById('installBtn');
-            if (isStandalone && btn) btn.style.display = 'none';
-        }
-
-        function copyStoreUrl() {
-            var btn = document.getElementById('shareBtn');
-            var txt = document.getElementById('shareBtnText');
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(STORE_URL).then(function() {
-                    btn.classList.add('copied');
-                    txt.textContent = 'Copied!';
-                    showToast('Link copied');
-                    setTimeout(function() {
-                        btn.classList.remove('copied');
-                        txt.textContent = 'Copy Link';
-                    }, 2000);
-                });
-            } else {
-                var ta = document.createElement('textarea');
-                ta.value = STORE_URL;
-                ta.style.cssText = 'position:fixed;opacity:0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                btn.classList.add('copied');
-                txt.textContent = 'Copied!';
-                showToast('Link copied');
-                setTimeout(function() {
-                    btn.classList.remove('copied');
-                    txt.textContent = 'Copy Link';
-                }, 2000);
-            }
-        }
-
-        function addToHomeScreen() {
-            var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            var msg = isIOS
-                ? 'Tap Share (↑) → "Add to Home Screen"'
-                : 'Tap Menu (⋮) → "Add to Home Screen"';
-            showToast(msg);
-        }
-
-        function loadStoreData() {
-            return fetch('./store.json')
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('./apps.json')
                 .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    storeData = data;
-                    var v = data.store && data.store.version;
-                    if (v) document.getElementById('storeVersion').textContent = 'v' + v;
+                .then(function(d) {
+                    if (d.apps) d.apps.forEach(function(a) { versions[a.id] = a.version; });
                 })
-                .catch(function() {
-                    storeData = {
-                        categories: [
-                            { id: 'youtuber', name: 'YouTuber Kit', icon: '🎬', appCount: 8, status: 'active', description: 'Shorts, audio, thumbnails' },
-                            { id: 'educator', name: 'Educator Kit', icon: '📚', appCount: 0, status: 'coming_soon', description: 'Teaching material tools' },
-                            { id: 'designer', name: 'Designer Kit', icon: '🎨', appCount: 0, status: 'coming_soon', description: 'Image editing & conversion' },
-                            { id: 'marketer', name: 'Marketer Kit', icon: '📊', appCount: 0, status: 'coming_soon', description: 'Content optimization' }
-                        ]
-                    };
+                .catch(function() {})
+                .finally(render);
+        });
+
+        function render() {
+            var container = document.getElementById('toolsContainer');
+            var groups = ['영상', '오디오', '이미지', '유틸'];
+            var html = '';
+
+            groups.forEach(function(g) {
+                var items = TOOLS.filter(function(t) { return t.group === g; });
+                html += '<div class="group">';
+                html += '<div class="group-title">' + g + '</div>';
+                html += '<div class="tools-grid">';
+                items.forEach(function(t) {
+                    var ver = versions[t.id] || '';
+                    html += '<a href="./' + t.id + '/" class="tool-card">' +
+                        '<div class="tool-icon">' + t.icon + '</div>' +
+                        '<div class="tool-name">' + t.name + '</div>' +
+                        '<div class="tool-desc">' + t.desc + '</div>' +
+                        '<div class="tool-ver">' + (ver ? 'v' + ver : '') + '</div>' +
+                    '</a>';
                 });
-        }
-
-        function renderCategories() {
-            var grid = document.getElementById('categoriesGrid');
-            var cats = storeData.categories || storeData;
-            grid.innerHTML = '';
-
-            cats.forEach(function(cat) {
-                var isActive = cat.status === 'active';
-                var card = document.createElement('a');
-                card.href = isActive ? './' + cat.id + '/' : '#';
-                card.className = 'category-card reveal' + (!isActive ? ' disabled' : '');
-
-                if (!isActive) {
-                    card.onclick = function(e) {
-                        e.preventDefault();
-                        showToast('Coming soon');
-                    };
-                }
-
-                card.innerHTML =
-                    '<div class="category-card-accent">' + cat.icon + '</div>' +
-                    '<span class="category-card-count">' + (cat.appCount > 0 ? cat.appCount + ' apps' : 'Soon') + '</span>' +
-                    '<h3 class="category-card-name">' + (cat.name || cat.nameEn) + '</h3>' +
-                    '<p class="category-card-desc">' + (cat.description || cat.descriptionEn || '') + '</p>';
-
-                grid.appendChild(card);
+                html += '</div></div>';
             });
-        }
 
-        function updateStats() {
-            var cats = storeData.categories || storeData;
-            var total = cats.reduce(function(s, c) { return s + (c.appCount || 0); }, 0);
-            document.getElementById('categoryCount').textContent = cats.length;
-            document.getElementById('appCount').textContent = total;
-        }
-
-        // IntersectionObserver Reveal (inventory #13)
-        function setupReveal() {
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('revealed');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-
-            document.querySelectorAll('.reveal').forEach(function(el, i) {
-                el.style.transitionDelay = (i * 0.1) + 's';
-                observer.observe(el);
-            });
-        }
-
-        function showToast(message) {
-            var toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show';
-            setTimeout(function() { toast.classList.remove('show'); }, 2500);
+            container.innerHTML = html;
         }
     </script>
+    <script src="./shared/js/nav.js"></script>
 </body>
 </html>
