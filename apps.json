@@ -9,21 +9,21 @@
       "name": "Lecture Shorts",
       "desc": "4분→3분 쇼츠 변환",
       "icon": "🎓",
-      "version": "7.0"
+      "version": "8.0"
     },
     {
       "id": "lecture-long",
       "name": "Lecture Long",
       "desc": "16분→12분 튜토리얼 변환",
       "icon": "📹",
-      "version": "3.0"
+      "version": "4.0"
     },
     {
       "id": "auto-shorts",
       "name": "Auto Shorts",
       "desc": "6~30초→2분 변환",
       "icon": "🎬",
-      "version": "2.0"
+      "version": "3.0"
     },
     {
       "id": "clip-shorts",

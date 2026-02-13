@@ -17,9 +17,14 @@
  * - Memory Management
  * - Drag & Drop Support
  * - Transition Effects (TV, VHS, Focus, Tremble, Zoom)
+ * - ST mode exit(0) protection (single filter_complex + reload)
  */
 
 'use strict';
+
+// 싱글스레드 모드 exit(0) 대응
+let _useST = false;
+let _coreCDN = null;
 
 /* ========== CONFIGURATION ========== */
 const CONFIG = {
@@ -1233,6 +1238,7 @@ async function loadMp4Muxer() {
 }
 
 /* ========== Audio Mixing with FFmpeg ========== */
+// 싱글스레드 exit(0) 대응: 5-7개 run → 1개 filter_complex 통합
 async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     setStatus('FFmpeg 로딩 중...');
     await initFFmpeg();
@@ -1252,82 +1258,24 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
         state.ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(state.bgmFile));
     }
 
-    setStatus('인트로 오디오 추출...');
+    setStatus('오디오 처리 중...');
     setProg(93);
-    log('인트로 오디오 추출');
 
-    // Extract intro audio to PCM for reliable concatenation
-    await state.ffmpeg.run(
-        '-i', 'intro.mp4',
-        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-        'intro_audio.wav'
-    );
-
-    setStatus('본편 오디오 추출...');
-    setProg(94);
-    log('본편 오디오 추출');
-
-    // Extract main audio to PCM
-    await state.ffmpeg.run(
-        '-i', 'lecture.mp4',
-        '-vn', '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-        'lecture_audio_raw.wav'
-    );
-
-    setStatus('오디오 속도 조절...');
-    log(`오디오 속도 조절: ${mainSpeed.toFixed(2)}x`);
-
-    // Speed adjust (atempo supports 0.5-2.0)
+    // atempo filter (supports 0.5-2.0 range)
     const af = mainSpeed <= 2.0
         ? `atempo=${mainSpeed.toFixed(4)}`
         : `atempo=2.0,atempo=${(mainSpeed / 2).toFixed(4)}`;
 
-    await state.ffmpeg.run(
-        '-i', 'lecture_audio_raw.wav',
-        '-filter:a', af,
-        '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-        'main_audio.wav'
-    );
-
-    setStatus('오디오 합치기...');
-    setProg(95);
-    log('인트로 + 본편 오디오 연결 (filter_complex)');
-
-    // Use filter_complex concat for reliable audio concatenation
-    await state.ffmpeg.run(
-        '-i', 'intro_audio.wav',
-        '-i', 'main_audio.wav',
-        '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1[aout]',
-        '-map', '[aout]',
-        '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-        'combined_audio.wav'
-    );
-
-    setStatus('영상에 오디오 합성...');
-    setProg(96);
-
-    // Mix with BGM or just add audio
+    // 단일 filter_complex로 오디오 추출+속도조절+연결+BGM 믹싱 통합
     if (state.bgmFile && state.bgmVolume > 0) {
-        setStatus('BGM 믹싱 중...');
-        setProg(97);
-        log(`BGM 믹싱: 볼륨 ${(state.bgmVolume * 100).toFixed(0)}%`);
-
-        // First convert BGM to consistent format
-        await state.ffmpeg.run(
-            '-stream_loop', '-1',
-            '-i', 'bgm.mp3',
-            '-t', String(state.targetDuration),
-            '-acodec', 'pcm_s16le', '-ar', '44100', '-ac', '2',
-            'bgm_loop.wav'
-        );
-
-        // Mix combined audio with BGM
+        log(`오디오 통합 처리 (BGM ${(state.bgmVolume * 100).toFixed(0)}%)`);
         await state.ffmpeg.run(
             '-i', 'video.mp4',
-            '-i', 'combined_audio.wav',
-            '-i', 'bgm_loop.wav',
+            '-i', 'intro.mp4',
+            '-i', 'lecture.mp4',
+            '-stream_loop', '-1', '-i', 'bgm.mp3',
             '-filter_complex',
-            `[1:a]volume=1.0[voice];[2:a]volume=${state.bgmVolume.toFixed(2)}[music];[voice][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
+            `[1:a]aresample=44100[ia];[2:a]${af},aresample=44100[ma];[ia][ma]concat=n=2:v=0:a=1[ca];[3:a]volume=${state.bgmVolume.toFixed(2)},aresample=44100[bgm];[ca][bgm]amix=inputs=2:duration=first:dropout_transition=2[aout]`,
             '-map', '0:v', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
             '-t', String(state.targetDuration),
@@ -1335,10 +1283,14 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
             'output.mp4'
         );
     } else {
+        log('오디오 통합 처리 (BGM 없음)');
         await state.ffmpeg.run(
             '-i', 'video.mp4',
-            '-i', 'combined_audio.wav',
-            '-map', '0:v', '-map', '1:a',
+            '-i', 'intro.mp4',
+            '-i', 'lecture.mp4',
+            '-filter_complex',
+            `[1:a]aresample=44100[ia];[2:a]${af},aresample=44100[ma];[ia][ma]concat=n=2:v=0:a=1[aout]`,
+            '-map', '0:v', '-map', '[aout]',
             '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
             '-t', String(state.targetDuration),
             '-shortest',
@@ -1350,8 +1302,9 @@ async function mixAudioWithFFmpeg(videoBlob, mainSpeed) {
     log('최종 파일 읽기...');
     const data = state.ffmpeg.FS('readFile', 'output.mp4');
 
-    // Cleanup
-    cleanupFFmpegFiles();
+    // ST 모드: exit(0) 후 FS 소멸 → cleanup 불필요
+    if (!_useST) cleanupFFmpegFiles();
+    if (_useST) state.ffmpeg = null;
 
     return new Blob([data.buffer], { type: 'video/mp4' });
 }
@@ -1364,21 +1317,53 @@ async function generateWithFFmpeg() {
 
     setStatus('파일 준비...');
     setProg(10);
-    await writeFilesToFFmpeg();
+
+    // 소스 파일을 JS 메모리에 보관 (ST reload 시 재사용)
+    const { fetchFile } = FFmpeg;
+    const lectureData = await fetchFile(state.vidFile);
+    const introData = await fetchFile(state.introFile);
+    let bgmData = null;
+    if (state.bgmFile) bgmData = await fetchFile(state.bgmFile);
+
+    state.ffmpeg.FS('writeFile', 'lecture.mp4', lectureData);
+    state.ffmpeg.FS('writeFile', 'intro.mp4', introData);
+    if (bgmData) state.ffmpeg.FS('writeFile', 'bgm.mp3', bgmData);
 
     setStatus('인트로 처리...');
     setProg(15);
     await prepareIntroFFmpeg();
 
+    // ST: exit(0) 후 결과 저장 → 리로드 → 다음 단계용 파일 복원
+    let introReadyData, mainReadyData, outputData;
+    if (_useST) {
+        introReadyData = state.ffmpeg.FS('readFile', 'intro_ready.mp4');
+        await initFFmpeg(true);
+        state.ffmpeg.FS('writeFile', 'lecture.mp4', lectureData);
+    }
+
     setStatus('본편 처리... (시간 소요)');
     setProg(20);
     await processMainFFmpeg();
+
+    if (_useST) {
+        mainReadyData = state.ffmpeg.FS('readFile', 'main_ready.mp4');
+        await initFFmpeg(true);
+        state.ffmpeg.FS('writeFile', 'intro_ready.mp4', introReadyData);
+        state.ffmpeg.FS('writeFile', 'main_ready.mp4', mainReadyData);
+    }
 
     setStatus('영상 합치기...');
     setProg(80);
     await concatVideosFFmpeg();
 
     if (state.bgmFile) {
+        if (_useST) {
+            outputData = state.ffmpeg.FS('readFile', 'output.mp4');
+            await initFFmpeg(true);
+            state.ffmpeg.FS('writeFile', 'output.mp4', outputData);
+            state.ffmpeg.FS('writeFile', 'bgm.mp3', bgmData);
+        }
+
         setStatus('BGM 믹싱...');
         setProg(90);
         await mixBgmFFmpeg();
@@ -1386,10 +1371,13 @@ async function generateWithFFmpeg() {
 
     setProg(100);
     await showFFmpegResult();
+
+    // ST: cleanup
+    if (_useST) state.ffmpeg = null;
 }
 
-async function initFFmpeg() {
-    if (state.ffmpeg && state.ffmpeg.isLoaded()) return;
+async function initFFmpeg(forceReload) {
+    if (!forceReload && state.ffmpeg && state.ffmpeg.isLoaded()) return;
 
     // Load FFmpeg script if not available
     if (typeof FFmpeg === 'undefined') {
@@ -1402,11 +1390,11 @@ async function initFFmpeg() {
     }
 
     // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
-    const useST = !self.crossOriginIsolated;
-    const corePkg = useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
-    log(useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
+    _useST = !self.crossOriginIsolated;
+    const corePkg = _useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
+    if (!forceReload) log(_useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
 
-    const cdns = [
+    const cdns = _coreCDN ? [_coreCDN] : [
         `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
         `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
     ];
@@ -1417,7 +1405,7 @@ async function initFFmpeg() {
             state.ffmpeg = createFFmpeg({
                 log: true,
                 corePath: cdns[i],
-                mainName: useST ? 'main' : 'proxy_main'
+                mainName: _useST ? 'main' : 'proxy_main'
             });
 
             state.ffmpeg.setProgress(({ ratio }) => {
@@ -1426,12 +1414,13 @@ async function initFFmpeg() {
                 }
             });
 
-            log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
+            if (!forceReload) log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
             await state.ffmpeg.load();
-            log('FFmpeg 로드 완료');
+            _coreCDN = cdns[i];
+            if (!forceReload) log('FFmpeg 로드 완료');
             return;
         } catch (e) {
-            log(`CDN ${i + 1} 실패: ${e.message}`);
+            if (!forceReload) log(`CDN ${i + 1} 실패: ${e.message}`);
             state.ffmpeg = null;
             if (i === cdns.length - 1) throw new Error('FFmpeg WASM 로드 실패 - 네트워크 확인 후 재시도');
         }
