@@ -1413,7 +1413,8 @@ async function initFFmpeg() {
             const { createFFmpeg } = FFmpeg;
             state.ffmpeg = createFFmpeg({
                 log: true,
-                corePath: cdns[i]
+                corePath: cdns[i],
+                mainName: useST ? 'main' : 'proxy_main'
             });
 
             state.ffmpeg.setProgress(({ ratio }) => {
