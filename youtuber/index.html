@@ -286,6 +286,17 @@
                 console.error('Failed to load category data:', e);
                 categoryData = getFallbackData();
             }
+            // apps.json에서 최신 버전 동기화 (진실의 소스)
+            try {
+                const r = await fetch('../apps.json');
+                const d = await r.json();
+                if (d.apps && categoryData.apps) {
+                    d.apps.forEach(function(src) {
+                        var target = categoryData.apps.find(function(a) { return a.id === src.id; });
+                        if (target) target.version = src.version;
+                    });
+                }
+            } catch (e) { /* apps.json 못 읽어도 카테고리 데이터로 표시 */ }
         }
 
         function getFallbackData() {
