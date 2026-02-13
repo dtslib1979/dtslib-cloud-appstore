@@ -1,8 +1,7 @@
 {
-  "store": {
-    "name": "DTS Cloud AppStore",
-    "subtitle": "박씨 전용 PWA 공장",
-    "author": "PARKSY CTO"
+  "meta": {
+    "name": "DTSLIB Tools",
+    "author": "PARKSY"
   },
   "apps": [
     {
@@ -10,103 +9,63 @@
       "name": "Lecture Shorts",
       "desc": "4분→3분 쇼츠 변환",
       "icon": "🎓",
-      "version": "6.8",
-      "badge": "fix",
-      "featured": true
+      "version": "6.8"
     },
     {
       "id": "lecture-long",
       "name": "Lecture Long",
       "desc": "16분→12분 튜토리얼 변환",
       "icon": "📹",
-      "version": "2.3",
-      "badge": "fix"
+      "version": "2.3"
     },
     {
       "id": "auto-shorts",
       "name": "Auto Shorts",
       "desc": "6~30초→2분 변환",
       "icon": "🎬",
-      "version": "1.5",
-      "badge": "fix"
+      "version": "1.5"
     },
     {
-      "id": "bilingual-aligner",
-      "name": "Bilingual Aligner",
-      "desc": "한영 문장 정렬",
-      "icon": "📘",
-      "version": "LIVE",
-      "badge": "default"
+      "id": "clip-shorts",
+      "name": "Clip Shorts",
+      "desc": "클립 조합 쇼츠 + BGM",
+      "icon": "🎞️",
+      "version": "5.5"
+    },
+    {
+      "id": "audio-studio",
+      "name": "Audio Studio",
+      "desc": "오디오 컷 & 루프",
+      "icon": "🎵",
+      "version": "1.0"
     },
     {
       "id": "slim-lens",
       "name": "Slim Lens",
       "desc": "사진 가로 슬림",
       "icon": "📷",
-      "version": "2.0",
-      "badge": "new"
-    },
-    {
-      "id": "clip-shorts",
-      "name": "Clip Shorts",
-      "desc": "클립 조합 쇼츠 + BGM",
-      "icon": "🎬",
-      "version": "5.5",
-      "badge": "fix"
-    },
-    {
-      "id": "audio-cut",
-      "name": "Parksy AudioCut",
-      "desc": "1/2/3분 오디오 컷",
-      "icon": "✂️",
-      "version": "1.1",
-      "badge": "fix",
-      "featured": true
-    },
-    {
-      "id": "audio-loop",
-      "name": "Parksy AudioLoop",
-      "desc": "5/10/15분 자동 반복",
-      "icon": "🔁",
-      "version": "1.0",
-      "badge": "new",
-      "featured": true
-    },
-    {
-      "id": "meta-kit",
-      "name": "Parksy Meta Kit",
-      "desc": "메타데이터 규격 생성",
-      "icon": "📋",
-      "version": "1.0",
-      "badge": "new",
-      "featured": true
+      "version": "2.0"
     },
     {
       "id": "image-pack",
-      "name": "Parksy Image Pack",
+      "name": "Image Pack",
       "desc": "플랫폼별 이미지 규격",
       "icon": "📦",
-      "version": "1.0",
-      "badge": "new",
-      "featured": true
+      "version": "1.0"
     },
     {
-      "id": "export-packager",
-      "name": "Export / Packager",
-      "desc": "프로젝트 출하 엔진",
-      "icon": "🚀",
-      "version": "1.0",
-      "badge": "new",
-      "featured": true
+      "id": "bilingual-aligner",
+      "name": "Bilingual Aligner",
+      "desc": "한영 정렬 & 텔레프롬프터",
+      "icon": "📘",
+      "version": "1.0"
     },
     {
-      "id": "control-engine",
-      "name": "Control Engine",
-      "desc": "PC Batch용 실행 계획 생성",
-      "icon": "🎛️",
-      "version": "1.0",
-      "badge": "new",
-      "featured": true
+      "id": "project-manager",
+      "name": "Project Manager",
+      "desc": "메타데이터 & 출하 관리",
+      "icon": "📋",
+      "version": "1.0"
     }
   ]
 }
