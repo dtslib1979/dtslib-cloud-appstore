@@ -4,6 +4,10 @@ let ffmpeg = null;
 let vidFile = null;
 let audFile = null;
 
+// 싱글스레드 모드 exit(0) 대응
+let _useST = false;
+let _coreCDN = null;
+
 const $ = id => document.getElementById(id);
 const vidIn = $('video-input');
 const audIn = $('audio-input');
@@ -70,7 +74,7 @@ async function loadFFmpegScript() {
     throw { code: 'ERR_FFMPEG_LOAD' };
 }
 
-// FFmpeg lazy init (싱글/멀티스레드 자동 선택 + CDN 폴백)
+// FFmpeg lazy init (싱글/멀티스레드 자동 선택 + CDN 폴백 + CDN 캐시)
 async function initFFmpeg() {
     if (ffmpeg && ffmpeg.isLoaded()) return;
 
@@ -78,11 +82,10 @@ async function initFFmpeg() {
         await loadFFmpegScript();
     }
 
-    // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
-    const useST = !self.crossOriginIsolated;
-    const corePkg = useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
+    _useST = !self.crossOriginIsolated;
+    const corePkg = _useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
 
-    const cdns = [
+    const cdns = _coreCDN ? [_coreCDN] : [
         `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
         `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
     ];
@@ -93,7 +96,7 @@ async function initFFmpeg() {
             ffmpeg = createFFmpeg({
                 log: false,
                 corePath: cdns[i],
-                mainName: useST ? 'main' : 'proxy_main'
+                mainName: _useST ? 'main' : 'proxy_main'
             });
 
             ffmpeg.setProgress(({ ratio }) => {
@@ -104,6 +107,7 @@ async function initFFmpeg() {
             });
 
             await ffmpeg.load();
+            _coreCDN = cdns[i];
             return;
         } catch (e) {
             ffmpeg = null;
@@ -233,40 +237,36 @@ async function process() {
         ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(vidFile));
         ffmpeg.FS('writeFile', 'aud.mp3', await fetchFile(audFile));
 
-        setProgress(30, '오디오 제거...');
-        await ffmpeg.run('-i','in.mp4','-an','-c:v','copy','mute.mp4');
-
-        setProgress(40, '반복 생성...');
-        let list = '';
-        for (let i = 0; i < loops; i++) list += "file 'mute.mp4'\n";
-        const encoder = new TextEncoder();
-        ffmpeg.FS('writeFile', 'list.txt', encoder.encode(list));
-
-        setProgress(45, '영상 병합...');
-        await ffmpeg.run('-f','concat','-safe','0','-i','list.txt','-c','copy','loop.mp4');
-
-        setProgress(50, '최종 인코딩...');
+        // 싱글스레드 exit(0) 대응: 3개 run → 1개 run 통합
+        // -stream_loop N = 추가 N회 반복 (총 N+1회)
+        setProgress(30, '쇼츠 생성 중...');
         await ffmpeg.run(
-            '-i','loop.mp4','-i','aud.mp3','-t','120',
-            '-c:v','libx264','-preset','medium','-crf','18',
-            '-pix_fmt','yuv420p','-c:a','aac','-b:a','192k',
-            '-shortest','out.mp4'
+            '-stream_loop', String(loops - 1),
+            '-i', 'in.mp4',
+            '-i', 'aud.mp3',
+            '-t', '120',
+            '-map', '0:v', '-map', '1:a',
+            '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-shortest', 'out.mp4'
         );
 
         setProgress(95, '완료 처리...');
         const data = ffmpeg.FS('readFile', 'out.mp4');
         const blob = new Blob([data.buffer], { type: 'video/mp4' });
 
+        // ST 모드: exit(0) 후 WASM 죽음 → null (재시도 시 재생성)
+        if (_useST) ffmpeg = null;
+
         dlLink.href = URL.createObjectURL(blob);
         dlLink.download = `shorts-2min-${Date.now()}.mp4`;
 
-        setProgress(100, '완료! 🎉');
+        setProgress(100, '완료!');
         dlSec.style.display = 'block';
 
-        ['in.mp4','aud.mp3','mute.mp4','list.txt','loop.mp4','out.mp4']
-            .forEach(f => { try { ffmpeg.FS('unlink', f); } catch(e) {} });
-
     } catch (err) {
+        if (_useST) ffmpeg = null;
         const code = err.code || 'ERR_ENCODE';
         showErr(code, err.message);
     } finally {
