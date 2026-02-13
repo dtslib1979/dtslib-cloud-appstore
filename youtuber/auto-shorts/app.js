@@ -1,9 +1,6 @@
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ 
-    log: false,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-});
+'use strict';
 
+let ffmpeg = null;
 let vidFile = null;
 let audFile = null;
 
@@ -37,7 +34,7 @@ checkMem();
 // Version loader
 async function loadAppVersion() {
     try {
-        const res = await fetch('/apps.json');
+        const res = await fetch('../../apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'auto-shorts');
         if (app) {
@@ -48,6 +45,71 @@ async function loadAppVersion() {
     }
 }
 loadAppVersion();
+
+// FFmpeg 스크립트 동적 로딩
+async function loadFFmpegScript() {
+    if (typeof FFmpeg !== 'undefined') return;
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js'
+    ];
+    for (const src of cdns) {
+        try {
+            await new Promise((resolve, reject) => {
+                if (typeof FFmpeg !== 'undefined') { resolve(); return; }
+                const s = document.createElement('script');
+                s.src = src;
+                s.crossOrigin = 'anonymous';
+                s.onload = resolve;
+                s.onerror = () => reject(new Error('CDN fail'));
+                document.head.appendChild(s);
+            });
+            return;
+        } catch (e) { /* try next */ }
+    }
+    throw { code: 'ERR_FFMPEG_LOAD' };
+}
+
+// FFmpeg lazy init (싱글/멀티스레드 자동 선택 + CDN 폴백)
+async function initFFmpeg() {
+    if (ffmpeg && ffmpeg.isLoaded()) return;
+
+    if (typeof FFmpeg === 'undefined') {
+        await loadFFmpegScript();
+    }
+
+    // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
+    const useST = !self.crossOriginIsolated;
+    const corePkg = useST ? '@ffmpeg/core-st@0.11.1' : '@ffmpeg/core@0.11.0';
+
+    const cdns = [
+        `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
+        `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
+    ];
+
+    for (let i = 0; i < cdns.length; i++) {
+        try {
+            const { createFFmpeg } = FFmpeg;
+            ffmpeg = createFFmpeg({
+                log: false,
+                corePath: cdns[i]
+            });
+
+            ffmpeg.setProgress(({ ratio }) => {
+                if (ratio > 0 && ratio <= 1) {
+                    const pct = 50 + Math.floor(ratio * 40);
+                    setProgress(pct, `인코딩 중... ${Math.floor(ratio * 100)}%`);
+                }
+            });
+
+            await ffmpeg.load();
+            return;
+        } catch (e) {
+            ffmpeg = null;
+            if (i === cdns.length - 1) throw { code: 'ERR_FFMPEG_LOAD' };
+        }
+    }
+}
 
 // Duration preview
 function getVidDur(file) {
@@ -78,7 +140,7 @@ vidIn.onchange = async e => {
         vidStat.textContent = `✓ ${vidFile.name} (${fmtDur(dur)}, ${loops}회 반복)`;
         vidStat.dataset.dur = dur;
         e.target.parentElement.classList.add('active');
-        
+
         if (dur < 3 || dur > 30) {
             vidStat.textContent = `⚠️ ${fmtDur(dur)} - 3~30초 영상만 가능`;
             vidStat.classList.add('warn');
@@ -150,49 +212,38 @@ async function process() {
     progSec.style.display = 'block';
     dlSec.style.display = 'none';
     procBtn.disabled = true;
-    
+
     try {
-        if (!ffmpeg.isLoaded()) {
-            setProgress(5, 'FFmpeg 로딩 중...');
-            try {
-                await ffmpeg.load();
-            } catch (e) {
-                throw { code: 'ERR_FFMPEG_LOAD' };
-            }
-        }
-        
-        // Progress callback
-        ffmpeg.setProgress(({ ratio }) => {
-            if (ratio > 0 && ratio <= 1) {
-                const pct = 50 + Math.floor(ratio * 40);
-                setProgress(pct, `인코딩 중... ${Math.floor(ratio * 100)}%`);
-            }
-        });
-        
+        setProgress(5, 'FFmpeg 로딩 중...');
+        await initFFmpeg();
+
+        const { fetchFile } = FFmpeg;
+
         setProgress(10, '영상 분석 중...');
         const dur = parseFloat(vidStat.dataset.dur) || await getVidDur(vidFile);
-        
+
         if (dur < 3) throw { code: 'ERR_DURATION_SHORT' };
         if (dur > 30) throw { code: 'ERR_DURATION_LONG' };
-        
+
         const loops = Math.ceil(120 / dur);
         setProgress(15, `${loops}회 반복 예정`);
-        
+
         setProgress(20, '파일 로딩...');
         ffmpeg.FS('writeFile', 'in.mp4', await fetchFile(vidFile));
         ffmpeg.FS('writeFile', 'aud.mp3', await fetchFile(audFile));
-        
+
         setProgress(30, '오디오 제거...');
         await ffmpeg.run('-i','in.mp4','-an','-c:v','copy','mute.mp4');
-        
+
         setProgress(40, '반복 생성...');
         let list = '';
         for (let i = 0; i < loops; i++) list += "file 'mute.mp4'\n";
-        ffmpeg.FS('writeFile', 'list.txt', list);
-        
+        const encoder = new TextEncoder();
+        ffmpeg.FS('writeFile', 'list.txt', encoder.encode(list));
+
         setProgress(45, '영상 병합...');
         await ffmpeg.run('-f','concat','-safe','0','-i','list.txt','-c','copy','loop.mp4');
-        
+
         setProgress(50, '최종 인코딩...');
         await ffmpeg.run(
             '-i','loop.mp4','-i','aud.mp3','-t','120',
@@ -200,20 +251,20 @@ async function process() {
             '-pix_fmt','yuv420p','-c:a','aac','-b:a','192k',
             '-shortest','out.mp4'
         );
-        
+
         setProgress(95, '완료 처리...');
         const data = ffmpeg.FS('readFile', 'out.mp4');
         const blob = new Blob([data.buffer], { type: 'video/mp4' });
-        
+
         dlLink.href = URL.createObjectURL(blob);
         dlLink.download = `shorts-2min-${Date.now()}.mp4`;
-        
+
         setProgress(100, '완료! 🎉');
         dlSec.style.display = 'block';
-        
+
         ['in.mp4','aud.mp3','mute.mp4','list.txt','loop.mp4','out.mp4']
             .forEach(f => { try { ffmpeg.FS('unlink', f); } catch(e) {} });
-        
+
     } catch (err) {
         const code = err.code || 'ERR_ENCODE';
         showErr(code, err.message);
@@ -225,4 +276,3 @@ async function process() {
 procBtn.onclick = process;
 retryBtn.onclick = () => { hideErr(); process(); };
 newBtn.onclick = reset;
-
