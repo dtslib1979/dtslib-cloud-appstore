@@ -1400,7 +1400,7 @@ async function initFFmpeg() {
 
     // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
     const useST = !self.crossOriginIsolated;
-    const corePkg = useST ? '@ffmpeg/core-st@0.11.1' : '@ffmpeg/core@0.11.0';
+    const corePkg = useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
     log(useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
 
     const cdns = [
@@ -1436,8 +1436,8 @@ async function initFFmpeg() {
 
 async function loadFFmpegScript() {
     const cdns = [
-        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js'
     ];
 
     for (const src of cdns) {
