@@ -1,21 +1,10 @@
 /**
- * Clip Shorts v5.1
+ * Clip Shorts v5.6
  * 클립 선택 → 3분 쇼츠 자동 생성
  *
- * v5.1 변경사항:
- * - 10개+ 클립 병합 시 OOM 크래시 수정
- * - 클립을 한꺼번에 로드하지 않고 1개씩 로드→전처리→삭제 (스트리밍 방식)
- * - chunkSize 6→4 축소 (메모리 안전 마진 확보)
- *
- * v5.0 변경사항:
- * - 청크 방식 병합으로 메모리 문제 해결 (18개 클립도 안정적 처리)
- * - concat demuxer 방식으로 효율적 병합
- * - 메모리 관리 개선
- *
- * v4.0 변경사항:
- * - filter_complex concat 방식으로 안정적 병합
- * - 트랜지션 효과 실제 적용
- * - 배경 음악 믹싱
+ * v5.6: 파일 선택 시 메타데이터 로딩 제거 (모바일 15개+ 프리즈 해결)
+ * v5.1: 10개+ 클립 OOM 수정, 스트리밍 방식
+ * v5.0: 청크 병합, concat demuxer
  */
 
 'use strict';
@@ -279,59 +268,23 @@ function handleBGMDrop(e) {
 }
 
 /* ========== FILE HANDLING ========== */
-async function handleFilesSelect(files) {
-    const dropZone = $('clipDropZone');
-    if (dropZone) {
-        dropZone.innerHTML = '<div class="drop-content"><span class="drop-icon">⏳</span><span class="drop-text">클립 로딩 중... 0/' + files.length + '</span></div>';
-    }
-
-    let loaded = 0;
-    for (const file of files) {
+function handleFilesSelect(files) {
+    let added = 0;
+    for (const file of Array.from(files)) {
         if (state.clips.length >= state.maxClips) {
             alert(`최대 ${state.maxClips}개까지만 추가할 수 있습니다.`);
             break;
         }
         if (!file.type.startsWith('video/')) continue;
-
-        try {
-            const meta = await getVideoMeta(file);
-            state.clips.push({ file, meta });
-        } catch (e) {
-            log(`스킵: ${file.name} (메타 로드 실패)`);
-        }
-        loaded++;
-        if (dropZone) {
-            dropZone.querySelector('.drop-text').textContent = `클립 로딩 중... ${loaded}/${files.length}`;
-        }
+        // 메타데이터 로딩 생략 — 모바일에서 15개+ 영상 순차 로딩하면 브라우저 프리즈
+        // duration은 파일 크기에서 추정, FFmpeg 처리 시 정확한 값 사용
+        const estimatedDur = Math.max(1, Math.round(file.size / 500000));
+        state.clips.push({ file, meta: { dur: estimatedDur, w: 720, h: 1280 } });
+        added++;
     }
-
-    if (dropZone) {
-        dropZone.innerHTML = '<div class="drop-content"><span class="drop-icon">📹</span><span class="drop-text">클릭 또는 드래그하여 클립 추가</span><span class="drop-hint">여러 파일 선택 가능 (MP4, MOV)</span></div>';
-    }
+    if (added > 0) log(`${added}개 클립 추가 (총 ${state.clips.length}개)`);
     updateClipList();
     checkReady();
-}
-
-function getVideoMeta(file) {
-    return new Promise((resolve, reject) => {
-        const vid = document.createElement('video');
-        vid.preload = 'metadata';
-        const timeout = setTimeout(() => {
-            URL.revokeObjectURL(vid.src);
-            vid.src = '';
-            resolve({ dur: 0, w: 720, h: 1280 });
-        }, 3000);
-        vid.onloadedmetadata = () => {
-            clearTimeout(timeout);
-            resolve({ dur: vid.duration, w: vid.videoWidth, h: vid.videoHeight });
-            URL.revokeObjectURL(vid.src);
-        };
-        vid.onerror = () => {
-            clearTimeout(timeout);
-            reject(new Error('비디오 로드 실패'));
-        };
-        vid.src = URL.createObjectURL(file);
-    });
 }
 
 function removeClip(index) {
