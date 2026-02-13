@@ -1,7 +1,9 @@
 /**
- * Clip Shorts v5.6
+ * Clip Shorts v6.1
  * 클립 선택 → 3분 쇼츠 자동 생성
  *
+ * v6.1: ST exit(0) 완전 대응 — 전 파이프라인 reload+restore
+ * v6.0: mainName fix (proxy_main → main for core-st)
  * v5.6: 파일 선택 시 메타데이터 로딩 제거 (모바일 15개+ 프리즈 해결)
  * v5.1: 10개+ 클립 OOM 수정, 스트리밍 방식
  * v5.0: 청크 병합, concat demuxer
@@ -39,7 +41,11 @@ const state = {
         volume: 0.5,
         clipVolume: 1.0,
         enabled: false
-    }
+    },
+    // 싱글스레드 모드 중간 데이터 (exit(0) 후 FS 소멸 대응)
+    _stClipData: [],
+    _stMergedData: null,
+    _stBgmData: null
 };
 
 /* ========== DOM HELPERS ========== */
@@ -469,38 +475,43 @@ async function loadFFmpegScript() {
     throw new Error('FFmpeg 스크립트 로드 실패');
 }
 
-async function initFFmpeg() {
-    if (state.ffmpeg && state.ffmpeg.isLoaded()) return;
+// 싱글스레드 모드 감지 (core-st의 main은 run 후 exit하므로 매번 재로드 필요)
+const _useST = !self.crossOriginIsolated;
+let _coreCDN = null;
+
+async function initFFmpeg(forceReload) {
+    if (!forceReload && state.ffmpeg && state.ffmpeg.isLoaded()) return;
 
     if (typeof FFmpeg === 'undefined') {
         log('FFmpeg 스크립트 로드...');
         await loadFFmpegScript();
     }
 
-    // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
-    const useST = !self.crossOriginIsolated;
-    const corePkg = useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
-    log(useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
+    const corePkg = _useST ? '@ffmpeg/core-st@0.11.0' : '@ffmpeg/core@0.11.0';
+    if (!_coreCDN) log(_useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
 
-    const cdns = [
-        `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
-        `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
-    ];
+    const cdns = _coreCDN
+        ? [_coreCDN]
+        : [
+            `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
+            `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
+        ];
 
     for (let i = 0; i < cdns.length; i++) {
         try {
             const { createFFmpeg } = FFmpeg;
             state.ffmpeg = createFFmpeg({
-                log: true,
+                log: false,
                 corePath: cdns[i],
-                mainName: useST ? 'main' : 'proxy_main'
+                mainName: _useST ? 'main' : 'proxy_main'
             });
-            log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
+            if (!_coreCDN) log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
             await state.ffmpeg.load();
-            log('FFmpeg 로드 완료');
+            _coreCDN = cdns[i];
+            if (!forceReload) log('FFmpeg 로드 완료');
             return;
         } catch (e) {
-            log(`CDN ${i + 1} 실패: ${e.message}`);
+            if (!_coreCDN) log(`CDN ${i + 1} 실패: ${e.message}`);
             state.ffmpeg = null;
             if (i === cdns.length - 1) throw new Error('FFmpeg WASM 로드 실패 - 네트워크 확인 후 재시도');
         }
@@ -509,7 +520,9 @@ async function initFFmpeg() {
 
 async function writeBGMToFFmpeg() {
     const { fetchFile } = FFmpeg;
-    state.ffmpeg.FS('writeFile', 'bgm.mp3', await fetchFile(state.bgm.file));
+    const bgmData = await fetchFile(state.bgm.file);
+    if (_useST) state._stBgmData = bgmData;
+    state.ffmpeg.FS('writeFile', 'bgm.mp3', bgmData);
     log('배경 음악 로드 완료');
 }
 
@@ -522,10 +535,17 @@ async function preprocessClips() {
     const fadeDur = CONFIG.transitionDuration;
     const totalClips = state.clips.length;
 
+    // 처리된 클립 결과를 state에 보관 (싱글스레드 재로드 시 FS 초기화되므로)
+    if (_useST) state._stClipData = [];
+
     for (let i = 0; i < totalClips; i++) {
         if (state.processingAborted) throw new Error('중단됨');
 
-        // ★ 클립 1개만 로드 (전체 로드 X → OOM 방지)
+        // ★ 싱글스레드: main()이 exit(0) 하므로 매 클립마다 FFmpeg 재로드
+        if (_useST && i > 0) {
+            await initFFmpeg(true);
+        }
+
         const clip = state.clips[i];
         state.ffmpeg.FS('writeFile', `input_${i}.mp4`, await fetchFile(clip.file));
         log(`클립 ${i + 1}/${totalClips} 로드`);
@@ -535,7 +555,6 @@ async function preprocessClips() {
 
         let vf = vfBase;
 
-        // 트랜지션 효과: 클립 사이 페이드
         if (hasTransition) {
             if (i === 0) {
                 vf += `,fade=t=out:st=${fadeOutStart}:d=${fadeDur}`;
@@ -557,28 +576,39 @@ async function preprocessClips() {
             '-y', `clip_${i}.mp4`
         );
 
-        // ★ 원본 즉시 삭제 (다음 클립 로드 전에 메모리 확보)
-        try { state.ffmpeg.FS('unlink', `input_${i}.mp4`); } catch(e) {}
-
-        // GC 힌트 — 3개마다 쉬어줌 (4→3으로 더 자주)
-        if (i > 0 && i % 3 === 0) {
-            await new Promise(r => setTimeout(r, 200));
+        // ★ 싱글스레드: 결과물을 JS 메모리로 빼놓기 (FS가 재로드 시 사라지므로)
+        if (_useST) {
+            try {
+                state._stClipData[i] = state.ffmpeg.FS('readFile', `clip_${i}.mp4`);
+            } catch(e) {}
         }
+
+        try { state.ffmpeg.FS('unlink', `input_${i}.mp4`); } catch(e) {}
 
         log(`클립 처리 ${i + 1}/${totalClips}`);
         setProgress(15 + Math.floor(((i + 1) / totalClips) * 35));
     }
 }
 
-/* ========== 청크 기반 병합 (메모리 최적화) ========== */
+/* ========== 청크 기반 병합 (메모리 최적화 + ST exit(0) 대응) ========== */
 async function mergeClipsWithFilterComplex() {
     const n = state.clips.length;
     const chunkSize = CONFIG.chunkSize;
 
-    // 클립이 적으면 기존 방식 사용
     if (n <= chunkSize) {
+        // ★ ST: 재로드 후 모든 클립 복원
+        if (_useST) {
+            await initFFmpeg(true);
+            for (let i = 0; i < n; i++) {
+                state.ffmpeg.FS('writeFile', `clip_${i}.mp4`, state._stClipData[i]);
+            }
+        }
         await mergeClipsDirectly(0, n - 1, 'merged.mp4');
-        // 처리된 클립 삭제
+        // ★ ST: 병합 결과 JS 메모리 보관
+        if (_useST) {
+            state._stMergedData = state.ffmpeg.FS('readFile', 'merged.mp4');
+            state._stClipData = [];
+        }
         for (let i = 0; i < n; i++) {
             try { state.ffmpeg.FS('unlink', `clip_${i}.mp4`); } catch(e) {}
         }
@@ -586,32 +616,61 @@ async function mergeClipsWithFilterComplex() {
         return;
     }
 
-    // 청크로 나눠서 병합
+    // 청크 병합
     log(`청크 병합 시작 (${chunkSize}개씩 처리)`);
-    const chunks = [];
+    const chunkResults = [];
+    let chunkIdx = 0;
 
     for (let i = 0; i < n; i += chunkSize) {
         const end = Math.min(i + chunkSize - 1, n - 1);
-        const chunkName = `chunk_${chunks.length}.mp4`;
+        const chunkName = `chunk_${chunkIdx}.mp4`;
 
-        log(`청크 ${chunks.length + 1} 병합 중 (클립 ${i + 1}~${end + 1})`);
+        // ★ ST: 매 청크마다 재로드 + 해당 클립만 복원
+        if (_useST) {
+            await initFFmpeg(true);
+            for (let j = i; j <= end; j++) {
+                state.ffmpeg.FS('writeFile', `clip_${j}.mp4`, state._stClipData[j]);
+            }
+        }
+
+        log(`청크 ${chunkIdx + 1} 병합 중 (클립 ${i + 1}~${end + 1})`);
         await mergeClipsDirectly(i, end, chunkName);
 
-        // 병합된 클립들 즉시 삭제 (메모리 확보)
+        // ★ ST: 청크 결과 JS 메모리 보관
+        if (_useST) {
+            chunkResults.push(state.ffmpeg.FS('readFile', chunkName));
+        }
+
         for (let j = i; j <= end; j++) {
             try { state.ffmpeg.FS('unlink', `clip_${j}.mp4`); } catch(e) {}
         }
 
-        chunks.push(chunkName);
-        setProgress(50 + Math.floor((chunks.length / Math.ceil(n / chunkSize)) * 15));
+        chunkIdx++;
+        setProgress(50 + Math.floor((chunkIdx / Math.ceil(n / chunkSize)) * 15));
     }
 
+    if (_useST) state._stClipData = [];
+
     // 청크들 최종 병합
-    if (chunks.length > 1) {
-        log(`최종 병합 중 (${chunks.length}개 청크)`);
-        await mergeChunks(chunks, 'merged.mp4');
+    if (chunkIdx > 1) {
+        if (_useST) {
+            await initFFmpeg(true);
+            for (let c = 0; c < chunkResults.length; c++) {
+                state.ffmpeg.FS('writeFile', `chunk_${c}.mp4`, chunkResults[c]);
+            }
+        }
+        log(`최종 병합 중 (${chunkIdx}개 청크)`);
+        const chunkNames = Array.from({length: chunkIdx}, (_, c) => `chunk_${c}.mp4`);
+        await mergeChunks(chunkNames, 'merged.mp4');
+        if (_useST) {
+            state._stMergedData = state.ffmpeg.FS('readFile', 'merged.mp4');
+        }
     } else {
-        state.ffmpeg.FS('rename', chunks[0], 'merged.mp4');
+        if (_useST) {
+            state._stMergedData = chunkResults[0];
+        } else {
+            state.ffmpeg.FS('rename', `chunk_0.mp4`, 'merged.mp4');
+        }
     }
 
     log('클립 병합 완료');
@@ -707,6 +766,11 @@ async function applyIntroEndingEffects() {
     }
 
     if (filters.length > 0) {
+        // ★ ST: 재로드 후 merged.mp4 복원
+        if (_useST) {
+            await initFFmpeg(true);
+            state.ffmpeg.FS('writeFile', 'merged.mp4', state._stMergedData);
+        }
         try {
             await state.ffmpeg.run(
                 '-i', 'merged.mp4',
@@ -716,8 +780,12 @@ async function applyIntroEndingEffects() {
                 '-y', 'effected.mp4'
             );
 
-            state.ffmpeg.FS('unlink', 'merged.mp4');
-            state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
+            if (_useST) {
+                state._stMergedData = state.ffmpeg.FS('readFile', 'effected.mp4');
+            } else {
+                state.ffmpeg.FS('unlink', 'merged.mp4');
+                state.ffmpeg.FS('rename', 'effected.mp4', 'merged.mp4');
+            }
             log('시작/엔딩 효과 적용 완료');
         } catch (e) {
             log(`효과 적용 실패: ${e.message}`);
@@ -729,6 +797,13 @@ async function applyIntroEndingEffects() {
 async function mixBGM() {
     const bgmVol = state.bgm.volume;
     const clipVol = state.bgm.clipVolume;
+
+    // ★ ST: 재로드 후 merged.mp4 + bgm.mp3 복원
+    if (_useST) {
+        await initFFmpeg(true);
+        state.ffmpeg.FS('writeFile', 'merged.mp4', state._stMergedData);
+        state.ffmpeg.FS('writeFile', 'bgm.mp3', state._stBgmData);
+    }
 
     try {
         await state.ffmpeg.run(
@@ -744,18 +819,32 @@ async function mixBGM() {
             '-y', 'bgm_mixed.mp4'
         );
 
-        state.ffmpeg.FS('unlink', 'merged.mp4');
-        state.ffmpeg.FS('rename', 'bgm_mixed.mp4', 'merged.mp4');
+        if (_useST) {
+            state._stMergedData = state.ffmpeg.FS('readFile', 'bgm_mixed.mp4');
+            state._stBgmData = null;
+        } else {
+            state.ffmpeg.FS('unlink', 'merged.mp4');
+            state.ffmpeg.FS('rename', 'bgm_mixed.mp4', 'merged.mp4');
+        }
         log(`BGM 믹싱 완료 (BGM: ${Math.round(bgmVol*100)}%, 원본: ${Math.round(clipVol*100)}%)`);
     } catch (e) {
         log(`BGM 믹싱 실패: ${e.message}`);
     }
 
-    try { state.ffmpeg.FS('unlink', 'bgm.mp3'); } catch(e) {}
+    if (!_useST) {
+        try { state.ffmpeg.FS('unlink', 'bgm.mp3'); } catch(e) {}
+    }
 }
 
 /* ========== 최종 인코딩 ========== */
 async function finalEncode() {
+    // ★ ST: 재로드 후 merged.mp4 복원
+    if (_useST) {
+        await initFFmpeg(true);
+        state.ffmpeg.FS('writeFile', 'merged.mp4', state._stMergedData);
+        state._stMergedData = null;
+    }
+
     try {
         state.ffmpeg.FS('readFile', 'merged.mp4');
     } catch (e) {
@@ -864,6 +953,11 @@ function reset() {
         URL.revokeObjectURL(state.resultUrl);
         state.resultUrl = null;
     }
+
+    // ST 중간 데이터 정리
+    state._stClipData = [];
+    state._stMergedData = null;
+    state._stBgmData = null;
 
     log('리셋 완료');
 }
