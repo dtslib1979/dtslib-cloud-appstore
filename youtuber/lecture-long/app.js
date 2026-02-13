@@ -158,7 +158,7 @@ function log(msg) {
 /* ========== VERSION LOADER ========== */
 async function loadAppVersion() {
     try {
-        const res = await fetch('/apps.json');
+        const res = await fetch('../../apps.json');
         const data = await res.json();
         const app = data.apps.find(a => a.id === 'lecture-long');
         if (app) {
@@ -1225,6 +1225,7 @@ async function loadMp4Muxer() {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/mp4-muxer@5.0.0/build/mp4-muxer.min.js';
+        script.crossOrigin = 'anonymous';
         script.onload = resolve;
         script.onerror = () => reject(new Error('mp4-muxer 로드 실패'));
         document.head.appendChild(script);
@@ -1400,38 +1401,65 @@ async function initFFmpeg() {
         throw new Error('FFmpeg 로드 실패 - 네트워크 확인 후 새로고침하세요');
     }
 
-    const { createFFmpeg } = FFmpeg;
-    state.ffmpeg = createFFmpeg({
-        log: true,
-        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.6/dist/ffmpeg-core.js'
-    });
+    // SharedArrayBuffer 가용 여부에 따라 멀티/싱글 스레드 자동 선택
+    const useST = !self.crossOriginIsolated;
+    const corePkg = useST ? '@ffmpeg/core-st@0.11.1' : '@ffmpeg/core@0.11.0';
+    log(useST ? '싱글스레드 모드 (GitHub Pages)' : '멀티스레드 모드');
 
-    state.ffmpeg.setProgress(({ ratio }) => {
-        if (ratio > 0) {
-            el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
+    const cdns = [
+        `https://unpkg.com/${corePkg}/dist/ffmpeg-core.js`,
+        `https://cdn.jsdelivr.net/npm/${corePkg}/dist/ffmpeg-core.js`
+    ];
+
+    for (let i = 0; i < cdns.length; i++) {
+        try {
+            const { createFFmpeg } = FFmpeg;
+            state.ffmpeg = createFFmpeg({
+                log: true,
+                corePath: cdns[i]
+            });
+
+            state.ffmpeg.setProgress(({ ratio }) => {
+                if (ratio > 0) {
+                    el('progText').textContent = `처리: ${Math.round(ratio * 100)}%`;
+                }
+            });
+
+            log(`FFmpeg WASM 로드 시도 (${i === 0 ? 'unpkg' : 'jsdelivr'})...`);
+            await state.ffmpeg.load();
+            log('FFmpeg 로드 완료');
+            return;
+        } catch (e) {
+            log(`CDN ${i + 1} 실패: ${e.message}`);
+            state.ffmpeg = null;
+            if (i === cdns.length - 1) throw new Error('FFmpeg WASM 로드 실패 - 네트워크 확인 후 재시도');
         }
-    });
-
-    await state.ffmpeg.load();
-    log('FFmpeg 로드 완료');
+    }
 }
 
 async function loadFFmpegScript() {
-    return new Promise((resolve, reject) => {
-        if (typeof FFmpeg !== 'undefined') {
-            resolve();
-            return;
-        }
+    const cdns = [
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js'
+    ];
 
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
-        script.onload = () => {
-            log('FFmpeg 스크립트 로드 완료');
-            resolve();
-        };
-        script.onerror = () => reject(new Error('FFmpeg CDN 로드 실패'));
-        document.head.appendChild(script);
-    });
+    for (const src of cdns) {
+        try {
+            await new Promise((resolve, reject) => {
+                if (typeof FFmpeg !== 'undefined') { resolve(); return; }
+                const script = document.createElement('script');
+                script.src = src;
+                script.crossOrigin = 'anonymous';
+                script.onload = () => { log('FFmpeg 스크립트 로드 완료'); resolve(); };
+                script.onerror = () => reject(new Error('CDN 실패'));
+                document.head.appendChild(script);
+            });
+            if (typeof FFmpeg !== 'undefined') return;
+        } catch (e) {
+            log(`스크립트 CDN 실패: ${src}`);
+        }
+    }
+    throw new Error('FFmpeg CDN 전부 실패');
 }
 
 async function writeFilesToFFmpeg() {

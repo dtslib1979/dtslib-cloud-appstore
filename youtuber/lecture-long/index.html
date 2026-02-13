@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📹 Lecture Long Factory v2.0</title>
+    <title>📹 Lecture Long Factory v2.1</title>
     <meta name="theme-color" content="#1a1a2e">
     <meta name="description" content="16분 튜토리얼 영상을 12분으로 자동 변환 - 긴 강의용">
-    <link rel="stylesheet" href="./style.css">
+    <link rel="stylesheet" href="./style.css?v=2.1">
 
     <!-- Preload FFmpeg -->
-    <link rel="preload" href="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" as="script">
+    <link rel="preload" href="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js" as="script" crossorigin="anonymous">
 </head>
 <body>
     <!-- Update Notification -->
@@ -480,7 +480,7 @@
     </div>
 
     <!-- FFmpeg Script (defer) -->
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" defer></script>
-    <script src="./app.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js" defer crossorigin="anonymous"></script>
+    <script src="./app.js?v=2.3"></script>
 </body>
 </html>
