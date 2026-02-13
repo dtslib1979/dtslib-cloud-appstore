@@ -85,6 +85,89 @@
 - 캐시버스터: 각 index.html의 `?v=` 쿼리 수동 관리
 - 호스팅: GitHub Pages (서버 비용 0)
 
+---
+
+## Browser Execution Constitution v1.0 (2026-02-13 확정)
+
+> Samsung Android + Windows Chromium. 이 밖은 존재하지 않는다.
+
+### 전제 공리
+
+1. 디바이스는 삼성 안드로이드만 고려한다
+2. iOS는 존재하지 않는 것으로 간주한다
+3. Safari는 고려 대상이 아니다
+4. PC는 Windows + Chromium 계열만 고려한다
+5. 배포 목적은 "내가 쓰기 위함"이다. 범용 SaaS가 아니다
+
+### 브라우저 기준: Chromium Runtime Only
+
+| 지원 | 엔진 |
+|------|------|
+| Android Chrome | Chromium |
+| Samsung Internet | Chromium |
+| Windows Chrome | Chromium |
+| Windows Edge | Chromium |
+
+엔진이 하나이므로 전략도 하나다.
+
+### WASM 정책
+
+- ffmpeg.wasm 싱글스레드 모드 기본
+- SharedArrayBuffer / COOP·COEP 요구 기능 사용 안 함
+- GitHub Pages 기본 헤더 제한 회피 + 삼성 모바일 안정성 확보
+
+### 메모리 · 입력 제한 (도구별)
+
+| 도구 | 모바일 입력 제한 | PC | 비고 |
+|------|-----------------|-----|------|
+| auto-shorts | 30초 × N개 | 제한 없음 | 짧은 클립 조합 |
+| clip-shorts | 15초 × N개 | 제한 없음 | 짧은 클립 + BGM |
+| lecture-shorts | 5분 | 제한 없음 | 쇼츠 변환 |
+| lecture-long | PC 전용 | 20분 | 16분 입력 = 모바일 불가 |
+
+- 모바일 메모리 상한: 150MB
+- lecture-long은 PC Extended Mode 전용으로 설계
+
+### 모드 설계
+
+| 모드 | 대상 | 특성 |
+|------|------|------|
+| Mobile Safe (기본) | 삼성 Galaxy | 싱글스레드, 저용량, 빠른 컷 |
+| PC Extended | Windows Chromium | 고해상도, 긴 렌더, 메모리 여유 |
+
+분기 기준 = **디바이스 스펙** (RAM/화면). 브라우저 UA로 분기하지 않는다.
+
+### CDN 정책
+
+- WASM 바이너리(~25MB)는 레포에 넣지 않는다 (git clone 비대화 방지)
+- CDN 듀얼 fallback 유지: unpkg → jsdelivr
+- 버전 세트 잠금으로 CDN 서비스 중단 리스크 대응
+- CDN 전부 죽으면 GitHub Releases에 백업본 올려서 전환
+
+### 절대 금지
+
+| 금지 | 이유 |
+|------|------|
+| Safari 대응 코드 | 타겟 밖 |
+| iOS 조건문 | 타겟 밖 |
+| `-webkit-` prefix 추가 | Chromium 표준이면 충분 |
+| "Cross-browser compatibility" 언급 | 엔진이 하나인데 호환성이 무슨 의미 |
+| 멀티엔진 대응 설계 | 죽은 코드 양산 |
+| Firefox 전용 polyfill | 타겟 밖 |
+
+### Claude Code 인스트럭션
+
+```
+Target: Samsung Android (Chromium-only).
+Ignore iOS, Safari, non-Chromium completely.
+ffmpeg.wasm single-thread mode.
+No SharedArrayBuffer, no cross-origin isolation.
+No multi-browser compatibility layer.
+```
+
+---
+
 ## 철학 (한 줄)
 
 > 이 프로젝트는 최신 기술을 쓰지 않기 위해 기술을 쓰는 프로젝트다.
+> Samsung-First Personal Media Engine. SaaS가 아니다.
