@@ -1,5 +1,40 @@
 # dtslib-cloud-appstore — Claude Code 행동 규칙
 
+---
+
+## 헌법 제1조: 레포지토리는 소설이다
+
+> **모든 레포지토리는 한 권의 소설책이다.**
+> **커밋이 문장이고, 브랜치가 챕터이고, git log --reverse가 줄거리다.**
+
+- 삽질, 실패, 방향 전환 전부 남긴다. squash로 뭉개지 않는다.
+- 기능 구현 과정 = 플롯 (문제→시도→실패→전환→해결)
+- 레포 서사 → 블로그/웹툰/방송 콘텐츠로 파생 (액자 구성)
+
+### 서사 추출 명령
+
+```bash
+narrative-extract.py --repo .                    # 이 레포 줄거리
+narrative-extract.py --repo . --format synopsis  # 시놉시스
+narrative-extract.py --repo . --format blog      # 블로그 원고
+narrative-extract.py --repo . --climax           # 전환점만
+narrative-extract.py --all ~                     # 28개 레포 연작 인덱스
+```
+
+### 서사 분류
+
+| 커밋 유형 | 서사 | 의미 |
+|-----------|------|------|
+| `feat:` / 기능 추가 | 시도 | 주인공이 무언가를 만든다 |
+| `fix:` / 버그 수정 | 삽질 | 예상대로 안 됐다 |
+| `migration` / 전환 | 전환 | 버리고 다른 길을 간다 |
+| `rewrite` / v2 | 각성 | 처음부터 제대로 다시 한다 |
+| `refactor:` | 성장 | 같은 일을 더 잘하게 됐다 |
+| `docs:` | 정리 | 지나온 길을 돌아본다 |
+
+---
+
+
 ## 이 레포의 정체 (한 줄)
 
 > 구독을 거부하는 생활형 도구 보관함. SaaS 아님. 기술 데모 아님.
