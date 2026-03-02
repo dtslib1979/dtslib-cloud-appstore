@@ -4,68 +4,14 @@
     "author": "PARKSY"
   },
   "apps": [
-    {
-      "id": "lecture-shorts",
-      "name": "Lecture Shorts",
-      "desc": "4분→3분 쇼츠 변환",
-      "icon": "🎓",
-      "version": "8.0"
-    },
-    {
-      "id": "lecture-long",
-      "name": "Lecture Long",
-      "desc": "16분→12분 튜토리얼 변환",
-      "icon": "📹",
-      "version": "4.0"
-    },
-    {
-      "id": "auto-shorts",
-      "name": "Auto Shorts",
-      "desc": "6~30초→2분 변환",
-      "icon": "🎬",
-      "version": "3.0"
-    },
-    {
-      "id": "clip-shorts",
-      "name": "Clip Shorts",
-      "desc": "클립 조합 쇼츠 + BGM",
-      "icon": "🎞️",
-      "version": "7.0"
-    },
-    {
-      "id": "audio-studio",
-      "name": "Audio Studio",
-      "desc": "오디오 컷 & 루프",
-      "icon": "🎵",
-      "version": "1.0"
-    },
-    {
-      "id": "slim-lens",
-      "name": "Slim Lens",
-      "desc": "사진 가로 슬림",
-      "icon": "📷",
-      "version": "2.0"
-    },
-    {
-      "id": "image-pack",
-      "name": "Image Pack",
-      "desc": "플랫폼별 이미지 규격",
-      "icon": "📦",
-      "version": "1.0"
-    },
-    {
-      "id": "bilingual-aligner",
-      "name": "Bilingual Aligner",
-      "desc": "한영 정렬 & 텔레프롬프터",
-      "icon": "📘",
-      "version": "1.0"
-    },
-    {
-      "id": "project-manager",
-      "name": "Project Manager",
-      "desc": "메타데이터 & 출하 관리",
-      "icon": "📋",
-      "version": "1.0"
-    }
+    { "id": "lecture-shorts", "name": "Lecture Shorts", "desc": "4분→3분 쇼츠 변환", "icon": "🎓", "version": "8.0", "category": "video", "type": "pwa" },
+    { "id": "lecture-long", "name": "Lecture Long", "desc": "16분→12분 튜토리얼 변환", "icon": "📹", "version": "4.0", "category": "video", "type": "pwa" },
+    { "id": "auto-shorts", "name": "Auto Shorts", "desc": "6~30초→2분 변환", "icon": "🎬", "version": "3.0", "category": "video", "type": "pwa" },
+    { "id": "clip-shorts", "name": "Clip Shorts", "desc": "클립 조합 쇼츠 + BGM", "icon": "🎞️", "version": "7.0", "category": "video", "type": "pwa" },
+    { "id": "audio-studio", "name": "Audio Studio", "desc": "오디오 컷 & 루프", "icon": "🎵", "version": "1.0", "category": "audio", "type": "webapp" },
+    { "id": "slim-lens", "name": "Slim Lens", "desc": "사진 가로 슬림", "icon": "📷", "version": "2.0", "category": "image", "type": "webapp" },
+    { "id": "image-pack", "name": "Image Pack", "desc": "플랫폼별 이미지 규격", "icon": "📦", "version": "1.0", "category": "image", "type": "webapp" },
+    { "id": "bilingual-aligner", "name": "Bilingual Aligner", "desc": "한영 정렬 & 텔레프롬프터", "icon": "📘", "version": "1.0", "category": "util", "type": "webapp" },
+    { "id": "project-manager", "name": "Project Manager", "desc": "메타데이터 & 출하 관리", "icon": "📋", "version": "1.0", "category": "util", "type": "webapp" }
   ]
 }

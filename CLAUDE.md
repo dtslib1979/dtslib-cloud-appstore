@@ -141,7 +141,7 @@ state.json         = 공정 현황판
 | 빌드툴 (webpack, vite, rollup) | 유지보수 지옥 |
 | npm install / node_modules | CDN script 태그면 충분 |
 | 최신 FFmpeg (0.12.x) | API 호환성 파괴 |
-| Service Worker | 광역 룰 위반 |
+| Service Worker (webapp) | type: "webapp" 도구에서 SW 금지 |
 | SPA 프레임워크 | 정적 HTML + 단순 JS |
 | TypeScript | 트랜스파일 = 빌드 의존성 |
 | 로그인/계정/클라우드 | 이 도구의 존재 이유를 파괴 |
@@ -151,6 +151,26 @@ state.json         = 공정 현황판
 - 내가 구독 하나 끊었는가? → 성공
 - 한 달 뒤에도 다시 쓸 수 있는가? → 성공
 - 3년 뒤에도 브라우저에서 그대로 돌아가는가? → 성공
+
+---
+
+## PWA 2-Track 정책
+
+> apps.json의 `type` 필드로 도구를 2트랙으로 분류한다.
+
+| type | 특성 | SW/Manifest |
+|------|------|-------------|
+| `pwa` | FFmpeg, 무거운 처리, 오프라인 필요, 주1회+ 사용 | sw.js + manifest.json 보유 |
+| `webapp` | 가벼운 도구, 순수 HTML/JS | SW 없음, manifest 없음 |
+
+### 승격 기준 (webapp → pwa)
+1. FFmpeg 또는 무거운 WASM 사용
+2. 오프라인 사용 필요
+3. 주 1회 이상 정기 사용
+4. 3개 조건 중 2개 이상 충족 시 승격
+
+### PWA 도구 (현재 4개)
+- lecture-shorts, lecture-long, auto-shorts, clip-shorts
 
 ---
 

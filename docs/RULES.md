@@ -27,11 +27,10 @@
 
 ### ROOT WHITELIST
 ```
-index.html, README.md, .gitignore, .nojekyll
-apps.json, vercel.json, manifest.json, sw.js
-.github/, assets/, scripts/, apps/
-auto-shorts/, bilingual-aligner/, clip-shorts/
-lecture-long/, lecture-shorts/, slim-lens/
+index.html, README.md, CLAUDE.md, .gitignore, .nojekyll
+apps.json, vercel.json, manifest.json, sw.js, dashboard-config.json
+.github/, assets/, scripts/, shared/, docs/, 00_TRUTH/
++ apps.json에 등록된 모든 앱 디렉토리 (동적)
 ```
 
 ### RULES
@@ -56,6 +55,19 @@ lecture-long/, lecture-shorts/, slim-lens/
 | ROOT_JS_FORBIDDEN | 루트 JS (sw.js 제외) |
 | PY_TRASH_FORBIDDEN | __pycache__, *.pyc |
 | SPACE_IN_FILENAME_FORBIDDEN | 공백 파일명 |
+
+---
+
+## PWA 2-TRACK
+
+| type | 파일 구성 | 대상 |
+|------|-----------|------|
+| `pwa` | index.html + manifest.json + sw.js | FFmpeg, 무거운 처리, 오프라인 필요 |
+| `webapp` | index.html only | 가벼운 도구, 순수 HTML/JS |
+
+- `apps.json`의 `type` 필드로 분류
+- PWA 현재 4개: lecture-shorts, lecture-long, auto-shorts, clip-shorts
+- webapp 도구에는 SW/manifest 생성 금지
 
 ---
 

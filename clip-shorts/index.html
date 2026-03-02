@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#e91e63">
     <title>Clip Shorts - 클립 조합 쇼츠 메이커</title>
     <link rel="stylesheet" href="./style.css?v=5.2">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="container">
@@ -314,5 +315,6 @@
 
     <script src="./app.js?v=7.0"></script>
     <script src="../shared/js/nav.js"></script>
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

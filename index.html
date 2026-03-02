@@ -7,185 +7,557 @@
     <meta name="description" content="DTSLIB Tools — 브라우저에서 바로 사용하는 도구함">
     <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
-
     <title>DTSLIB Tools</title>
-
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
             --bg: #000;
             --bg-card: #1C1C1E;
+            --bg-card-hover: #2C2C2E;
+            --accent: #0A84FF;
+            --border: rgba(255,255,255,0.08);
+            --border-hover: rgba(255,255,255,0.2);
             --text: #F5F5F7;
             --text-sec: rgba(245,245,247,0.6);
             --text-dim: rgba(245,245,247,0.35);
-            --blue: #0A84FF;
-            --sep: rgba(255,255,255,0.08);
+            --green: #30D158;
+            --red: #FF453A;
+            --yellow: #FFD60A;
+            --grid-cols: 2;
+            --max-width: 600px;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.5;
-            min-height: 100vh;
+            background: var(--bg); color: var(--text);
+            line-height: 1.5; min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             padding: calc(52px + env(safe-area-inset-top)) 0 0;
         }
 
-        .page { max-width: 600px; margin: 0 auto; padding: 24px 20px 60px; }
+        .page { max-width: var(--max-width); margin: 0 auto; padding: 24px 20px 60px; }
 
-        .page-title {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 4px;
+        /* ── Header ── */
+        .page-title { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+        .page-title span { color: var(--accent); }
+        .page-sub { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; }
+
+        /* ── Stats ── */
+        .stats-bar {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .stat-pill {
+            display: flex; align-items: center; gap: 5px;
+            padding: 5px 12px; background: var(--bg-card);
+            border-radius: 100px; font-size: 11px; color: var(--text-sec);
+        }
+        .stat-pill .sv { color: var(--accent); font-weight: 600; }
+
+        /* ── Factory Bar ── */
+        .factory-bar {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px 14px; margin-bottom: 16px;
+            background: var(--bg-card); border-radius: 12px; font-size: 12px;
+        }
+        .factory-bar.off { color: var(--yellow); }
+        .factory-bar.on { color: var(--green); }
+
+        .fb-btn {
+            padding: 5px 14px; border-radius: 100px;
+            border: 1px solid var(--accent); background: transparent;
+            color: var(--accent); font-family: inherit;
+            font-size: 11px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .fb-btn:hover { background: var(--accent); color: #000; }
+        .fb-btn.dim {
+            border-color: var(--border); color: var(--text-dim);
+        }
+        .fb-btn.dim:hover { border-color: var(--border-hover); color: var(--text-sec); }
+
+        /* ── Category Filter ── */
+        .cat-filter {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+        }
+        .cat-pill {
+            padding: 5px 14px; border-radius: 100px;
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-sec); font-family: inherit;
+            font-size: 11px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cat-pill:hover { border-color: var(--border-hover); color: var(--text); }
+        .cat-pill.active {
+            background: var(--accent); border-color: var(--accent);
+            color: #000; font-weight: 600;
         }
 
-        .page-sub {
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 28px;
-        }
-
+        /* ── Group Headers ── */
         .group { margin-bottom: 24px; }
-
         .group-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            padding-left: 4px;
-            margin-bottom: 8px;
+            font-size: 11px; font-weight: 600; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 1px;
+            padding-left: 4px; margin-bottom: 8px;
         }
 
+        /* ── Tool Grid ── */
         .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            display: grid; grid-template-columns: repeat(var(--grid-cols), 1fr); gap: 10px;
         }
 
         .tool-card {
-            display: flex;
-            flex-direction: column;
-            padding: 16px 14px;
-            background: var(--bg-card);
-            border-radius: 14px;
-            text-decoration: none;
-            color: inherit;
+            display: flex; flex-direction: column;
+            padding: 16px 14px; background: var(--bg-card);
+            border-radius: 14px; text-decoration: none; color: inherit;
             transition: transform 0.2s, background 0.2s;
         }
-
-        .tool-card:hover { background: #2C2C2E; }
+        .tool-card:hover { background: var(--bg-card-hover); }
         .tool-card:active { transform: scale(0.97); }
+        .tool-card.hidden { display: none; }
 
-        .tool-icon {
-            font-size: 28px;
-            margin-bottom: 10px;
+        .tool-icon { font-size: 28px; margin-bottom: 10px; }
+        .tool-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .tool-desc { font-size: 11px; color: var(--text-sec); line-height: 1.4; }
+        .tool-meta {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: auto; padding-top: 10px;
+        }
+        .tool-ver { font-size: 10px; color: var(--text-dim); }
+        .tool-cat {
+            font-size: 9px; font-weight: 600; padding: 1px 8px;
+            border-radius: 100px; border: 1px solid; letter-spacing: 0.04em;
+        }
+        .tool-pwa-badge {
+            font-size: 8px; font-weight: 700; padding: 1px 6px;
+            border-radius: 100px; background: #30D158; color: #000;
+            letter-spacing: 0.06em; margin-left: 6px;
         }
 
-        .tool-name {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .tool-desc {
-            font-size: 11px;
-            color: var(--text-sec);
-            line-height: 1.4;
-        }
-
-        .tool-ver {
-            font-size: 10px;
-            color: var(--text-dim);
-            margin-top: auto;
-            padding-top: 8px;
-        }
-
+        /* ── Footer ── */
         .footer {
-            text-align: center;
-            padding: 20px;
-            border-top: 1px solid var(--sep);
-            margin-top: 16px;
+            text-align: center; padding: 20px;
+            border-top: 1px solid var(--border); margin-top: 16px;
         }
-
-        .footer a {
-            font-size: 12px;
-            color: var(--blue);
-            text-decoration: none;
-        }
-
+        .footer a { font-size: 12px; color: var(--accent); text-decoration: none; }
         .footer-brand {
-            font-size: 10px;
-            color: var(--text-dim);
-            letter-spacing: 0.1em;
-            margin-top: 6px;
+            font-size: 10px; color: var(--text-dim);
+            letter-spacing: 0.1em; margin-top: 6px;
         }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.8); align-items: center;
+            justify-content: center; padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #1C1C1E; border-radius: 16px; padding: 24px;
+            width: 100%; max-width: 380px;
+        }
+        .modal-box h3 {
+            font-size: 18px; font-weight: 700; margin-bottom: 16px;
+        }
+        .modal-box label {
+            display: block; font-size: 11px; color: var(--text-sec);
+            margin-bottom: 4px;
+        }
+        .modal-box input, .modal-box select {
+            width: 100%; padding: 10px 12px; margin-bottom: 12px;
+            background: #000; border: 1px solid var(--border);
+            border-radius: 10px; color: var(--text);
+            font-family: inherit; font-size: 14px; outline: none;
+        }
+        .modal-box input:focus, .modal-box select:focus {
+            border-color: var(--accent);
+        }
+        .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .modal-actions button {
+            flex: 1; padding: 12px; border-radius: 10px; border: none;
+            font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .m-primary { background: var(--accent); color: #000; }
+        .m-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+        .m-cancel { background: #333; color: var(--text-sec); }
+        .progress-log {
+            font-size: 11px; color: var(--text-dim); margin-top: 10px;
+            line-height: 1.8; font-family: monospace;
+        }
+        .progress-log .ok { color: var(--green); }
+        .progress-log .err { color: var(--red); }
+        .progress-log .wait { color: var(--yellow); }
     </style>
 </head>
 <body>
     <div class="page">
-        <h1 class="page-title">도구함</h1>
-        <p class="page-sub">9 tools — browser-native</p>
-
+        <div id="header"></div>
+        <div id="statsBar"></div>
+        <div id="factoryBar"></div>
+        <div id="catFilter"></div>
         <div id="toolsContainer"></div>
+        <div class="footer" id="footer"></div>
+    </div>
 
-        <div class="footer">
-            <a href="https://github.com/dtslib1979/dtslib-cloud-appstore" target="_blank">GitHub</a>
-            <div class="footer-brand">DTSLIB TOOLS</div>
+    <!-- Token Modal -->
+    <div class="modal-overlay" id="tokenModal">
+        <div class="modal-box">
+            <h3>GitHub Connect</h3>
+            <label>Personal Access Token (repo scope)</label>
+            <input type="password" id="tokenInput" placeholder="ghp_..." />
+            <div class="modal-actions">
+                <button class="m-primary" onclick="F.saveToken()">Connect</button>
+                <button class="m-cancel" onclick="F.closeModal('tokenModal')">Cancel</button>
+            </div>
+            <div id="tokenStatus" class="progress-log"></div>
+        </div>
+    </div>
+
+    <!-- New Tool Modal -->
+    <div class="modal-overlay" id="newToolModal">
+        <div class="modal-box">
+            <h3>New Tool</h3>
+            <label>Tool Name</label>
+            <input type="text" id="ntName" placeholder="My Tool" />
+            <label>Category</label>
+            <select id="ntCat"></select>
+            <label>Description</label>
+            <input type="text" id="ntDesc" placeholder="What does it do" />
+            <label>Icon Emoji</label>
+            <input type="text" id="ntEmoji" placeholder="🔧" maxlength="4" />
+            <label>Type</label>
+            <select id="ntType">
+                <option value="webapp">Web App</option>
+                <option value="pwa">PWA (오프라인/설치)</option>
+            </select>
+            <div class="modal-actions">
+                <button class="m-primary" id="ntSubmit" onclick="F.createTool()">Create & Deploy</button>
+                <button class="m-cancel" onclick="F.closeModal('newToolModal')">Cancel</button>
+            </div>
+            <div id="createProgress" class="progress-log"></div>
         </div>
     </div>
 
     <script>
-        var TOOLS = [
-            { id: 'lecture-shorts', name: 'Lecture Shorts', desc: '4분→3분 쇼츠 변환', icon: '🎓', group: '영상' },
-            { id: 'lecture-long',   name: 'Lecture Long',   desc: '16분→12분 튜토리얼', icon: '📹', group: '영상' },
-            { id: 'auto-shorts',   name: 'Auto Shorts',    desc: '6~30초→2분 변환', icon: '🎬', group: '영상' },
-            { id: 'clip-shorts',   name: 'Clip Shorts',    desc: '클립 조합 + BGM', icon: '🎞️', group: '영상' },
-            { id: 'audio-studio',  name: 'Audio Studio',   desc: '오디오 컷 & 루프', icon: '🎵', group: '오디오' },
-            { id: 'slim-lens',     name: 'Slim Lens',      desc: '사진 가로 슬림', icon: '📷', group: '이미지' },
-            { id: 'image-pack',    name: 'Image Pack',     desc: '플랫폼별 이미지 규격', icon: '📦', group: '이미지' },
-            { id: 'bilingual-aligner', name: 'Bilingual Aligner', desc: '한영 정렬 & 텔레프롬프터', icon: '📘', group: '유틸' },
-            { id: 'project-manager',   name: 'Project Manager',   desc: '메타데이터 & 출하 관리', icon: '📋', group: '유틸' }
-        ];
+    var F = (function() {
+        var config, tools;
+        var GH = {};
+        var TK = 'dtstools_gh_token';
 
-        var versions = {};
+        // Category label map
+        var CAT_LABELS = { video: '영상', audio: '오디오', image: '이미지', util: '유틸' };
+        var CAT_ORDER = ['video', 'audio', 'image', 'util'];
 
-        document.addEventListener('DOMContentLoaded', function() {
-            fetch('./apps.json')
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    if (d.apps) d.apps.forEach(function(a) { versions[a.id] = a.version; });
-                })
-                .catch(function() {})
-                .finally(render);
+        // ── Init ──
+        Promise.all([
+            fetch('./dashboard-config.json').then(function(r) {
+                if (!r.ok) throw new Error('config: ' + r.status);
+                return r.json();
+            }),
+            fetch('./apps.json').then(function(r) {
+                if (!r.ok) throw new Error('apps: ' + r.status);
+                return r.json();
+            })
+        ]).then(function(res) {
+            config = res[0]; tools = res[1].apps || [];
+            GH = config.github || {};
+            applyTheme(config.theme);
+            renderHeader(config.brand, tools.length);
+            if (config.sections.stats) renderStats(config.stats);
+            renderFactoryBar();
+            if (config.sections.categoryFilter) renderCatFilter(config.categories);
+            renderTools(tools, config.categories);
+            renderFooter(config.brand);
+        }).catch(function(err) {
+            document.querySelector('.page').innerHTML =
+                '<p style="color:var(--red);text-align:center;padding:80px 20px;">' +
+                'Failed to load: ' + err.message + '</p>';
         });
 
-        function render() {
-            var container = document.getElementById('toolsContainer');
-            var groups = ['영상', '오디오', '이미지', '유틸'];
-            var html = '';
+        function applyTheme(t) {
+            var s = document.documentElement.style;
+            var m = {bg:'bg',bgCard:'bg-card',bgCardHover:'bg-card-hover',
+                accent:'accent',border:'border',borderHover:'border-hover',
+                text:'text',textSecondary:'text-sec',textMuted:'text-dim'};
+            Object.keys(m).forEach(function(k) { if (t[k]) s.setProperty('--'+m[k], t[k]); });
+        }
 
-            groups.forEach(function(g) {
-                var items = TOOLS.filter(function(t) { return t.group === g; });
-                html += '<div class="group">';
-                html += '<div class="group-title">' + g + '</div>';
-                html += '<div class="tools-grid">';
-                items.forEach(function(t) {
-                    var ver = versions[t.id] || '';
-                    html += '<a href="./' + t.id + '/" class="tool-card">' +
+        function renderHeader(b, count) {
+            document.getElementById('header').innerHTML =
+                '<h1 class="page-title">' + b.name + ' <span>' + b.highlight + '</span></h1>' +
+                '<p class="page-sub">' + count + ' tools — browser-native</p>';
+            document.title = b.name + ' ' + b.highlight;
+        }
+
+        function renderStats(st) {
+            var pwaHtml = st.pwa_tools ? '<div class="stat-pill"><span class="sv">' + st.pwa_tools + '</span> PWA</div>' : '';
+            document.getElementById('statsBar').innerHTML =
+                '<div class="stats-bar">' +
+                '<div class="stat-pill"><span class="sv">' + st.total_tools + '</span> Tools</div>' +
+                '<div class="stat-pill"><span class="sv">' + st.categories_count + '</span> Categories</div>' +
+                '<div class="stat-pill"><span class="sv">' + st.ffmpeg_tools + '</span> FFmpeg</div>' +
+                pwaHtml +
+                '</div>';
+        }
+
+        function renderFactoryBar() {
+            var el = document.getElementById('factoryBar');
+            if (!ht()) {
+                el.innerHTML = '<div class="factory-bar off">' +
+                    '<span>Connect GitHub to add tools</span>' +
+                    '<button class="fb-btn" onclick="F.openModal(\'tokenModal\')">Connect</button></div>';
+            } else {
+                el.innerHTML = '<div class="factory-bar on">' +
+                    '<span>Factory Online</span>' +
+                    '<button class="fb-btn" onclick="F.openModal(\'newToolModal\')">+ New Tool</button>' +
+                    '<button class="fb-btn dim" onclick="F.openModal(\'tokenModal\')">&#9881;</button></div>';
+            }
+        }
+
+        function renderCatFilter(cats) {
+            var html = '<div class="cat-filter">';
+            var keys = Object.keys(cats);
+            keys.forEach(function(k) {
+                var a = k === 'all' ? ' active' : '';
+                html += '<button class="cat-pill' + a + '" data-cat="' + k + '">' + cats[k].label + '</button>';
+            });
+            html += '</div>';
+            document.getElementById('catFilter').innerHTML = html;
+            document.querySelectorAll('.cat-pill').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    document.querySelectorAll('.cat-pill').forEach(function(x) { x.classList.remove('active'); });
+                    b.classList.add('active');
+                    var cat = b.getAttribute('data-cat');
+                    document.querySelectorAll('.tool-card').forEach(function(c) {
+                        c.classList.toggle('hidden', cat !== 'all' && c.getAttribute('data-cat') !== cat);
+                    });
+                });
+            });
+        }
+
+        function renderTools(tools, cats) {
+            var groups = {};
+            tools.forEach(function(t) {
+                var cat = t.category || 'util';
+                if (!groups[cat]) groups[cat] = [];
+                groups[cat].push(t);
+            });
+
+            var html = '';
+            CAT_ORDER.forEach(function(cat) {
+                if (!groups[cat]) return;
+                var label = CAT_LABELS[cat] || cat;
+                html += '<div class="group"><div class="group-title">' + label + '</div><div class="tools-grid">';
+                groups[cat].forEach(function(t) {
+                    var cc = cats[t.category] || { color: '#0A84FF' };
+                    var pwaBadge = t.type === 'pwa' ? '<span class="tool-pwa-badge">PWA</span>' : '';
+                    html += '<a href="./' + t.id + '/" class="tool-card" data-cat="' + t.category + '">' +
                         '<div class="tool-icon">' + t.icon + '</div>' +
-                        '<div class="tool-name">' + t.name + '</div>' +
+                        '<div class="tool-name">' + t.name + pwaBadge + '</div>' +
                         '<div class="tool-desc">' + t.desc + '</div>' +
-                        '<div class="tool-ver">' + (ver ? 'v' + ver : '') + '</div>' +
-                    '</a>';
+                        '<div class="tool-meta">' +
+                        '<span class="tool-ver">v' + t.version + '</span>' +
+                        '<span class="tool-cat" style="color:' + cc.color + ';border-color:' + cc.color + '44">' + label + '</span>' +
+                        '</div></a>';
                 });
                 html += '</div></div>';
             });
-
-            container.innerHTML = html;
+            document.getElementById('toolsContainer').innerHTML = html;
         }
+
+        function renderFooter(b) {
+            document.getElementById('footer').innerHTML =
+                '<a href="' + b.githubUrl + '" target="_blank">GitHub</a>' +
+                '<div class="footer-brand">' + b.footer + '</div>';
+        }
+
+        // ── Token ──
+        function gt() { return localStorage.getItem(TK); }
+        function ht() { return !!gt(); }
+
+        function api(method, path, body) {
+            var h = { 'Accept': 'application/vnd.github.v3+json' };
+            if (gt()) h['Authorization'] = 'Bearer ' + gt();
+            if (body) h['Content-Type'] = 'application/json';
+            return fetch('https://api.github.com' + path, {
+                method: method, headers: h,
+                body: body ? JSON.stringify(body) : undefined
+            }).then(function(r) {
+                if (r.status === 204) return null;
+                return r.json().then(function(d) {
+                    if (!r.ok) throw new Error(d.message || r.status);
+                    return d;
+                });
+            });
+        }
+
+        function gp(p) { return '/repos/' + GH.owner + '/' + GH.repo + p; }
+
+        // ── Factory: Create Tool ──
+        function createTool() {
+            var name = document.getElementById('ntName').value.trim();
+            var cat = document.getElementById('ntCat').value;
+            var desc = document.getElementById('ntDesc').value.trim();
+            var emoji = document.getElementById('ntEmoji').value.trim() || '🔧';
+            var type = document.getElementById('ntType').value;
+            if (!name) return;
+
+            var id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            var log = document.getElementById('createProgress');
+            var btn = document.getElementById('ntSubmit');
+            btn.disabled = true;
+            log.innerHTML = '<span class="wait">● Reading apps.json...</span>';
+
+            // Step 1: Update apps.json
+            api('GET', gp('/contents/apps.json'))
+            .then(function(file) {
+                var content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+                var data = JSON.parse(content);
+                data.apps.push({
+                    id: id, name: name, desc: desc,
+                    icon: emoji, version: '1.0', category: cat, type: type
+                });
+                var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2) + '\n')));
+                log.innerHTML += '<br><span class="ok">✓ Read</span><br><span class="wait">● Registering...</span>';
+                return api('PUT', gp('/contents/apps.json'), {
+                    message: 'feat: register ' + name,
+                    content: encoded, sha: file.sha
+                });
+            })
+            .then(function() {
+                log.innerHTML += '<br><span class="ok">✓ Registered</span><br><span class="wait">● Scaffolding tool...</span>';
+
+                // Step 2: Create tool index.html
+                var manifestLink = type === 'pwa' ? '    <link rel="manifest" href="manifest.json">\n' : '';
+                var swScript = type === 'pwa'
+                    ? '    <script>if(\'serviceWorker\' in navigator) navigator.serviceWorker.register(\'sw.js\');</' + 'script>\n'
+                    : '';
+                var scaffold =
+                    '<!DOCTYPE html>\n<html lang="ko">\n<head>\n' +
+                    '    <meta charset="UTF-8">\n' +
+                    '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+                    '    <meta name="theme-color" content="#000">\n' +
+                    manifestLink +
+                    '    <title>' + name + '</title>\n' +
+                    '    <style>\n' +
+                    '        body { background: #000; color: #f5f5f7; font-family: -apple-system, sans-serif; margin: 0; padding: 60px 20px 40px; }\n' +
+                    '        .app { max-width: 600px; margin: 0 auto; }\n' +
+                    '        h1 { font-size: 24px; margin-bottom: 8px; }\n' +
+                    '        .desc { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 24px; }\n' +
+                    '        .placeholder { text-align: center; padding: 60px 20px; background: #1C1C1E; border-radius: 14px; color: rgba(255,255,255,0.3); }\n' +
+                    '    </style>\n</head>\n<body>\n' +
+                    '    <div class="app">\n' +
+                    '        <h1>' + emoji + ' ' + name + '</h1>\n' +
+                    '        <p class="desc">' + desc + '</p>\n' +
+                    '        <div class="placeholder">Tool scaffold — develop here</div>\n' +
+                    '    </div>\n' +
+                    '    <script src="../shared/js/nav.js"></' + 'script>\n' +
+                    swScript +
+                    '</body>\n</html>\n';
+
+                var encoded = btoa(unescape(encodeURIComponent(scaffold)));
+                return api('PUT', gp('/contents/' + id + '/index.html'), {
+                    message: 'feat: scaffold ' + name,
+                    content: encoded
+                });
+            })
+            .then(function() {
+                if (type !== 'pwa') {
+                    log.innerHTML += '<br><span class="ok">✓ Scaffolded</span><br>' +
+                        '<span class="ok"><b>Done! Push triggers GitHub Pages deploy.</b></span>';
+                    btn.disabled = false;
+                    return;
+                }
+                log.innerHTML += '<br><span class="ok">✓ Scaffolded</span><br><span class="wait">● Creating manifest.json...</span>';
+
+                // Step 3 (PWA only): Create manifest.json
+                var manifest = JSON.stringify({
+                    name: name, short_name: name,
+                    start_url: './', display: 'standalone',
+                    background_color: '#000', theme_color: '#000',
+                    icons: [
+                        { src: '../assets/icon-192.png', sizes: '192x192', type: 'image/png' },
+                        { src: '../assets/icon-512.png', sizes: '512x512', type: 'image/png' }
+                    ]
+                }, null, 2) + '\n';
+                var encManifest = btoa(unescape(encodeURIComponent(manifest)));
+                return api('PUT', gp('/contents/' + id + '/manifest.json'), {
+                    message: 'feat: PWA manifest for ' + name,
+                    content: encManifest
+                }).then(function() {
+                    log.innerHTML += '<br><span class="ok">✓ manifest.json</span><br><span class="wait">● Creating sw.js...</span>';
+
+                    // Step 4 (PWA only): Create sw.js
+                    var sw = "var CACHE = '" + id + "-v1';\n" +
+                        "var ASSETS = ['./index.html', './style.css', './app.js'];\n" +
+                        "self.addEventListener('install', function(e) {\n" +
+                        "  e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(ASSETS); }));\n" +
+                        "});\n" +
+                        "self.addEventListener('fetch', function(e) {\n" +
+                        "  e.respondWith(caches.match(e.request).then(function(r) { return r || fetch(e.request); }));\n" +
+                        "});\n";
+                    var encSw = btoa(unescape(encodeURIComponent(sw)));
+                    return api('PUT', gp('/contents/' + id + '/sw.js'), {
+                        message: 'feat: service worker for ' + name,
+                        content: encSw
+                    });
+                }).then(function() {
+                    log.innerHTML += '<br><span class="ok">✓ sw.js</span><br>' +
+                        '<span class="ok"><b>Done! PWA 3-file scaffold complete.</b></span>';
+                    btn.disabled = false;
+                });
+            })
+            .catch(function(err) {
+                log.innerHTML += '<br><span class="err">✗ ' + err.message + '</span>';
+                btn.disabled = false;
+            });
+        }
+
+        // ── Modal ──
+        function openModal(id) {
+            document.getElementById(id).classList.add('open');
+            if (id === 'newToolModal') {
+                var sel = document.getElementById('ntCat');
+                if (sel.options.length < 2) {
+                    sel.innerHTML = '';
+                    CAT_ORDER.forEach(function(k) {
+                        var opt = document.createElement('option');
+                        opt.value = k; opt.textContent = CAT_LABELS[k] || k;
+                        sel.appendChild(opt);
+                    });
+                }
+            }
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        function saveToken() {
+            var t = document.getElementById('tokenInput').value.trim();
+            if (!t) return;
+            var st = document.getElementById('tokenStatus');
+            st.innerHTML = '<span class="wait">Verifying...</span>';
+            fetch('https://api.github.com/user', {
+                headers: { 'Authorization': 'Bearer ' + t, 'Accept': 'application/vnd.github.v3+json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(u) {
+                if (u.login) {
+                    localStorage.setItem(TK, t);
+                    st.innerHTML = '<span class="ok">✓ Connected as ' + u.login + '</span>';
+                    setTimeout(function() { closeModal('tokenModal'); renderFactoryBar(); }, 800);
+                } else {
+                    st.innerHTML = '<span class="err">Invalid token</span>';
+                }
+            })
+            .catch(function(err) { st.innerHTML = '<span class="err">' + err.message + '</span>'; });
+        }
+
+        return {
+            createTool: createTool,
+            openModal: openModal,
+            closeModal: closeModal,
+            saveToken: saveToken
+        };
+    })();
     </script>
     <script src="./shared/js/nav.js"></script>
 </body>

@@ -2,30 +2,39 @@
 import sys
 import pathlib
 import re
+import json
 
 ROOT = pathlib.Path(".").resolve()
 
-# ✅ PWA App Hub Root Whitelist
+# ✅ Static whitelist (non-app entries)
 ROOT_WHITELIST = {
     "index.html",
     "README.md",
+    "CLAUDE.md",
     ".gitignore",
     ".nojekyll",
     "apps.json",
     "vercel.json",
     "manifest.json",
     "sw.js",
+    "dashboard-config.json",
     ".github",
     "assets",
     "scripts",
-    "apps",
-    "auto-shorts",
-    "bilingual-aligner",
-    "clip-shorts",
-    "lecture-long",
-    "lecture-shorts",
-    "slim-lens",
+    "shared",
+    "docs",
+    "00_TRUTH",
 }
+
+# ✅ Dynamic: read app IDs from apps.json
+_apps_json = ROOT / "apps.json"
+if _apps_json.exists():
+    try:
+        _data = json.loads(_apps_json.read_text())
+        for _app in _data.get("apps", []):
+            ROOT_WHITELIST.add(_app["id"])
+    except (json.JSONDecodeError, KeyError):
+        pass
 
 # ❌ Python 찌꺼기 금지
 PY_TRASH_PATTERNS = [
