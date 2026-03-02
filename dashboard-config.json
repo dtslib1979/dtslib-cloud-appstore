@@ -37,7 +37,7 @@
   },
   "stats": {
     "total_tools": 9,
-    "categories_count": 4,
+    "categories_count": 5,
     "ffmpeg_tools": 4,
     "pwa_tools": 4,
     "build_system": "none"
@@ -47,6 +47,7 @@
     "video": { "label": "영상",   "color": "#FF6B6B" },
     "audio": { "label": "오디오", "color": "#4ECDC4" },
     "image": { "label": "이미지", "color": "#96CEB4" },
-    "util":  { "label": "유틸",   "color": "#FFEAA7" }
+    "util":  { "label": "유틸",   "color": "#FFEAA7" },
+    "game":  { "label": "게임",   "color": "#DDA0DD" }
   }
 }
