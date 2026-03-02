@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "name": "DTSLIB",
+    "highlight": "Tools",
+    "subtitle": "Browser-Native Toolbox",
+    "githubUrl": "https://github.com/dtslib1979/dtslib-cloud-appstore",
+    "footer": "DTSLIB TOOLS"
+  },
+  "github": {
+    "owner": "dtslib1979",
+    "repo": "dtslib-cloud-appstore",
+    "branch": "main"
+  },
+  "theme": {
+    "bg": "#000000",
+    "bgCard": "#1C1C1E",
+    "bgCardHover": "#2C2C2E",
+    "surface": "#1C1C1E",
+    "surfaceAlt": "#2C2C2E",
+    "accent": "#0A84FF",
+    "border": "rgba(255,255,255,0.08)",
+    "borderHover": "rgba(255,255,255,0.2)",
+    "text": "#F5F5F7",
+    "textSecondary": "rgba(245,245,247,0.6)",
+    "textMuted": "rgba(245,245,247,0.35)"
+  },
+  "layout": {
+    "maxWidth": "600px",
+    "gridColumns": 2
+  },
+  "sections": {
+    "stats": true,
+    "categoryFilter": true,
+    "timeline": false,
+    "warning": false,
+    "warningText": ""
+  },
+  "stats": {
+    "total_tools": 9,
+    "categories_count": 4,
+    "ffmpeg_tools": 4,
+    "pwa_tools": 4,
+    "build_system": "none"
+  },
+  "categories": {
+    "all":   { "label": "전체",   "color": "#0A84FF" },
+    "video": { "label": "영상",   "color": "#FF6B6B" },
+    "audio": { "label": "오디오", "color": "#4ECDC4" },
+    "image": { "label": "이미지", "color": "#96CEB4" },
+    "util":  { "label": "유틸",   "color": "#FFEAA7" }
+  }
+}

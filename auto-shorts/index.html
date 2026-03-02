@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#764ba2">
     <title>Auto Shorts Maker</title>
     <link rel="stylesheet" href="./style.css?v=1.2">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="container">
@@ -68,5 +69,6 @@
     
     <script src="./app.js?v=3.0"></script>
     <script src="../shared/js/nav.js"></script>
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>

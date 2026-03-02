@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="description" content="4분 강의 영상을 3분 유튜브 쇼츠로 자동 변환 - Pro Edition">
     <link rel="stylesheet" href="./style.css?v=8.0">
+    <link rel="manifest" href="manifest.json">
 
     <!-- Preload FFmpeg -->
     <link rel="preload" href="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js" as="script" crossorigin="anonymous">
@@ -483,5 +484,6 @@
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.0/dist/ffmpeg.min.js" defer crossorigin="anonymous"></script>
     <script src="./app.js?v=8.0"></script>
     <script src="../shared/js/nav.js"></script>
+    <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 </body>
 </html>
