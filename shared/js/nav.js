@@ -1,73 +1,29 @@
 /**
  * DTSLIB Tools — Shared Navigation
  * Mobile-first hamburger + drawer
+ * Reads tool list from apps.json (single source of truth)
  */
 (function() {
     'use strict';
 
-    var TOOLS = [
-        { id: 'lecture-shorts', name: 'Lecture Shorts', icon: '🎓', group: '영상' },
-        { id: 'lecture-long',   name: 'Lecture Long',   icon: '📹', group: '영상' },
-        { id: 'auto-shorts',   name: 'Auto Shorts',    icon: '🎬', group: '영상' },
-        { id: 'clip-shorts',   name: 'Clip Shorts',    icon: '🎞️', group: '영상' },
-        { id: 'audio-studio',  name: 'Audio Studio',   icon: '🎵', group: '오디오' },
-        { id: 'slim-lens',     name: 'Slim Lens',      icon: '📷', group: '이미지' },
-        { id: 'image-pack',    name: 'Image Pack',     icon: '📦', group: '이미지' },
-        { id: 'bilingual-aligner', name: 'Bilingual Aligner', icon: '📘', group: '유틸' },
-        { id: 'project-manager',   name: 'Project Manager',   icon: '📋', group: '유틸' }
-    ];
-
-    // Detect current page from URL
     var path = location.pathname;
-    var currentId = '';
-    TOOLS.forEach(function(t) {
-        if (path.indexOf('/' + t.id) !== -1) currentId = t.id;
-    });
-
-    // Determine base path (are we in root or a tool dir?)
-    var isRoot = !currentId;
-    var base = isRoot ? './' : '../';
-
-    // Build nav HTML
-    var navHTML = '<nav id="dtsnav" class="dtsnav">' +
-        '<div class="dtsnav-bar">' +
-            '<a href="' + base + '" class="dtsnav-logo">DTSLIB Tools</a>' +
-            '<button class="dtsnav-toggle" id="dtsnavToggle" aria-label="메뉴">' +
-                '<span></span><span></span><span></span>' +
-            '</button>' +
-        '</div>' +
-        '<div class="dtsnav-drawer" id="dtsnavDrawer">' +
-            '<div class="dtsnav-drawer-inner">' +
-                buildGroups() +
-            '</div>' +
-        '</div>' +
-    '</nav>';
-
-    function buildGroups() {
-        var groups = {};
-        var order = ['영상', '오디오', '이미지', '유틸'];
-        TOOLS.forEach(function(t) {
-            if (!groups[t.group]) groups[t.group] = [];
-            groups[t.group].push(t);
-        });
-        var html = '';
-        order.forEach(function(g) {
-            html += '<div class="dtsnav-group">';
-            html += '<div class="dtsnav-group-title">' + g + '</div>';
-            groups[g].forEach(function(t) {
-                var href = base + t.id + '/';
-                var active = t.id === currentId ? ' dtsnav-active' : '';
-                html += '<a href="' + href + '" class="dtsnav-item' + active + '">' +
-                    '<span class="dtsnav-icon">' + t.icon + '</span>' +
-                    '<span class="dtsnav-name">' + t.name + '</span>' +
-                '</a>';
-            });
-            html += '</div>';
-        });
-        return html;
+    var isRoot = path === '/' || path.endsWith('/dtslib-cloud-appstore/') || path.endsWith('/index.html');
+    // Also check: if we're NOT in a tool subdirectory
+    var segments = path.replace(/\/+$/, '').split('/');
+    var lastSeg = segments[segments.length - 1];
+    // If last segment is '' or 'index.html' or the repo name, we're at root
+    if (lastSeg === 'index.html') {
+        lastSeg = segments[segments.length - 2] || '';
     }
 
-    // Inject CSS
+    var base = isRoot ? './' : '../';
+    var currentId = '';
+
+    // Category grouping
+    var CAT_LABELS = { video: '영상', audio: '오디오', image: '이미지', util: '유틸' };
+    var CAT_ORDER = ['video', 'audio', 'image', 'util'];
+
+    // Inject CSS immediately (no flash)
     var style = document.createElement('style');
     style.textContent =
         '.dtsnav{position:fixed;top:0;left:0;right:0;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
@@ -91,25 +47,68 @@
         'body{padding-top:calc(52px + env(safe-area-inset-top)) !important}';
     document.head.appendChild(style);
 
-    // Inject nav into body
-    var div = document.createElement('div');
-    div.innerHTML = navHTML;
-    document.body.insertBefore(div.firstChild, document.body.firstChild);
+    // Insert placeholder nav bar immediately
+    var placeholder = document.createElement('nav');
+    placeholder.id = 'dtsnav';
+    placeholder.className = 'dtsnav';
+    placeholder.innerHTML = '<div class="dtsnav-bar">' +
+        '<a href="' + base + '" class="dtsnav-logo">DTSLIB Tools</a>' +
+        '<button class="dtsnav-toggle" id="dtsnavToggle" aria-label="메뉴">' +
+        '<span></span><span></span><span></span></button></div>' +
+        '<div class="dtsnav-drawer" id="dtsnavDrawer"><div class="dtsnav-drawer-inner" id="dtsnavContent"></div></div>';
+    document.body.insertBefore(placeholder, document.body.firstChild);
+
+    // Load tools from apps.json
+    fetch(base + 'apps.json')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var tools = data.apps || [];
+
+            // Detect current tool
+            tools.forEach(function(t) {
+                if (path.indexOf('/' + t.id) !== -1) currentId = t.id;
+            });
+
+            // Build groups
+            var groups = {};
+            tools.forEach(function(t) {
+                var cat = t.category || 'util';
+                if (!groups[cat]) groups[cat] = [];
+                groups[cat].push(t);
+            });
+
+            var html = '';
+            CAT_ORDER.forEach(function(cat) {
+                if (!groups[cat]) return;
+                html += '<div class="dtsnav-group">';
+                html += '<div class="dtsnav-group-title">' + (CAT_LABELS[cat] || cat) + '</div>';
+                groups[cat].forEach(function(t) {
+                    var href = base + t.id + '/';
+                    var active = t.id === currentId ? ' dtsnav-active' : '';
+                    html += '<a href="' + href + '" class="dtsnav-item' + active + '">' +
+                        '<span class="dtsnav-icon">' + t.icon + '</span>' +
+                        '<span class="dtsnav-name">' + t.name + '</span></a>';
+                });
+                html += '</div>';
+            });
+
+            document.getElementById('dtsnavContent').innerHTML = html;
+        })
+        .catch(function() {});
 
     // Toggle drawer
-    var toggle = document.getElementById('dtsnavToggle');
-    var drawer = document.getElementById('dtsnavDrawer');
-    toggle.addEventListener('click', function() {
-        toggle.classList.toggle('open');
-        drawer.classList.toggle('open');
-        document.body.style.overflow = drawer.classList.contains('open') ? 'hidden' : '';
-    });
-
-    // Close drawer on link click
-    drawer.addEventListener('click', function(e) {
-        if (e.target.closest('.dtsnav-item')) {
-            drawer.classList.remove('open');
-            toggle.classList.remove('open');
+    document.addEventListener('click', function(e) {
+        var toggle = e.target.closest('#dtsnavToggle');
+        if (toggle) {
+            toggle.classList.toggle('open');
+            document.getElementById('dtsnavDrawer').classList.toggle('open');
+            document.body.style.overflow = document.getElementById('dtsnavDrawer').classList.contains('open') ? 'hidden' : '';
+            return;
+        }
+        var item = e.target.closest('.dtsnav-item');
+        if (item) {
+            document.getElementById('dtsnavDrawer').classList.remove('open');
+            document.getElementById('dtsnavToggle').classList.remove('open');
             document.body.style.overflow = '';
         }
     });

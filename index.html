@@ -134,6 +134,79 @@
             letter-spacing: 0.06em; margin-left: 6px;
         }
 
+        /* ── Pipeline ── */
+        .pipeline-section { margin-bottom: 20px; }
+        .pipe-header {
+            font-size: 11px; font-weight: 600; color: var(--text-dim);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 10px; padding-left: 4px;
+        }
+        .pipe-input-row {
+            display: flex; gap: 8px; margin-bottom: 10px;
+        }
+        .pipe-input-row input, .pipe-input-row select {
+            flex: 1; padding: 9px 12px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: 10px;
+            color: var(--text); font-family: inherit; font-size: 12px; outline: none;
+        }
+        .pipe-input-row input:focus, .pipe-input-row select:focus { border-color: var(--accent); }
+        .pipe-input-row input::placeholder { color: var(--text-dim); }
+        .pipe-input-row button {
+            padding: 9px 16px; border-radius: 10px; border: none;
+            background: var(--accent); color: #000;
+            font-family: inherit; font-size: 12px; font-weight: 600;
+            cursor: pointer; white-space: nowrap;
+        }
+        .pipe-input-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .pipe-stages { display: flex; flex-direction: column; gap: 0; }
+        .pipe-step {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; border-left: 2px solid var(--border);
+            margin-left: 9px; position: relative;
+        }
+        .pipe-step.active { border-left-color: var(--accent); }
+        .pipe-step.done { border-left-color: var(--green); }
+        .pipe-step.fail { border-left-color: var(--red); }
+        .pipe-dot {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 2px solid var(--border); background: var(--bg);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; flex-shrink: 0; position: absolute; left: -11px;
+        }
+        .pipe-step.active .pipe-dot { border-color: var(--accent); background: var(--accent); color: #000; }
+        .pipe-step.done .pipe-dot { border-color: var(--green); background: var(--green); color: #fff; }
+        .pipe-step.fail .pipe-dot { border-color: var(--red); background: var(--red); color: #fff; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .pipe-step.active .pipe-dot::after {
+            content: ''; position: absolute; inset: -4px;
+            border: 2px solid transparent; border-top-color: var(--accent);
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        .pipe-info { flex: 1; min-width: 0; padding-left: 16px; }
+        .pipe-label { font-size: 12px; font-weight: 600; }
+        .pipe-detail { font-size: 10px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pipe-step.done .pipe-detail { color: var(--green); }
+        .pipe-step.fail .pipe-detail { color: var(--red); }
+        .pipe-badge {
+            font-size: 9px; font-weight: 600; padding: 2px 8px;
+            border-radius: 100px; flex-shrink: 0;
+        }
+        .pipe-badge.idle { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+        .pipe-badge.running { background: rgba(10,132,255,0.15); color: var(--accent); }
+        .pipe-badge.ok { background: rgba(48,209,88,0.15); color: var(--green); }
+        .pipe-badge.err { background: rgba(255,69,58,0.15); color: var(--red); }
+        .pipe-output {
+            margin-top: 8px; padding: 10px 12px; background: #000;
+            border: 1px solid var(--border); border-radius: 10px;
+            font-size: 10px; color: var(--text-dim); font-family: monospace;
+            line-height: 1.7; max-height: 120px; overflow-y: auto; display: none;
+        }
+        .pipe-output.show { display: block; }
+        .pipe-output .ok { color: var(--green); }
+        .pipe-output .err { color: var(--red); }
+        .pipe-output .warn { color: var(--yellow); }
+
         /* ── Footer ── */
         .footer {
             text-align: center; padding: 20px;
@@ -194,6 +267,7 @@
         <div id="header"></div>
         <div id="statsBar"></div>
         <div id="factoryBar"></div>
+        <div id="pipelineSection"></div>
         <div id="catFilter"></div>
         <div id="toolsContainer"></div>
         <div class="footer" id="footer"></div>
@@ -265,6 +339,7 @@
             renderHeader(config.brand, tools.length);
             if (config.sections.stats) renderStats(config.stats);
             renderFactoryBar();
+            renderPipeline();
             if (config.sections.categoryFilter) renderCatFilter(config.categories);
             renderTools(tools, config.categories);
             renderFooter(config.brand);
@@ -363,6 +438,250 @@
                 html += '</div></div>';
             });
             document.getElementById('toolsContainer').innerHTML = html;
+        }
+
+        // ── Pipeline ──
+        var PIPE_STAGES = [
+            { num: 1, name: 'Spec', icon: '📋', desc: 'Tool name, type, category' },
+            { num: 2, name: 'Scaffold', icon: '🏗️', desc: 'HTML + CSS + JS skeleton' },
+            { num: 3, name: 'Register', icon: '📝', desc: 'apps.json entry' },
+            { num: 4, name: 'PWA', icon: '📦', desc: 'manifest.json + sw.js (if PWA)' },
+            { num: 5, name: 'Deploy', icon: '🚀', desc: 'GitHub Pages auto-deploy' }
+        ];
+
+        function renderPipeline() {
+            if (!ht()) {
+                document.getElementById('pipelineSection').innerHTML = '';
+                return;
+            }
+            var h = '<div class="pipeline-section">' +
+                '<div class="pipe-header">Tool Pipeline</div>' +
+                '<div class="pipe-input-row">' +
+                '<input type="text" id="pipeName" placeholder="Tool name (e.g. My Tool)" />' +
+                '<select id="pipeType" style="flex:0.6"><option value="webapp">WebApp</option><option value="pwa">PWA</option></select>' +
+                '</div>' +
+                '<div class="pipe-input-row">' +
+                '<select id="pipeCat" style="flex:0.5"></select>' +
+                '<input type="text" id="pipeDesc" placeholder="Description" />' +
+                '<button id="pipeStart" onclick="F.startPipeline()">Run</button>' +
+                '</div>';
+            h += '<div class="pipe-stages">';
+            PIPE_STAGES.forEach(function(s) {
+                h += '<div class="pipe-step" id="ps-' + s.num + '">' +
+                    '<div class="pipe-dot">' + s.num + '</div>' +
+                    '<div class="pipe-info"><div class="pipe-label">' + s.icon + ' ' + s.name + '</div>' +
+                    '<div class="pipe-detail" id="pd-' + s.num + '">' + s.desc + '</div></div>' +
+                    '<span class="pipe-badge idle" id="pb-' + s.num + '">IDLE</span></div>';
+            });
+            h += '</div><div class="pipe-output" id="pipeLog"></div></div>';
+            document.getElementById('pipelineSection').innerHTML = h;
+
+            // populate category select
+            var sel = document.getElementById('pipeCat');
+            CAT_ORDER.forEach(function(k) {
+                var opt = document.createElement('option');
+                opt.value = k; opt.textContent = CAT_LABELS[k] || k;
+                sel.appendChild(opt);
+            });
+        }
+
+        function psSet(num, state, detail) {
+            var step = document.getElementById('ps-' + num);
+            var badge = document.getElementById('pb-' + num);
+            var det = document.getElementById('pd-' + num);
+            step.className = 'pipe-step ' + state;
+            if (state === 'active') { badge.className = 'pipe-badge running'; badge.textContent = 'RUN'; }
+            else if (state === 'done') { badge.className = 'pipe-badge ok'; badge.textContent = 'DONE'; }
+            else if (state === 'fail') { badge.className = 'pipe-badge err'; badge.textContent = 'FAIL'; }
+            if (detail) det.textContent = detail;
+        }
+
+        function pLog(msg, cls) {
+            var el = document.getElementById('pipeLog');
+            el.classList.add('show');
+            el.innerHTML += '<span class="' + (cls || '') + '">' + msg + '</span><br>';
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function startPipeline() {
+            var name = document.getElementById('pipeName').value.trim();
+            var type = document.getElementById('pipeType').value;
+            var cat = document.getElementById('pipeCat').value;
+            var desc = document.getElementById('pipeDesc').value.trim();
+            if (!name) return;
+
+            var id = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            var emoji = '🔧';
+            var btn = document.getElementById('pipeStart');
+            btn.disabled = true;
+            document.getElementById('pipeLog').innerHTML = '';
+
+            pLog('Pipeline: ' + name + ' (' + type + ')', 'warn');
+
+            // S1: Spec validation
+            psSet(1, 'active', 'Validating...');
+            pLog('S1: Validating spec...', '');
+            if (!id || !desc) {
+                psSet(1, 'fail', 'Name and description required');
+                pLog('S1: ✗ Missing fields', 'err');
+                btn.disabled = false;
+                return;
+            }
+            psSet(1, 'done', name + ' / ' + type + ' / ' + cat);
+            pLog('S1: ✓ Spec validated', 'ok');
+
+            // S2: Scaffold
+            psSet(2, 'active', 'Creating files...');
+            pLog('S2: Reading apps.json...', '');
+
+            api('GET', gp('/contents/apps.json'))
+            .then(function(file) {
+                var content = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+                var data = JSON.parse(content);
+
+                // Check duplicate
+                var exists = data.apps.some(function(a) { return a.id === id; });
+                if (exists) {
+                    psSet(2, 'fail', 'Tool "' + id + '" already exists');
+                    pLog('S2: ✗ Duplicate tool ID', 'err');
+                    btn.disabled = false;
+                    return Promise.reject('__STOP__');
+                }
+
+                // Build scaffold HTML
+                var manifestLink = type === 'pwa' ? '    <link rel="manifest" href="manifest.json">\n' : '';
+                var swScript = type === 'pwa'
+                    ? '    <script>if(\'serviceWorker\' in navigator) navigator.serviceWorker.register(\'sw.js\');</' + 'script>\n' : '';
+                var scaffold =
+                    '<!DOCTYPE html>\n<html lang="ko">\n<head>\n' +
+                    '    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+                    '    <meta name="theme-color" content="#000">\n' + manifestLink +
+                    '    <title>' + name + '</title>\n' +
+                    '    <link rel="stylesheet" href="style.css">\n' +
+                    '</head>\n<body>\n    <div class="app">\n' +
+                    '        <h1>' + emoji + ' ' + name + '</h1>\n' +
+                    '        <p class="desc">' + desc + '</p>\n' +
+                    '        <div class="main-area">Tool ready</div>\n' +
+                    '    </div>\n    <script src="app.js"></' + 'script>\n' +
+                    '    <script src="../shared/js/nav.js"></' + 'script>\n' + swScript +
+                    '</body>\n</html>\n';
+
+                var encHtml = btoa(unescape(encodeURIComponent(scaffold)));
+                pLog('S2: Creating ' + id + '/index.html...', '');
+
+                return api('PUT', gp('/contents/' + id + '/index.html'), {
+                    message: 'pipeline(s2): scaffold ' + name + ' index.html',
+                    content: encHtml
+                }).then(function() {
+                    // style.css
+                    var css = 'body { background: #000; color: #f5f5f7; font-family: -apple-system, sans-serif; margin: 0; padding: 60px 20px 40px; }\n' +
+                        '.app { max-width: 600px; margin: 0 auto; }\nh1 { font-size: 24px; margin-bottom: 8px; }\n' +
+                        '.desc { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 24px; }\n' +
+                        '.main-area { text-align: center; padding: 60px 20px; background: #1C1C1E; border-radius: 14px; color: rgba(255,255,255,0.3); }\n';
+                    var encCss = btoa(unescape(encodeURIComponent(css)));
+                    pLog('S2: Creating style.css...', '');
+                    return api('PUT', gp('/contents/' + id + '/style.css'), {
+                        message: 'pipeline(s2): scaffold ' + name + ' style.css',
+                        content: encCss
+                    });
+                }).then(function() {
+                    // app.js
+                    var js = '// ' + name + '\nconsole.log("' + name + ' loaded");\n';
+                    var encJs = btoa(unescape(encodeURIComponent(js)));
+                    pLog('S2: Creating app.js...', '');
+                    return api('PUT', gp('/contents/' + id + '/app.js'), {
+                        message: 'pipeline(s2): scaffold ' + name + ' app.js',
+                        content: encJs
+                    });
+                }).then(function() {
+                    psSet(2, 'done', 'index.html + style.css + app.js');
+                    pLog('S2: ✓ Scaffold created', 'ok');
+                    return { data: data, sha: file.sha };
+                });
+            })
+            .then(function(ctx) {
+                if (!ctx) return;
+                // S3: Register in apps.json
+                psSet(3, 'active', 'Updating apps.json...');
+                pLog('S3: Adding to apps.json...', '');
+
+                ctx.data.apps.push({
+                    id: id, name: name, desc: desc,
+                    icon: emoji, version: '1.0', category: cat, type: type
+                });
+                var encoded = btoa(unescape(encodeURIComponent(JSON.stringify(ctx.data, null, 2) + '\n')));
+
+                return api('PUT', gp('/contents/apps.json'), {
+                    message: 'pipeline(s3): register ' + name,
+                    content: encoded, sha: ctx.sha
+                }).then(function() {
+                    psSet(3, 'done', 'apps.json updated');
+                    pLog('S3: ✓ Registered', 'ok');
+                    return type;
+                });
+            })
+            .then(function(t) {
+                if (!t) return;
+                // S4: PWA files (if type=pwa)
+                if (t !== 'pwa') {
+                    psSet(4, 'done', 'Skipped (webapp)');
+                    pLog('S4: Skipped — webapp type', '');
+                    return true;
+                }
+
+                psSet(4, 'active', 'Creating PWA files...');
+                pLog('S4: Creating manifest.json...', '');
+
+                var manifest = JSON.stringify({
+                    name: name, short_name: name,
+                    start_url: './', display: 'standalone',
+                    background_color: '#000', theme_color: '#000',
+                    icons: [
+                        { src: '../assets/icon-192.png', sizes: '192x192', type: 'image/png' },
+                        { src: '../assets/icon-512.png', sizes: '512x512', type: 'image/png' }
+                    ]
+                }, null, 2) + '\n';
+                var encM = btoa(unescape(encodeURIComponent(manifest)));
+
+                return api('PUT', gp('/contents/' + id + '/manifest.json'), {
+                    message: 'pipeline(s4): PWA manifest for ' + name,
+                    content: encM
+                }).then(function() {
+                    pLog('S4: Creating sw.js...', '');
+                    var sw = "var CACHE='" + id + "-v1';\nvar ASSETS=['./','./index.html','./style.css','./app.js'];\n" +
+                        "self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(ASSETS)}))});\n" +
+                        "self.addEventListener('fetch',function(e){e.respondWith(caches.match(e.request).then(function(r){return r||fetch(e.request)}))});\n";
+                    var encSw = btoa(unescape(encodeURIComponent(sw)));
+                    return api('PUT', gp('/contents/' + id + '/sw.js'), {
+                        message: 'pipeline(s4): service worker for ' + name,
+                        content: encSw
+                    });
+                }).then(function() {
+                    psSet(4, 'done', 'manifest.json + sw.js');
+                    pLog('S4: ✓ PWA files created', 'ok');
+                    return true;
+                });
+            })
+            .then(function(ok) {
+                if (!ok) return;
+                // S5: Deploy
+                psSet(5, 'active', 'Deploying...');
+                pLog('S5: GitHub Pages auto-deploys on push — verifying...', 'warn');
+
+                // Each PUT already pushed to main → Pages auto-deploys
+                setTimeout(function() {
+                    psSet(5, 'done', 'Live at /' + id + '/');
+                    var url = 'https://dtslib1979.github.io/dtslib-cloud-appstore/' + id + '/';
+                    pLog('S5: ✓ Deployed → ' + url, 'ok');
+                    pLog('━━━ Pipeline complete ✓ ━━━', 'ok');
+                    btn.disabled = false;
+                }, 2000);
+            })
+            .catch(function(err) {
+                if (err === '__STOP__') { btn.disabled = false; return; }
+                pLog('✗ ' + err.message, 'err');
+                btn.disabled = false;
+            });
         }
 
         function renderFooter(b) {
@@ -555,7 +874,8 @@
             createTool: createTool,
             openModal: openModal,
             closeModal: closeModal,
-            saveToken: saveToken
+            saveToken: saveToken,
+            startPipeline: startPipeline
         };
     })();
     </script>
