@@ -1,10 +1,10 @@
 {
   "brand": {
     "name": "DTSLIB",
-    "highlight": "Tools",
-    "subtitle": "Browser-Native Toolbox",
+    "highlight": "Studio",
+    "subtitle": "Browser-Native Runtime Studio",
     "githubUrl": "https://github.com/dtslib1979/dtslib-cloud-appstore",
-    "footer": "DTSLIB TOOLS"
+    "footer": "DTSLIB STUDIO"
   },
   "github": {
     "owner": "dtslib1979",
