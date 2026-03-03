@@ -1,6 +1,6 @@
 # DTSLIB Cloud Appstore — System Architecture Whitepaper
 
-> **Version:** v1.3 — Execution Document + 아이디어 진화 기록 + Browser=Studio + F-Droid 판정 + 게임 카테고리
+> **Version:** v1.4 — Execution Document + 3레포 연동 맵 + 아이디어 진화 기록 + Browser=Studio + F-Droid 판정
 > **Date:** 2026-03-03
 > **Author:** Parksy (Voice) + Claude Code (Implementation)
 > **형제 문서:** dtslib-apk-lab/docs/SYSTEM_ARCHITECTURE_WHITEPAPER.md v2.2
@@ -969,23 +969,141 @@ F2가 최고 RPN — FFmpeg WASM 바이너리 CDN 백업이 최우선 과제.
 
 ---
 
-## 15. Cross-Repo Sync Map
+## 15. Cross-Repo Sync Map — 3레포 연동
+
+### 15.1 전체 구조: HQ → 엔진 → 스튜디오
 
 ```
-dtslib-cloud-appstore (이 레포)
-    │
-    ├──→ dtslib-apk-lab (형제)
-    │     공유: 대시보드 패턴, Guard 구조, Pipeline 5-Stage 패턴
-    │     차이: APK(빌드O) vs Web(빌드X)
-    │
-    ├──→ parksy-image (에셋 공급)
-    │     visual-novel 에피소드 번들 → cloud-appstore/visual-novel/
-    │     동기화: deploy-episode.sh (미구현)
-    │
-    └──→ parksy-audio (에셋 공급)
-          Lyria 3 BGM → visual-novel 사운드트랙
-          동기화: sync-lyria3-to-image.sh (parksy-audio 내)
+┌─────────────────────────────────────────────────────────────────┐
+│              dtslib-papyrus (HQ 관제센터)                         │
+│                                                                   │
+│  maps/stations.json  ── 28개 워크센터 (cloud-appstore = 1개)     │
+│  maps/routes.json    ── 8대 생산 라우트                          │
+│  ops/registry.json   ── 52개 OP 코드                             │
+│  ops/fab-run.sh      ── 생산 명령 발행                           │
+│  ledger/postings/    ── ERP 전표 (공정 기록)                     │
+│  maps/lanes.json     ── 크로스레포 배포 레인                     │
+│  state.json          ── 실시간 현황판                            │
+│                                                                   │
+│  역할: "어디서 뭘 만들어라" 명령 + 기록 + 관제                    │
+├───────────────────────┬─────────────────────────────────────────┤
+│                       │                                           │
+│                       ▼                                           │
+│  ┌──────────────────────────────────┐                            │
+│  │     OrbitPrompt (메타 프롬프팅)   │                            │
+│  │                                   │                            │
+│  │  orbit/atoms/     ── Prompt Atom  │                            │
+│  │  orbit/templates/ ── 6종 템플릿   │                            │
+│  │  prompts/         ── Generator 5종│                            │
+│  │  boards/          ── 결과물 8개   │                            │
+│  │  phl/             ── PHL 프로토콜 │                            │
+│  │                                   │                            │
+│  │  역할: "뭘 만들지" 설계 + 프롬프트│                            │
+│  └──────────────┬───────────────────┘                            │
+│                 │                                                 │
+│                 ▼                                                 │
+│  ┌──────────────────────────────────┐                            │
+│  │  dtslib-cloud-appstore (Studio)   │                            │
+│  │                                   │                            │
+│  │  9개 브라우저 도구 (실시간 제작)   │                            │
+│  │  5-Stage Pipeline (도구 생성)     │                            │
+│  │  Browser Runtime API (무료 엔진)  │                            │
+│  │                                   │                            │
+│  │  역할: "실제로 만든다" 제작 실행   │                            │
+│  └──────────────┬───────────────────┘                            │
+│                 │                                                 │
+│                 ▼                                                 │
+│  ┌──────────────────────────────────┐                            │
+│  │  dtslib-apk-lab (쇼룸)            │                            │
+│  │                                   │                            │
+│  │  10개 APK (Vercel 공개 배포)      │                            │
+│  │  YouTube 시청자가 설치/체험       │                            │
+│  │                                   │                            │
+│  │  역할: "증명한다" 공개 샘플       │                            │
+│  └──────────────────────────────────┘                            │
+└─────────────────────────────────────────────────────────────────┘
+
+흐름 요약:
+  Papyrus(명령) → OrbitPrompt(설계) → Cloud Appstore(제작) → APK Lab(공개)
+                                                    ↓
+                                              YouTube(유통)
 ```
+
+### 15.2 Papyrus ↔ Cloud Appstore 연동
+
+| Papyrus 자산 | Cloud Appstore 대응 | 연동 방식 |
+|-------------|-------------------|----------|
+| `stations.json` 워크센터 | cloud-appstore = 1개 스테이션 | JSON 등록 |
+| `routes.json` 라우트 | 도구가 공정 단계로 삽입 | 라우트 편집 |
+| `registry.json` OP 코드 | OP-STUDIO-SHORTS, OP-STUDIO-AUDIO 등 | OP 등록 |
+| `lanes.json` 배포 레인 | OrbitPrompt → cloud-appstore 레인 | 레인 추가 |
+| `ledger/postings/` 전표 | 도구 생산 기록 → 전표 기표 | fab-run.sh 경유 |
+| `state.json` 현황판 | 도구 상태 반영 | 상태 갱신 |
+
+**라우트 삽입 예시:**
+
+```
+RT-alpha (음원 급행):  ... → audio-studio(보정) → YouTube
+RT-beta  (웹툰 공장):  ... → image-pack(리사이즈) → slim-lens(보정) → 패키징
+RT-gamma (칠판 급행):  OrbitPrompt 칠판 → lecture-shorts(영상화) → YouTube
+RT-delta (추모 영상):  ... → slim-lens(사진 보정) → clip-shorts(영상 조합)
+```
+
+### 15.3 OrbitPrompt ↔ Cloud Appstore 연동
+
+| OrbitPrompt 자산 | Cloud Appstore 대응 | 연동 방식 |
+|-----------------|-------------------|----------|
+| `boards/*.html` (8개 칠판) | game 카테고리 도구 후보 | 파일 복사 + apps.json 등록 |
+| `orbit/atoms/` Prompt Atom | 도구 스펙 (Stage 1 입력) | Atom → Pipeline Spec 변환 |
+| `orbit/templates/` 6종 | 도구 설계 프롬프트 | 템플릿 바인딩 |
+| Generator (prompts/) | Studio Tool Generator (6번째) | 신규 Generator 개발 |
+| `config/sources.json` | parksy-image/audio 에셋 참조 | 매니페스트 경유 |
+
+**boards/ → game 카테고리 후보:**
+
+| OrbitPrompt 칠판 | Cloud Appstore 도구 | 카테고리 |
+|-----------------|-------------------|----------|
+| `math-tutor.html` | 수학 드릴 | game |
+| `music-curation.html` | 음악 큐레이션 퀴즈 | game |
+| `memorial-tribute.html` | 추모 영상 뷰어 | util |
+| `luxury-editorial.html` | 룩북 에디토리얼 | util |
+
+### 15.4 기존 에셋 공급 레포 (변경 없음)
+
+```
+parksy-image ──→ cloud-appstore
+  visual-novel 에피소드 번들 → visual-novel/
+  동기화: deploy-episode.sh (미구현)
+
+parksy-audio ──→ cloud-appstore
+  Lyria 3 BGM → visual-novel 사운드트랙
+  동기화: sync-lyria3-to-image.sh (parksy-audio 내)
+```
+
+### 15.5 공개/비공개 전략
+
+```
+비공개 (내부 엔진)              공개 (쇼룸)
+─────────────────              ─────────────
+dtslib-papyrus (HQ)            dtslib-apk-lab (Vercel)
+OrbitPrompt (프롬프팅)          → YouTube (스토리)
+dtslib-cloud-appstore (제작)    → 시청자 설치/체험
+
+도구는 숨긴다 (차별성 유지 + 과금 리스크)
+결과물은 공개한다 (신뢰 확보)
+스토리로 연결한다 (콘텐츠화)
+```
+
+### 15.6 연동 우선순위
+
+| 순위 | 아이디어 | 난이도 | 즉시 가치 | 상태 |
+|------|---------|--------|----------|------|
+| 1 | boards/ → game 카테고리 도구 등록 | 낮음 | 높음 | 미구현 |
+| 2 | Papyrus stations.json에 워크센터 등록 | 낮음 | 높음 | 미구현 |
+| 3 | 라우트에 cloud-appstore 도구 삽입 | 중간 | 높음 | 미구현 |
+| 4 | lanes.json 배포 레인 추가 | 낮음 | 중간 | 미구현 |
+| 5 | Studio Tool Generator (OrbitPrompt) | 중간 | 중간 | 미구현 |
+| 6 | Prompt Atom → Pipeline Spec 변환 | 높음 | 나중 | 미구현 |
 
 모든 크로스레포 이동은 명시적 스크립트로 (매트릭스 제2조).
 
@@ -1067,6 +1185,7 @@ git push origin main
 
 ---
 
+*v1.4 — §15 3레포 연동 맵 (Papyrus HQ + OrbitPrompt + Cloud Appstore + APK Lab 4레포 흐름도, 공개/비공개 전략).*
 *v1.3 — §9.7 아이디어 진화 기록 (ChatGPT 브레인스토밍 논쟁 4건 + 합의점 + 진화 타임라인).*
 *v1.2 — §9 Browser=Studio 프레이밍 추가 (브라우저 무료 엔진 카탈로그, 방송 소재 테스트 필터, 정체성 전환).*
 *v1.1 — §8 F-Droid 소스풀 불필요 판정 + 게임 카테고리 추가 + 데이터 수급 전략.*
