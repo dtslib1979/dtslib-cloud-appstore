@@ -1,6 +1,6 @@
 # DTSLIB Cloud Appstore — System Architecture Whitepaper
 
-> **Version:** v1.4 — Execution Document + 3레포 연동 맵 + 아이디어 진화 기록 + Browser=Studio + F-Droid 판정
+> **Version:** v1.5 — §15 3레포 연동 구현 완료 (6 Task, 20파일, 4 sync 스크립트)
 > **Date:** 2026-03-03
 > **Author:** Parksy (Voice) + Claude Code (Implementation)
 > **형제 문서:** dtslib-apk-lab/docs/SYSTEM_ARCHITECTURE_WHITEPAPER.md v2.2
@@ -969,7 +969,7 @@ F2가 최고 RPN — FFmpeg WASM 바이너리 CDN 백업이 최우선 과제.
 
 ---
 
-## 15. Cross-Repo Sync Map — 3레포 연동
+## 15. Cross-Repo Sync Map — 3레포 연동 (2026-03-03 구현 완료)
 
 ### 15.1 전체 구조: HQ → 엔진 → 스튜디오
 
@@ -993,8 +993,8 @@ F2가 최고 RPN — FFmpeg WASM 바이너리 CDN 백업이 최우선 과제.
 │  │     OrbitPrompt (메타 프롬프팅)   │                            │
 │  │                                   │                            │
 │  │  orbit/atoms/     ── Prompt Atom  │                            │
-│  │  orbit/templates/ ── 6종 템플릿   │                            │
-│  │  prompts/         ── Generator 5종│                            │
+│  │  data/templates/  ── 12종 템플릿  │                            │
+│  │  prompts/         ── Generator 8종│                            │
 │  │  boards/          ── 결과물 8개   │                            │
 │  │  phl/             ── PHL 프로토콜 │                            │
 │  │                                   │                            │
@@ -1005,7 +1005,7 @@ F2가 최고 RPN — FFmpeg WASM 바이너리 CDN 백업이 최우선 과제.
 │  ┌──────────────────────────────────┐                            │
 │  │  dtslib-cloud-appstore (Studio)   │                            │
 │  │                                   │                            │
-│  │  9개 브라우저 도구 (실시간 제작)   │                            │
+│  │  13개 브라우저 도구 (실시간 제작)  │                            │
 │  │  5-Stage Pipeline (도구 생성)     │                            │
 │  │  Browser Runtime API (무료 엔진)  │                            │
 │  │                                   │                            │
@@ -1031,42 +1031,49 @@ F2가 최고 RPN — FFmpeg WASM 바이너리 CDN 백업이 최우선 과제.
 
 ### 15.2 Papyrus ↔ Cloud Appstore 연동
 
-| Papyrus 자산 | Cloud Appstore 대응 | 연동 방식 |
-|-------------|-------------------|----------|
-| `stations.json` 워크센터 | cloud-appstore = 1개 스테이션 | JSON 등록 |
-| `routes.json` 라우트 | 도구가 공정 단계로 삽입 | 라우트 편집 |
-| `registry.json` OP 코드 | OP-STUDIO-SHORTS, OP-STUDIO-AUDIO 등 | OP 등록 |
-| `lanes.json` 배포 레인 | OrbitPrompt → cloud-appstore 레인 | 레인 추가 |
-| `ledger/postings/` 전표 | 도구 생산 기록 → 전표 기표 | fab-run.sh 경유 |
-| `state.json` 현황판 | 도구 상태 반영 | 상태 갱신 |
+| Papyrus 자산 | Cloud Appstore 대응 | 연동 방식 | 상태 |
+|-------------|-------------------|----------|------|
+| `maps/stations.json` 스테이션 | studio 스테이션 (13도구, 5카테고리) | `sync-stations.sh` | **구현** |
+| `maps/lanes.json` 배포 레인 | studio 레인 (satom prefix) + studio-orbit combo | `sync-lane.sh` | **구현** |
+| `state.json` 현황판 | 4개 라인 chain에 studio_tools 참조 | `sync-routes.sh` 경유 | **구현** |
+| `ledger/postings/` 전표 | 도구 생산 기록 → 전표 기표 | fab-run.sh 경유 | 미구현 |
 
-**라우트 삽입 예시:**
+**state.json studio_tools 매핑 (구현됨):**
 
 ```
-RT-alpha (음원 급행):  ... → audio-studio(보정) → YouTube
-RT-beta  (웹툰 공장):  ... → image-pack(리사이즈) → slim-lens(보정) → 패키징
-RT-gamma (칠판 급행):  OrbitPrompt 칠판 → lecture-shorts(영상화) → YouTube
-RT-delta (추모 영상):  ... → slim-lens(사진 보정) → clip-shorts(영상 조합)
+piano-weekly.chain[0]  → ["audio-studio"]
+tutorial.chain[2]      → ["lecture-shorts"]
+memorial.chain[1]      → ["slim-lens", "clip-shorts", "memorial-tribute"]
+documentary.chain[4]   → ["slim-lens", "clip-shorts"]
 ```
 
 ### 15.3 OrbitPrompt ↔ Cloud Appstore 연동
 
-| OrbitPrompt 자산 | Cloud Appstore 대응 | 연동 방식 |
-|-----------------|-------------------|----------|
-| `boards/*.html` (8개 칠판) | game 카테고리 도구 후보 | 파일 복사 + apps.json 등록 |
-| `orbit/atoms/` Prompt Atom | 도구 스펙 (Stage 1 입력) | Atom → Pipeline Spec 변환 |
-| `orbit/templates/` 6종 | 도구 설계 프롬프트 | 템플릿 바인딩 |
-| Generator (prompts/) | Studio Tool Generator (6번째) | 신규 Generator 개발 |
-| `config/sources.json` | parksy-image/audio 에셋 참조 | 매니페스트 경유 |
+| OrbitPrompt 자산 | Cloud Appstore 대응 | 연동 방식 | 상태 |
+|-----------------|-------------------|----------|------|
+| `boards/*.html` (4개 이식) | game/util 도구로 등록 | `sync-boards-from-orbit.sh` | **구현** |
+| `data/fab-manifest.json` 라우트 | RT-α/ζ/η에 studio_tools 배열 | `sync-routes.sh` | **구현** |
+| `data/templates.json` | studio-tool 템플릿 등록 | gh api PUT | **구현** |
+| `prompts/studio/` Generator | Studio Tool Generator (8번째) | gh api PUT | **구현** |
+| `orbit/atoms/` Prompt Atom | Atom → Pipeline Spec 변환 | `scripts/atom-bridge.html` | **구현** |
+| `config/sources.json` | parksy-image/audio 에셋 참조 | 매니페스트 경유 | 미구현 |
 
-**boards/ → game 카테고리 후보:**
+**boards/ → 도구 등록 완료:**
 
-| OrbitPrompt 칠판 | Cloud Appstore 도구 | 카테고리 |
-|-----------------|-------------------|----------|
-| `math-tutor.html` | 수학 드릴 | game |
-| `music-curation.html` | 음악 큐레이션 퀴즈 | game |
-| `memorial-tribute.html` | 추모 영상 뷰어 | util |
-| `luxury-editorial.html` | 룩북 에디토리얼 | util |
+| OrbitPrompt 칠판 | Cloud Appstore ID | 카테고리 | 변환 |
+|-----------------|-------------------|----------|------|
+| `math-tutor.html` | `math-tutor` | game | manifest 제거, nav.js 삽입 |
+| `music-curation.html` | `music-curation` | game | asset-loader 제거, nav.js 삽입 |
+| `memorial-tribute.html` | `memorial-tribute` | util | manifest+asset-loader 제거, nav.js 삽입 |
+| `luxury-editorial.html` | `luxury-editorial` | util | nav.js 삽입 |
+
+**fab-manifest.json studio_tools 매핑 (구현됨):**
+
+```
+RT-α (콘텐츠 생산): ["lecture-shorts", "auto-shorts", "math-tutor", "music-curation"]
+RT-ζ (오디오 엔진): ["audio-studio"]
+RT-η (물성 스튜디오): ["slim-lens", "image-pack", "clip-shorts", "memorial-tribute", "luxury-editorial"]
+```
 
 ### 15.4 기존 에셋 공급 레포 (변경 없음)
 
@@ -1094,18 +1101,29 @@ dtslib-cloud-appstore (제작)    → 시청자 설치/체험
 스토리로 연결한다 (콘텐츠화)
 ```
 
-### 15.6 연동 우선순위
+### 15.6 연동 구현 현황 (2026-03-03 전수 완료)
 
-| 순위 | 아이디어 | 난이도 | 즉시 가치 | 상태 |
-|------|---------|--------|----------|------|
-| 1 | boards/ → game 카테고리 도구 등록 | 낮음 | 높음 | 미구현 |
-| 2 | Papyrus stations.json에 워크센터 등록 | 낮음 | 높음 | 미구현 |
-| 3 | 라우트에 cloud-appstore 도구 삽입 | 중간 | 높음 | 미구현 |
-| 4 | lanes.json 배포 레인 추가 | 낮음 | 중간 | 미구현 |
-| 5 | Studio Tool Generator (OrbitPrompt) | 중간 | 중간 | 미구현 |
-| 6 | Prompt Atom → Pipeline Spec 변환 | 높음 | 나중 | 미구현 |
+| 순위 | 아이디어 | 구현물 | 상태 |
+|------|---------|--------|------|
+| 1 | boards/ → game 카테고리 도구 등록 | 4개 HTML 이식 + apps.json 13도구 + `sync-boards-from-orbit.sh` | **완료** |
+| 2 | Papyrus stations.json 스테이션 등록 | `maps/stations.json` 3스테이션 + `sync-stations.sh` | **완료** |
+| 3 | 라우트에 studio 도구 삽입 | fab-manifest RT-α/ζ/η + state.json 4라인 + `sync-routes.sh` | **완료** |
+| 4 | lanes.json 배포 레인 추가 | studio 레인 + studio-orbit combo + `sync-lane.sh` | **완료** |
+| 5 | Studio Tool Generator | `prompts/studio/studio-generator.html` + templates/fab-manifest 등록 | **완료** |
+| 6 | Atom → Pipeline Spec 변환 | `scripts/atom-bridge.html` + `atom-to-pipeline.js` | **완료** |
+
+### 15.7 크로스레포 동기화 스크립트
 
 모든 크로스레포 이동은 명시적 스크립트로 (매트릭스 제2조).
+
+| 스크립트 | 방향 | 대상 | 실행 |
+|---------|------|------|------|
+| `sync-boards-from-orbit.sh` | OrbitPrompt → local | 4개 board HTML | `gh api` GET + sed 변환 |
+| `sync-stations.sh` | local → Papyrus | `maps/stations.json` studio 항목 | `gh api` PUT |
+| `sync-routes.sh` | local → OrbitPrompt | `fab-manifest.json` studio_tools | `gh api` PUT |
+| `sync-lane.sh` | local → Papyrus | `maps/lanes.json` studio 레인 | `gh api` PUT (없을 때만) |
+
+총 20파일 수정 (로컬 14 + 원격 6). 커밋 `8bfd5a3`.
 
 ---
 
