@@ -20,8 +20,8 @@
     var currentId = '';
 
     // Category grouping
-    var CAT_LABELS = { video: '영상', audio: '오디오', image: '이미지', util: '유틸' };
-    var CAT_ORDER = ['video', 'audio', 'image', 'util'];
+    var CAT_LABELS = { video: '영상', audio: '오디오', image: '이미지', util: '유틸', game: '게임' };
+    var CAT_ORDER = ['video', 'audio', 'image', 'util', 'game'];
 
     // Inject CSS immediately (no flash)
     var style = document.createElement('style');

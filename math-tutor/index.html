@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Tutor Studio | 수학 과외 스튜디오</title>
+<meta name="description" content="Khan Academy style math tutoring chalkboard. 칸 아카데미 스타일 수학 과외 칠판.">
+<meta name="description" lang="en" content="Khan Academy style math tutoring chalkboard for screen recording broadcasts.">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --accent: #4af;
+  --accent-soft: rgba(68,170,255,0.15);
+  --chalk: #e8e8e8;
+  --dim: #777;
+  --board: #1a2a1a;
+  --board-line: #2a3a2a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--chalk);
+  min-height: 100vh;
+}
+.app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+
+/* Progress */
+.progress { display: flex; gap: 2px; margin-bottom: 1.5rem; }
+.progress-dot {
+  flex: 1; height: 4px; background: #333; border-radius: 2px; transition: 0.3s;
+}
+.progress-dot.active { background: var(--accent); }
+.progress-dot.done { background: #2a6; }
+
+/* Nav tabs */
+.tabs { display: flex; gap: 0; margin-bottom: 1rem; overflow-x: auto; }
+.tab {
+  flex: 1; padding: 0.7rem 0.3rem; text-align: center;
+  background: #1a1a1a; border: none; color: var(--dim);
+  font-size: 0.75rem; cursor: pointer; border-right: 1px solid #333;
+  min-width: 0; white-space: nowrap;
+}
+.tab:last-child { border-right: none; }
+.tab.active { background: var(--accent); color: #fff; }
+.tab .num { display: block; font-size: 1rem; font-weight: 700; }
+
+/* Panels */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Blackboard */
+.board {
+  background: var(--board);
+  border: 2px solid var(--board-line);
+  border-radius: 12px;
+  padding: 2rem;
+  min-height: 400px;
+  position: relative;
+}
+.board-title {
+  font-size: 1.5rem; font-weight: 700; color: var(--accent);
+  margin-bottom: 1rem; text-align: center;
+}
+.board-content {
+  font-size: 1.1rem; line-height: 2;
+  white-space: pre-wrap; font-family: 'Courier New', monospace;
+}
+.board textarea {
+  width: 100%; min-height: 300px; background: transparent;
+  border: 1px dashed var(--board-line); border-radius: 8px;
+  color: var(--chalk); font-family: 'Courier New', monospace;
+  font-size: 1.1rem; line-height: 2; padding: 1rem; resize: vertical;
+}
+
+/* Formula card */
+.formula-card {
+  background: #1a1a2a; border: 1px solid #334; border-radius: 10px;
+  padding: 1.5rem; margin-top: 1rem; text-align: center;
+  font-size: 1.3rem; font-family: 'Courier New', monospace;
+}
+
+/* Nav buttons */
+.nav { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.nav-btn {
+  flex: 1; padding: 1rem; border: none; border-radius: 8px;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.nav-btn.prev { background: #333; color: #fff; }
+.nav-btn.next { background: var(--accent); color: #000; }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Input fields */
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 0.85rem; color: var(--dim); margin-bottom: 0.3rem; }
+.field input, .field select {
+  width: 100%; background: #1a1a1a; border: 1px solid #333;
+  border-radius: 6px; padding: 0.7rem; color: #fff; font-size: 1rem;
+}
+
+/* Bilingual Support - Bing/Chrome Translation Compatible */
+.bilingual { display: block; }
+.bilingual .ko { display: block; }
+.bilingual .en { display: block; font-size: 0.85em; color: var(--dim); margin-top: 0.25em; }
+[lang="en"] { font-style: normal; }
+
+/* Language toggle */
+.lang-toggle {
+  position: fixed; top: 1rem; right: 1rem; z-index: 100;
+  display: flex; gap: 4px; background: #1a1a1a; padding: 4px; border-radius: 6px;
+}
+.lang-btn {
+  padding: 0.4rem 0.8rem; border: none; border-radius: 4px;
+  font-size: 0.75rem; cursor: pointer; background: transparent; color: var(--dim);
+}
+.lang-btn.active { background: var(--accent); color: #000; }
+
+/* When English mode active */
+html.en-mode .bilingual .ko { font-size: 0.85em; color: var(--dim); }
+html.en-mode .bilingual .en { font-size: 1em; color: var(--chalk); }
+</style>
+</head>
+<body>
+<!-- Language Toggle -->
+<div class="lang-toggle">
+  <button class="lang-btn active" data-lang="ko" onclick="setLang('ko')">한국어</button>
+  <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+</div>
+
+<div class="app">
+  <div class="progress" id="progress"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+  <div class="nav">
+    <button class="nav-btn prev" id="prevBtn" onclick="go(-1)">
+      <span class="bilingual">
+        <span lang="ko" class="ko">← 이전</span>
+        <span lang="en" class="en">← Prev</span>
+      </span>
+    </button>
+    <button class="nav-btn next" id="nextBtn" onclick="go(1)">
+      <span class="bilingual">
+        <span lang="ko" class="ko">다음 →</span>
+        <span lang="en" class="en">Next →</span>
+      </span>
+    </button>
+  </div>
+</div>
+<script>
+// Bilingual pages data
+const pages = [
+  { num: 1, label: '단원', labelEn: 'Unit', title: '오늘의 단원', titleEn: "Today's Unit", placeholder: '예) 이차방정식의 근의 공식', placeholderEn: 'e.g.) Quadratic Formula' },
+  { num: 2, label: '질문', labelEn: 'Q', title: '오늘의 질문', titleEn: "Today's Question", placeholder: '예) x² + 5x + 6 = 0 의 해는?', placeholderEn: 'e.g.) Solve x² + 5x + 6 = 0' },
+  { num: 3, label: '개념', labelEn: 'Concept', title: '개념 설명', titleEn: 'Concept Explanation', placeholder: '판서할 내용을 여기에 적으세요...', placeholderEn: 'Write your board content here...' },
+  { num: 4, label: '풀이1', labelEn: 'Sol.1', title: '풀이 과정 1', titleEn: 'Solution Step 1', placeholder: 'Step 1: a=1, b=5, c=6', placeholderEn: 'Step 1: a=1, b=5, c=6' },
+  { num: 5, label: '풀이2', labelEn: 'Sol.2', title: '풀이 과정 2 (심화)', titleEn: 'Solution Step 2 (Advanced)', placeholder: '다른 방법으로 풀어보기...', placeholderEn: 'Try another method...' },
+  { num: 6, label: '공식', labelEn: 'Formula', title: '핵심 공식 카드', titleEn: 'Key Formula Card', placeholder: '스크린샷용 공식 정리', placeholderEn: 'Formula summary for screenshot' },
+  { num: 7, label: '예고', labelEn: 'Next', title: '다음 시간에...', titleEn: 'Next Time...', placeholder: '다음 강의 예고', placeholderEn: 'Preview next lecture' }
+];
+
+// Language toggle
+let currentLang = localStorage.getItem('orbitprompt_lang') || 'ko';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('orbitprompt_lang', lang);
+  document.documentElement.classList.toggle('en-mode', lang === 'en');
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  render();
+}
+
+// Initialize language on load
+document.documentElement.classList.toggle('en-mode', currentLang === 'en');
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.classList.toggle('active', btn.dataset.lang === currentLang);
+});
+
+let current = 0;
+
+function render() {
+  const isEn = currentLang === 'en';
+
+  document.getElementById('progress').innerHTML = pages.map((_, i) =>
+    `<div class="progress-dot ${i < current ? 'done' : i === current ? 'active' : ''}"></div>`
+  ).join('');
+
+  document.getElementById('tabs').innerHTML = pages.map((p, i) =>
+    `<button class="tab ${i === current ? 'active' : ''}" onclick="goTo(${i})">
+      <span class="num">${p.num}</span>
+      <span class="bilingual">
+        <span lang="ko" class="ko">${p.label}</span>
+        <span lang="en" class="en">${p.labelEn}</span>
+      </span>
+    </button>`
+  ).join('');
+
+  document.getElementById('panels').innerHTML = pages.map((p, i) => `
+    <div class="panel ${i === current ? 'active' : ''}">
+      <div class="board">
+        <div class="board-title bilingual">
+          <span lang="ko" class="ko">${p.title}</span>
+          <span lang="en" class="en">${p.titleEn}</span>
+        </div>
+        <textarea placeholder="${isEn ? p.placeholderEn : p.placeholder}" id="input${i}">${localStorage.getItem('math_'+i) || ''}</textarea>
+      </div>
+      ${i === 5 ? `<div class="formula-card" id="formulaPreview">
+        <span class="bilingual">
+          <span lang="ko" class="ko">공식 카드 미리보기</span>
+          <span lang="en" class="en">Formula Card Preview</span>
+        </span>
+      </div>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('prevBtn').disabled = current === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  if (current === pages.length - 1) {
+    nextBtn.innerHTML = `<span class="bilingual"><span lang="ko" class="ko">완료 ✓</span><span lang="en" class="en">Done ✓</span></span>`;
+  } else {
+    nextBtn.innerHTML = `<span class="bilingual"><span lang="ko" class="ko">다음 →</span><span lang="en" class="en">Next →</span></span>`;
+  }
+}
+
+function save() {
+  const input = document.getElementById('input' + current);
+  if (input) localStorage.setItem('math_' + current, input.value);
+}
+
+function go(dir) { save(); goTo(current + dir); }
+function goTo(i) { save(); current = Math.max(0, Math.min(pages.length - 1, i)); render(); }
+
+render();
+
+// 스튜디오 연동 초기화
+    // 디자인 토큰 적용 (tango-magenta)
+    const timing = AssetLoader.getDesignTokens('timing');
+    if (timing) {
+      document.documentElement.style.setProperty('--beat', timing.beat + 'ms');
+      document.documentElement.style.setProperty('--half-beat', timing.halfBeat + 'ms');
+    }
+
+    // 연결 상태 로그
+    const status = AssetLoader.getStatus();
+    console.log('스튜디오 연결:', status);
+
+  } catch (e) {
+    console.warn('스튜디오 연동 실패 (오프라인 모드):', e.message);
+  }
+}
+
+// Branch customization support
+</script>
+
+<script src="../shared/js/nav.js"></script>
+</body>
+</html>
