@@ -12,6 +12,10 @@
     { "id": "slim-lens", "name": "Slim Lens", "desc": "사진 가로 슬림", "icon": "📷", "version": "2.0", "category": "image", "type": "webapp" },
     { "id": "image-pack", "name": "Image Pack", "desc": "플랫폼별 이미지 규격", "icon": "📦", "version": "1.0", "category": "image", "type": "webapp" },
     { "id": "bilingual-aligner", "name": "Bilingual Aligner", "desc": "한영 정렬 & 텔레프롬프터", "icon": "📘", "version": "1.0", "category": "util", "type": "webapp" },
-    { "id": "project-manager", "name": "Project Manager", "desc": "메타데이터 & 출하 관리", "icon": "📋", "version": "1.0", "category": "util", "type": "webapp" }
+    { "id": "project-manager", "name": "Project Manager", "desc": "메타데이터 & 출하 관리", "icon": "📋", "version": "1.0", "category": "util", "type": "webapp" },
+    { "id": "math-tutor", "name": "Math Tutor", "desc": "수학 과외 칠판 스튜디오", "icon": "📐", "version": "1.0", "category": "game", "type": "webapp" },
+    { "id": "music-curation", "name": "Music Curation", "desc": "음악 큐레이션 스튜디오", "icon": "🎧", "version": "1.0", "category": "game", "type": "webapp" },
+    { "id": "memorial-tribute", "name": "Memorial Tribute", "desc": "추모 다큐 스튜디오", "icon": "🕯️", "version": "1.0", "category": "util", "type": "webapp" },
+    { "id": "luxury-editorial", "name": "Luxury Editorial", "desc": "럭셔리 에디토리얼 룩북", "icon": "✨", "version": "1.0", "category": "util", "type": "webapp" }
   ]
 }

@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Luxury Editorial | OrbitPrompt</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --surface-2: #1c1c1c;
+      --border: rgba(255,255,255,0.08);
+      --text: #f5f5f5;
+      --text-2: rgba(255,255,255,0.6);
+      --text-3: rgba(255,255,255,0.35);
+      --gold: #C9A962;
+      --gold-dim: rgba(201,169,98,0.12);
+      --gold-glow: rgba(201,169,98,0.3);
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-ui: 'Inter', -apple-system, sans-serif;
+      --ken-burns: 12s;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg);
+      font-family: var(--font-ui);
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* ══════════════════════════════════════════════════════════
+       SETUP MODE
+       ══════════════════════════════════════════════════════════ */
+    .setup {
+      min-height: 100vh;
+      padding: 20px;
+      padding-bottom: 100px;
+      overflow-y: auto;
+    }
+    .setup.hidden { display: none; }
+
+    .setup-header {
+      text-align: center;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+    .setup-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--gold-dim);
+      border: 1px solid var(--gold);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .setup-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .setup-sub {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-2);
+    }
+
+    /* Form */
+    .section {
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      color: var(--text-3);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-2);
+      margin-bottom: 6px;
+    }
+    .field input, .field textarea {
+      width: 100%;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .field input:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    .field textarea { min-height: 80px; resize: vertical; }
+
+    /* Slides */
+    .slides-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slide-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .slide-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .slide-num {
+      width: 24px;
+      height: 24px;
+      background: var(--gold-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+    }
+    .slide-title-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      padding: 4px 0;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .slide-title-input:focus { outline: none; border-color: var(--gold); }
+    .slide-remove {
+      background: none;
+      border: none;
+      color: var(--text-3);
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .slide-fields {
+      display: grid;
+      gap: 8px;
+    }
+    .slide-fields input, .slide-fields textarea {
+      width: 100%;
+      padding: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+    }
+    .slide-fields textarea { min-height: 50px; }
+
+    .add-slide-btn {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      color: var(--text-3);
+      font-size: 13px;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+    .add-slide-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--gold);
+      color: #000;
+    }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-secondary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-2);
+    }
+    .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ══════════════════════════════════════════════════════════
+       BROADCAST MODE
+       ══════════════════════════════════════════════════════════ */
+    .broadcast {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: none;
+      flex-direction: column;
+    }
+    .broadcast.active { display: flex; }
+
+    /* Slide Container */
+    .slide-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .slide.active { opacity: 1; }
+
+    /* Image with Ken Burns */
+    .slide-image {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: brightness(0.7);
+      animation: kenBurns var(--ken-burns) ease-out forwards;
+    }
+    @keyframes kenBurns {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
+    }
+
+    /* Gradient Overlay */
+    .slide-gradient {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        rgba(0,0,0,0.9) 0%,
+        rgba(0,0,0,0.4) 40%,
+        rgba(0,0,0,0.2) 100%
+      );
+    }
+
+    /* Content */
+    .slide-content {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 32px 24px;
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+    .slide-title {
+      font-family: var(--font-display);
+      font-size: clamp(24px, 6vw, 36px);
+      font-weight: 300;
+      letter-spacing: 0.03em;
+      line-height: 1.3;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+    }
+    .slide-caption {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.6;
+      max-width: 500px;
+    }
+
+    /* Progress */
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255,255,255,0.1);
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 0.3s;
+    }
+
+    /* Slide Counter */
+    .slide-counter {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      color: var(--text-2);
+      letter-spacing: 0.1em;
+    }
+
+    /* Exit Button */
+    .exit-btn {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 40px;
+      height: 40px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-2);
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .exit-btn:hover { background: rgba(0,0,0,0.8); color: var(--gold); }
+
+    /* Annotation Area */
+    .annotation-area {
+      position: absolute;
+      top: 50%;
+      right: 24px;
+      transform: translateY(-50%);
+      width: 280px;
+      height: 180px;
+      border: 1px dashed var(--gold);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-size: 12px;
+      opacity: 0.5;
+    }
+    .annotation-area.show { display: flex; }
+
+    /* Touch hint */
+    .touch-hint {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: var(--text-3);
+      letter-spacing: 0.1em;
+      opacity: 0;
+      animation: fadeHint 3s ease 2s forwards;
+    }
+    @keyframes fadeHint {
+      0% { opacity: 0; }
+      50% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Footer */
+    .setup-footer {
+      text-align: center;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 32px;
+    }
+    .setup-footer a {
+      color: var(--text-3);
+      text-decoration: none;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- SETUP MODE -->
+  <div class="setup" id="setup">
+    <header class="setup-header">
+      <div class="setup-badge">EDITORIAL BOARD</div>
+      <h1 class="setup-title">Luxury Editorial</h1>
+      <p class="setup-sub">High-end visual storytelling</p>
+    </header>
+
+    <!-- Content -->
+    <section class="section">
+      <div class="section-title">Content</div>
+      <div class="field">
+        <label>Title</label>
+        <input type="text" id="title" placeholder="The Art of Living">
+      </div>
+      <div class="field">
+        <label>Subtitle / Tagline</label>
+        <input type="text" id="subtitle" placeholder="A visual journey through timeless elegance">
+      </div>
+      <div class="field">
+        <label>Author / Curator</label>
+        <input type="text" id="author" placeholder="Curated by GOHSY">
+      </div>
+    </section>
+
+    <!-- Slides -->
+    <section class="section">
+      <div class="section-title">Slides</div>
+      <div class="slides-list" id="slidesList">
+        <div class="slide-item" data-index="0">
+          <div class="slide-header">
+            <span class="slide-num">1</span>
+            <input type="text" class="slide-title-input" placeholder="Slide title" data-field="title">
+            <button class="slide-remove" onclick="removeSlide(0)">x</button>
+          </div>
+          <div class="slide-fields">
+            <input type="url" placeholder="Image URL (Unsplash, etc.)" data-field="image">
+            <textarea placeholder="Caption / Commentary" data-field="caption"></textarea>
+          </div>
+        </div>
+      </div>
+      <button class="add-slide-btn" onclick="addSlide()">+ Add Slide</button>
+    </section>
+
+    <!-- Buttons -->
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="loadSample()">Sample</button>
+      <button class="btn btn-primary" onclick="startBroadcast()">Start Broadcast</button>
+    </div>
+
+    <footer class="setup-footer">
+      <a href="../prompts/editorial/">Back to Editorial</a>
+    </footer>
+  </div>
+
+  <!-- BROADCAST MODE -->
+  <div class="broadcast" id="broadcast">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress"></div>
+    </div>
+    <button class="exit-btn" onclick="exitBroadcast()">x</button>
+    <div class="slide-counter" id="counter">1 / 1</div>
+    <div class="slide-container" id="slideContainer"></div>
+    <div class="annotation-area show">S Pen Annotation</div>
+    <div class="touch-hint">SWIPE TO NAVIGATE</div>
+  </div>
+
+  <script>
+    // State
+    let slideCount = 1;
+    let currentSlide = 0;
+    let slides = [];
+    let touchStartX = 0;
+
+    // Slide Management
+    function addSlide() {
+      const list = document.getElementById('slidesList');
+      const index = slideCount++;
+      const item = document.createElement('div');
+      item.className = 'slide-item';
+      item.dataset.index = index;
+      item.innerHTML = `
+        <div class="slide-header">
+          <span class="slide-num">${index + 1}</span>
+          <input type="text" class="slide-title-input" placeholder="Slide title" data-field="title">
+          <button class="slide-remove" onclick="removeSlide(${index})">x</button>
+        </div>
+        <div class="slide-fields">
+          <input type="url" placeholder="Image URL (Unsplash, etc.)" data-field="image">
+          <textarea placeholder="Caption / Commentary" data-field="caption"></textarea>
+        </div>
+      `;
+      list.appendChild(item);
+    }
+
+    function removeSlide(index) {
+      const item = document.querySelector(`.slide-item[data-index="${index}"]`);
+      if (item && document.querySelectorAll('.slide-item').length > 1) {
+        item.remove();
+        updateSlideNumbers();
+      }
+    }
+
+    function updateSlideNumbers() {
+      document.querySelectorAll('.slide-item').forEach((item, i) => {
+        item.querySelector('.slide-num').textContent = i + 1;
+      });
+    }
+
+    function getSlides() {
+      return Array.from(document.querySelectorAll('.slide-item')).map(item => ({
+        title: item.querySelector('[data-field="title"]').value || 'Untitled',
+        image: item.querySelector('[data-field="image"]').value || '',
+        caption: item.querySelector('[data-field="caption"]').value || ''
+      }));
+    }
+
+    // Sample Data
+    function loadSample() {
+      document.getElementById('title').value = 'The Art of Living';
+      document.getElementById('subtitle').value = 'A visual journey through timeless elegance';
+      document.getElementById('author').value = 'Curated by GOHSY';
+
+      // Clear existing slides
+      document.getElementById('slidesList').innerHTML = '';
+      slideCount = 0;
+
+      const sampleSlides = [
+        {
+          title: 'Dawn Light',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200',
+          caption: 'Morning light filters through the quiet studio, casting long shadows across weathered wood.'
+        },
+        {
+          title: 'Material Studies',
+          image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200',
+          caption: 'Every texture tells a story. The worn leather, the patina of brass, the softness of linen.'
+        },
+        {
+          title: 'Quiet Moments',
+          image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200',
+          caption: 'In stillness, we find ourselves. The cup holds warmth; the room holds silence.'
+        },
+        {
+          title: 'The Details',
+          image: 'https://images.unsplash.com/photo-1517705008128-361805f42e86?w=1200',
+          caption: 'Luxury lives in the details we often overlook.'
+        }
+      ];
+
+      sampleSlides.forEach((s, i) => {
+        addSlide();
+        const item = document.querySelectorAll('.slide-item')[i];
+        item.querySelector('[data-field="title"]').value = s.title;
+        item.querySelector('[data-field="image"]').value = s.image;
+        item.querySelector('[data-field="caption"]').value = s.caption;
+      });
+    }
+
+    // Broadcast
+    function startBroadcast() {
+      slides = getSlides();
+      if (slides.length === 0) return;
+
+      currentSlide = 0;
+      renderSlides();
+      document.getElementById('setup').classList.add('hidden');
+      document.getElementById('broadcast').classList.add('active');
+      updateProgress();
+
+      // Request fullscreen
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    }
+
+    function exitBroadcast() {
+      document.getElementById('broadcast').classList.remove('active');
+      document.getElementById('setup').classList.remove('hidden');
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    }
+
+    function renderSlides() {
+      const container = document.getElementById('slideContainer');
+      container.innerHTML = slides.map((s, i) => `
+        <div class="slide ${i === 0 ? 'active' : ''}" data-index="${i}">
+          <div class="slide-image" style="background-image: url('${s.image || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%23222%22 width=%221%22 height=%221%22/></svg>'}')"></div>
+          <div class="slide-gradient"></div>
+          <div class="slide-content">
+            <h2 class="slide-title">${s.title}</h2>
+            <p class="slide-caption">${s.caption}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function goToSlide(index) {
+      if (index < 0 || index >= slides.length) return;
+      currentSlide = index;
+
+      document.querySelectorAll('.slide').forEach((s, i) => {
+        s.classList.toggle('active', i === index);
+        // Restart Ken Burns animation
+        if (i === index) {
+          const img = s.querySelector('.slide-image');
+          img.style.animation = 'none';
+          img.offsetHeight; // Trigger reflow
+          img.style.animation = '';
+        }
+      });
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const progress = ((currentSlide + 1) / slides.length) * 100;
+      document.getElementById('progress').style.width = progress + '%';
+      document.getElementById('counter').textContent = `${currentSlide + 1} / ${slides.length}`;
+    }
+
+    // Navigation
+    document.addEventListener('keydown', e => {
+      if (!document.getElementById('broadcast').classList.contains('active')) return;
+      if (e.key === 'ArrowRight' || e.key === ' ') goToSlide(currentSlide + 1);
+      if (e.key === 'ArrowLeft') goToSlide(currentSlide - 1);
+      if (e.key === 'Escape') exitBroadcast();
+    });
+
+    // Touch Navigation
+    document.getElementById('broadcast').addEventListener('touchstart', e => {
+      touchStartX = e.touches[0].clientX;
+    });
+
+    document.getElementById('broadcast').addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) goToSlide(currentSlide + 1);
+        else goToSlide(currentSlide - 1);
+      }
+    });
+
+    // Click to advance
+    document.getElementById('slideContainer').addEventListener('click', e => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      if (x > rect.width / 2) goToSlide(currentSlide + 1);
+      else goToSlide(currentSlide - 1);
+    });
+
+    console.log('%c LUXURY EDITORIAL ', 'background: #C9A962; color: #000; font-weight: bold;');
+  </script>
+<script src="../shared/js/nav.js"></script>
+</body>
+</html>

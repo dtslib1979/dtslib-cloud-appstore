@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Music Curation Studio | 음악 큐레이션 스튜디오</title>
+<meta name="description" content="NPR Tiny Desk style music curation chalkboard. NPR 타이니 데스크 스타일 음악 큐레이션 칠판.">
+<meta name="description" lang="en" content="NPR Tiny Desk style music curation chalkboard for screen recording broadcasts.">
+<style>
+:root {
+  --bg: #0a0508;
+  --panel: #1a1218;
+  --accent: #e847a0;
+  --accent-soft: rgba(232,71,160,0.12);
+  --text: #f0e8ef;
+  --dim: #887088;
+  --border: #2a1a28;
+  --vinyl: #1a1018;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.app { max-width: 960px; margin: 0 auto; padding: 1rem; }
+
+.progress { display: flex; gap: 2px; margin-bottom: 1.5rem; }
+.progress-dot { flex: 1; height: 4px; background: #222; border-radius: 2px; transition: 0.3s; }
+.progress-dot.active { background: var(--accent); }
+.progress-dot.done { background: #6a3058; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 1rem; overflow-x: auto; }
+.tab {
+  flex: 1; padding: 0.7rem 0.3rem; text-align: center;
+  background: var(--panel); border: none; color: var(--dim);
+  font-size: 0.7rem; cursor: pointer; border-right: 1px solid #222;
+}
+.tab:last-child { border-right: none; }
+.tab.active { background: var(--accent); color: #fff; }
+.tab .num { display: block; font-size: 1rem; font-weight: 700; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Studio frame */
+.studio {
+  background: linear-gradient(135deg, var(--panel), #0f080d);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2rem;
+  min-height: 450px;
+}
+.studio-title {
+  font-size: 1.4rem; font-weight: 700; color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+.studio-sub {
+  font-size: 0.85rem; color: var(--dim); margin-bottom: 1.5rem;
+}
+
+/* Vinyl record */
+.vinyl {
+  width: 120px; height: 120px; margin: 0 auto 1.5rem;
+  background: radial-gradient(circle, #333 20%, #111 21%, #222 45%, #111 46%, #1a1a1a 100%);
+  border-radius: 50%; position: relative;
+  box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+.vinyl::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px; height: 30px; background: var(--accent);
+  border-radius: 50%;
+}
+
+/* Waveform */
+.waveform {
+  display: flex; align-items: center; justify-content: center;
+  gap: 2px; height: 60px; margin: 1rem 0;
+}
+.wave-bar {
+  width: 3px; background: var(--accent); border-radius: 2px;
+  animation: wave 1.5s ease-in-out infinite;
+}
+@keyframes wave {
+  0%, 100% { height: 10px; opacity: 0.4; }
+  50% { height: 40px; opacity: 1; }
+}
+
+/* Section blocks */
+.section-block {
+  background: rgba(26,16,24,0.8); border: 1px solid var(--border);
+  border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem;
+}
+.section-block-title {
+  font-size: 0.8rem; color: var(--accent); margin-bottom: 0.5rem;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+textarea {
+  width: 100%; background: transparent; border: 1px dashed var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit;
+  font-size: 1rem; line-height: 1.8; padding: 1rem; resize: vertical;
+  min-height: 120px;
+}
+
+/* Track list */
+.track-list {
+  list-style: none; padding: 0;
+}
+.track-list li {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.8rem; background: rgba(26,16,24,0.5);
+  border-radius: 6px; margin-bottom: 0.5rem;
+  border: 1px solid var(--border);
+}
+.track-num { color: var(--accent); font-weight: 700; font-size: 1.2rem; min-width: 24px; }
+
+.nav { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.nav-btn {
+  flex: 1; padding: 1rem; border: none; border-radius: 8px;
+  font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.nav-btn.prev { background: #222; color: #fff; }
+.nav-btn.next { background: var(--accent); color: #fff; }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Bilingual Support */
+.bilingual { display: block; }
+.bilingual .ko { display: block; }
+.bilingual .en { display: block; font-size: 0.85em; color: var(--dim); margin-top: 0.2em; }
+[lang="en"] { font-style: normal; }
+
+.lang-toggle {
+  position: fixed; top: 1rem; right: 1rem; z-index: 100;
+  display: flex; gap: 4px; background: var(--panel); padding: 4px; border-radius: 6px;
+}
+.lang-btn {
+  padding: 0.4rem 0.8rem; border: none; border-radius: 4px;
+  font-size: 0.75rem; cursor: pointer; background: transparent; color: var(--dim);
+}
+.lang-btn.active { background: var(--accent); color: #fff; }
+
+html.en-mode .bilingual .ko { font-size: 0.85em; color: var(--dim); }
+html.en-mode .bilingual .en { font-size: 1em; color: var(--text); }
+</style>
+</head>
+<body>
+<div class="lang-toggle">
+  <button class="lang-btn active" data-lang="ko" onclick="setLang('ko')">한국어</button>
+  <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+</div>
+
+<div class="app">
+  <div class="progress" id="progress"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="panels"></div>
+  <div class="nav">
+    <button class="nav-btn prev" id="prevBtn" onclick="go(-1)">
+      <span class="bilingual"><span lang="ko" class="ko">← 이전</span><span lang="en" class="en">← Prev</span></span>
+    </button>
+    <button class="nav-btn next" id="nextBtn" onclick="go(1)">
+      <span class="bilingual"><span lang="ko" class="ko">다음 →</span><span lang="en" class="en">Next →</span></span>
+    </button>
+  </div>
+</div>
+<script>
+const pages = [
+  { num: 1, label: '곡 소개', labelEn: 'Intro', title: '오늘의 곡', titleEn: "Today's Piece", sub: '제목 / 작곡가 / 시대', subEn: 'Title / Composer / Era', type: 'intro' },
+  { num: 2, label: '배경', labelEn: 'Context', title: '작곡 배경', titleEn: 'Composition Background', sub: '이 곡은 왜 태어났는가', subEn: 'Why was this piece born?', type: 'text' },
+  { num: 3, label: '감상', labelEn: 'Listen', title: '구간별 감상 포인트', titleEn: 'Listening Guide', sub: '1절 / 2절 / 클라이맥스', subEn: 'Verse 1 / Verse 2 / Climax', type: 'sections' },
+  { num: 4, label: '분석', labelEn: 'Analysis', title: '화성 · 구조 분석', titleEn: 'Harmony & Structure', sub: '악보 / 코드 / 조성', subEn: 'Score / Chords / Key', type: 'text' },
+  { num: 5, label: '비교', labelEn: 'Compare', title: '추천 연주 버전', titleEn: 'Recommended Versions', sub: '같은 곡, 다른 해석', subEn: 'Same piece, different interpretations', type: 'tracks' },
+  { num: 6, label: '큐레이션', labelEn: 'Curate', title: '관련곡 3선', titleEn: 'Related Picks (3)', sub: '이 곡이 좋았다면...', subEn: 'If you liked this...', type: 'tracks' },
+  { num: 7, label: '예고', labelEn: 'Next', title: '다음 에피소드', titleEn: 'Next Episode', sub: '다음 주 감상 예고', subEn: "Next week's preview", type: 'next' }
+];
+
+let current = 0;
+let currentLang = localStorage.getItem('orbitprompt_lang') || 'ko';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('orbitprompt_lang', lang);
+  document.documentElement.classList.toggle('en-mode', lang === 'en');
+  document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === lang));
+  render();
+}
+document.documentElement.classList.toggle('en-mode', currentLang === 'en');
+document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.lang === currentLang));
+
+function renderPanel(p, i) {
+  const saved = localStorage.getItem('music_'+i) || '';
+  if (p.type === 'intro') {
+    return `
+      <div class="vinyl"></div>
+      <textarea placeholder="곡명: \n작곡가: \n시대: \n장르: \n연주 시간: " id="input${i}">${saved}</textarea>
+    `;
+  } else if (p.type === 'text') {
+    const ph = i === 1
+      ? '작곡 당시의 시대 배경, 작곡가의 상황, 헌정 대상 등...'
+      : '조성: \n박자: \n형식: (소나타/론도/변주곡)\n특징적 화성 진행: ';
+    return `<textarea placeholder="${ph}" id="input${i}">${saved}</textarea>`;
+  } else if (p.type === 'sections') {
+    return `
+      <div class="section-block">
+        <div class="section-block-title">도입부</div>
+        <div class="waveform">${Array(20).fill(0).map((_,j)=>`<div class="wave-bar" style="animation-delay:${j*0.08}s"></div>`).join('')}</div>
+      </div>
+      <textarea placeholder="구간별 감상 포인트:\n\n[0:00~1:30] 도입 - \n[1:30~4:00] 제1주제 - \n[4:00~6:00] 제2주제 - \n[6:00~8:00] 전개부 - \n[8:00~끝] 클라이맥스 - " id="input${i}">${saved}</textarea>
+    `;
+  } else if (p.type === 'tracks') {
+    return `
+      <ul class="track-list">
+        <li><span class="track-num">1</span><input style="flex:1;background:#1a1018;border:1px solid #2a1a28;border-radius:4px;padding:0.5rem;color:#fff;" placeholder="연주자/버전명"></li>
+        <li><span class="track-num">2</span><input style="flex:1;background:#1a1018;border:1px solid #2a1a28;border-radius:4px;padding:0.5rem;color:#fff;" placeholder="연주자/버전명"></li>
+        <li><span class="track-num">3</span><input style="flex:1;background:#1a1018;border:1px solid #2a1a28;border-radius:4px;padding:0.5rem;color:#fff;" placeholder="연주자/버전명"></li>
+      </ul>
+      <textarea placeholder="각 버전의 차이점, 추천 이유..." id="input${i}">${saved}</textarea>
+    `;
+  } else if (p.type === 'next') {
+    return `
+      <textarea placeholder="다음 에피소드 예고:\n\n▶ 곡명: \n▶ 왜 이 곡인가: \n▶ 기대 포인트: " id="input${i}">${saved}</textarea>
+    `;
+  }
+}
+
+function render() {
+  document.getElementById('progress').innerHTML = pages.map((_, i) =>
+    `<div class="progress-dot ${i < current ? 'done' : i === current ? 'active' : ''}"></div>`
+  ).join('');
+
+  document.getElementById('tabs').innerHTML = pages.map((p, i) =>
+    `<button class="tab ${i === current ? 'active' : ''}" onclick="goTo(${i})">
+      <span class="num">${p.num}</span>
+      <span class="bilingual"><span lang="ko" class="ko">${p.label}</span><span lang="en" class="en">${p.labelEn}</span></span>
+    </button>`
+  ).join('');
+
+  document.getElementById('panels').innerHTML = pages.map((p, i) => `
+    <div class="panel ${i === current ? 'active' : ''}">
+      <div class="studio">
+        <div class="studio-title bilingual">
+          <span lang="ko" class="ko">${p.title}</span>
+          <span lang="en" class="en">${p.titleEn}</span>
+        </div>
+        <div class="studio-sub bilingual">
+          <span lang="ko" class="ko">${p.sub}</span>
+          <span lang="en" class="en">${p.subEn}</span>
+        </div>
+        ${renderPanel(p, i)}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('prevBtn').disabled = current === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.innerHTML = current === pages.length - 1
+    ? `<span class="bilingual"><span lang="ko" class="ko">완료 ✓</span><span lang="en" class="en">Done ✓</span></span>`
+    : `<span class="bilingual"><span lang="ko" class="ko">다음 →</span><span lang="en" class="en">Next →</span></span>`;
+}
+
+function save() {
+  const input = document.getElementById('input' + current);
+  if (input) localStorage.setItem('music_' + current, input.value);
+}
+
+function go(dir) { save(); goTo(current + dir); }
+function goTo(i) { save(); current = Math.max(0, Math.min(pages.length - 1, i)); render(); }
+
+render();
+
+// 스튜디오 연동 초기화
+// Branch customization support
+</script>
+
+<script src="../shared/js/nav.js"></script>
+</body>
+</html>

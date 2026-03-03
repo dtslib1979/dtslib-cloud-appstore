@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atom → Pipeline Bridge</title>
+<style>
+:root { --bg: #000; --surface: #1C1C1E; --accent: #0A84FF; --text: #F5F5F7; --dim: rgba(245,245,247,0.6); --border: rgba(255,255,255,0.08); }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 1rem; }
+.app { max-width: 800px; margin: 0 auto; }
+h1 { font-size: 1.3rem; margin-bottom: 0.3rem; }
+.sub { color: var(--dim); font-size: 0.85rem; margin-bottom: 1.5rem; }
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 600px) { .panels { grid-template-columns: 1fr; } }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+.panel-title { font-size: 0.75rem; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.8rem; }
+textarea { width: 100%; min-height: 250px; background: transparent; border: 1px dashed var(--border); border-radius: 6px; color: var(--text); font-family: 'Courier New', monospace; font-size: 0.8rem; line-height: 1.6; padding: 0.8rem; resize: vertical; }
+.btn-row { display: flex; gap: 0.8rem; margin-top: 1rem; }
+.btn { flex: 1; padding: 0.8rem; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: #2C2C2E; color: var(--dim); border: 1px solid var(--border); }
+.btn:hover { filter: brightness(1.1); }
+.status { margin-top: 0.8rem; font-size: 0.8rem; color: var(--dim); min-height: 1.2em; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Atom → Pipeline Bridge</h1>
+  <p class="sub">OrbitPrompt Atom JSON → DTSLIB Studio Pipeline Spec 변환</p>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-title">Input: Atom JSON</div>
+      <textarea id="atomInput" placeholder='{"title": "My Tool", "tags": ["video", "editing"], "body": "도구 설명..."}'></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Output: Pipeline Spec</div>
+      <textarea id="specOutput" readonly placeholder="변환 결과가 여기에 표시됩니다"></textarea>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="convert()">Convert →</button>
+    <button class="btn btn-secondary" onclick="sendToPipeline()">Pipeline으로 보내기</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<script src="atom-to-pipeline.js"></script>
+<script>
+function convert() {
+  const input = document.getElementById('atomInput').value.trim();
+  const status = document.getElementById('status');
+  try {
+    const atom = JSON.parse(input);
+    const spec = atomToPipelineSpec(atom);
+    document.getElementById('specOutput').value = JSON.stringify(spec, null, 2);
+    status.textContent = '변환 완료';
+    status.style.color = '#30D158';
+  } catch (e) {
+    status.textContent = '오류: ' + e.message;
+    status.style.color = '#FF453A';
+  }
+}
+
+function sendToPipeline() {
+  const output = document.getElementById('specOutput').value.trim();
+  if (!output) { document.getElementById('status').textContent = '먼저 변환하세요'; return; }
+  try {
+    const spec = JSON.parse(output);
+    const params = new URLSearchParams({
+      name: spec.name || '',
+      type: spec.type || 'webapp',
+      cat: spec.category || 'util',
+      desc: spec.desc || ''
+    });
+    window.location.href = '../index.html?' + params.toString();
+  } catch (e) {
+    document.getElementById('status').textContent = '오류: ' + e.message;
+  }
+}
+</script>
+</body>
+</html>
